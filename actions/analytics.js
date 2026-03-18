@@ -34,6 +34,12 @@ export async function getAnalytics(period = "30d") {
     },
   });
 
+  const allTimeEntriesCount = await db.entry.count({
+    where: {
+      userId: user.id,
+    },
+  });
+
   // Process entries for analytics
   const moodData = entries.reduce((acc, entry) => {
     const date = entry.createdAt.toISOString().split("T")[0];
@@ -69,24 +75,24 @@ export async function getAnalytics(period = "30d") {
     };
   });
 
+  const totalEntries = entries.length;
+  const totalScore = entries.reduce((acc, entry) => acc + entry.moodScore, 0);
+  const moodCounts = entries.reduce((acc, entry) => {
+    acc[entry.mood] = (acc[entry.mood] || 0) + 1;
+    return acc;
+  }, {});
+
   // Calculate overall statistics
   const overallStats = {
-    totalEntries: entries.length,
-    averageScore: Number(
-      (
-        entries.reduce((acc, entry) => acc + entry.moodScore, 0) /
-        entries.length
-      ).toFixed(1)
-    ),
-    mostFrequentMood: Object.entries(
-      entries.reduce((acc, entry) => {
-        acc[entry.mood] = (acc[entry.mood] || 0) + 1;
-        return acc;
-      }, {})
-    ).sort((a, b) => b[1] - a[1])[0]?.[0],
+    totalEntries,
+    averageScore: totalEntries > 0 ? Number((totalScore / totalEntries).toFixed(1)) : 0,
+    mostFrequentMood:
+      totalEntries > 0
+        ? Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+        : null,
     dailyAverage: Number(
       (
-        entries.length / (period === "7d" ? 7 : period === "15d" ? 15 : 30)
+        totalEntries / (period === "7d" ? 7 : period === "15d" ? 15 : 30)
       ).toFixed(1)
     ),
   };
@@ -97,6 +103,7 @@ export async function getAnalytics(period = "30d") {
       timeline: analyticsData,
       stats: overallStats,
       entries,
+      hasAnyEntries: allTimeEntriesCount > 0,
     },
   };
 }
