@@ -654,12 +654,12 @@ function QuickDrawGame({ localPlayer, sessionId }) {
                 className="text-lg px-8"
                 disabled={!isHost || !remoteConnected || !localReady || !remoteReady}
               >
-                {isHost ? "Start Drawing! ✏️" : "Waiting for Hunter..."}
+                {isHost ? "Start Drawing! ✏️" : "Waiting for Partner 1..."}
               </Button>
             </div>
 
             <p className="text-xs text-muted-foreground">
-              {remoteConnected ? "Both ready → Hunter starts." : "Open this game on the other device."}
+              {remoteConnected ? "Both ready → Partner 1 starts." : "Open this game on the other device."}
             </p>
           </CardContent>
         </Card>
@@ -825,7 +825,7 @@ function QuickDrawGame({ localPlayer, sessionId }) {
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Waiting for Hunter to start the next round...
+                Waiting for Partner 1 to start the next round...
               </p>
             )}
           </CardContent>

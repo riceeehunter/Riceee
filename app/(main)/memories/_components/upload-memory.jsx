@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Upload, X, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,15 +24,22 @@ import { toast } from "sonner";
 import Image from "next/image";
 import { format } from "date-fns";
 
-export default function UploadMemory({ onClose, onSuccess }) {
+export default function UploadMemory({ onClose, onSuccess, partnerNames }) {
+  const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
+  const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
+  const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [caption, setCaption] = useState("");
-  const [uploadedBy, setUploadedBy] = useState("Hunter x Riceee");
+  const [uploadedBy, setUploadedBy] = useState(bothLabel);
   const [memoryDate, setMemoryDate] = useState(new Date());
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    setUploadedBy(bothLabel);
+  }, [bothLabel]);
 
   // Handle file selection
   const handleFileChange = (selectedFile) => {
@@ -223,9 +230,9 @@ export default function UploadMemory({ onClose, onSuccess }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Hunter">Hunter</SelectItem>
-                    <SelectItem value="Riceee">Riceee</SelectItem>
-                    <SelectItem value="Hunter x Riceee">Both Together</SelectItem>
+                    <SelectItem value={partnerOneName}>{partnerOneName}</SelectItem>
+                    <SelectItem value={partnerTwoName}>{partnerTwoName}</SelectItem>
+                    <SelectItem value={bothLabel}>Both Together</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -175,7 +175,7 @@ export function PusherMultiplayerWrapper({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Hunter */}
+              {/* Partner 1 */}
               <button
                 onClick={() => handlePlayerSelect(playerOne.id)}
                 className={`group relative overflow-hidden rounded-xl p-8 border-4 ${playerOne.cardClass} transition-all hover:scale-105 bg-gradient-to-br ${hunterColor}`}
@@ -189,7 +189,7 @@ export function PusherMultiplayerWrapper({
                 </div>
               </button>
 
-              {/* Riceee */}
+              {/* Partner 2 */}
               <button
                 onClick={() => handlePlayerSelect(playerTwo.id)}
                 className={`group relative overflow-hidden rounded-xl p-8 border-4 ${playerTwo.cardClass} transition-all hover:scale-105 bg-gradient-to-br ${riceeeColor}`}

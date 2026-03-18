@@ -29,6 +29,7 @@ import { getMoodById, MOODS } from "@/app/lib/moods";
 import { BarLoader } from "react-spinners";
 import { toast } from "sonner";
 import { journalSchema } from "@/app/lib/schemas";
+import { getCurrentPartnerNames } from "@/actions/onboarding";
 import "react-quill-new/dist/quill.snow.css";
 import CollectionForm from "@/components/collection-form";
 
@@ -61,6 +62,11 @@ export default function JournalEntryPage() {
   } = useFetch(getDraft);
 
   const { loading: savingDraft, fn: saveDraftFn } = useFetch(saveDraft);
+  const { data: partnerNames, fn: fetchPartnerNames } = useFetch(getCurrentPartnerNames);
+
+  const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
+  const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
+  const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
 
   const {
     loading: actionLoading,
@@ -89,7 +95,7 @@ export default function JournalEntryPage() {
       title: "",
       content: "",
       mood: "",
-      author: "Hunter x Riceee",
+      author: bothLabel,
       collectionId: "",
     },
   });
@@ -97,6 +103,7 @@ export default function JournalEntryPage() {
   // Handle draft or existing entry loading
   useEffect(() => {
     fetchCollections();
+    fetchPartnerNames();
     if (editId) {
       setIsEditMode(true);
       fetchEntry(editId);
@@ -113,7 +120,7 @@ export default function JournalEntryPage() {
         title: existingEntry.title || "",
         content: existingEntry.content || "",
         mood: existingEntry.mood || "",
-        author: existingEntry.author || "Hunter x Riceee",
+        author: existingEntry.author || bothLabel,
         collectionId: existingEntry.collectionId || "",
       });
     } else if (draftData?.success && draftData?.data) {
@@ -121,7 +128,7 @@ export default function JournalEntryPage() {
         title: draftData.data.title || "",
         content: draftData.data.content || "",
         mood: draftData.data.mood || "",
-        author: draftData.data.author || "Hunter x Riceee",
+        author: draftData.data.author || bothLabel,
         collectionId: "",
       });
     } else {
@@ -129,11 +136,11 @@ export default function JournalEntryPage() {
         title: "",
         content: "",
         mood: "",
-        author: "Hunter x Riceee",
+        author: bothLabel,
         collectionId: "",
       });
     }
-  }, [draftData, isEditMode, existingEntry]);
+  }, [draftData, isEditMode, existingEntry, bothLabel]);
 
   // Handle collection creation success
   useEffect(() => {
@@ -263,9 +270,9 @@ export default function JournalEntryPage() {
                   <SelectValue placeholder="Who's writing?" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Hunter">Hunter 💙</SelectItem>
-                  <SelectItem value="Riceee">Riceee 💗</SelectItem>
-                  <SelectItem value="Hunter x Riceee">Hunter x Riceee 💕</SelectItem>
+                  <SelectItem value={partnerOneName}>{partnerOneName} 💙</SelectItem>
+                  <SelectItem value={partnerTwoName}>{partnerTwoName} 💗</SelectItem>
+                  <SelectItem value={bothLabel}>{bothLabel} 💕</SelectItem>
                 </SelectContent>
               </Select>
             )}

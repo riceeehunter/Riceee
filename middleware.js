@@ -6,6 +6,10 @@ const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
   "/journal(.*)",
   "/collection(.*)",
+  "/memories(.*)",
+  "/games(.*)",
+  "/riceee-chat(.*)",
+  "/onboarding(.*)",
 ]);
 
 // Create base Clerk middleware

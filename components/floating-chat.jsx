@@ -8,12 +8,16 @@ import { sendMessage, getMessages, markMessagesAsRead, getUnreadCount } from "@/
 import { format } from "date-fns";
 import { toast } from "sonner";
 import Pusher from "pusher-js";
+import { PLAYER_IDS } from "@/lib/constants/players";
 
-export default function FloatingChat() {
+export default function FloatingChat({ partnerNames }) {
+  const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
+  const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
+  const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [sender, setSender] = useState("Hunter");
+  const [sender, setSender] = useState(PLAYER_IDS.ONE);
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [replyingTo, setReplyingTo] = useState(null);
@@ -23,6 +27,9 @@ export default function FloatingChat() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const isSenderOne = (value) =>
+    value === PLAYER_IDS.ONE || value === "Partner 1";
 
   useEffect(() => {
     scrollToBottom();
@@ -95,7 +102,9 @@ export default function FloatingChat() {
         sender,
         replyTo: replyingTo?.id,
         replyToContent: replyingTo?.content,
-        replyToSender: replyingTo?.sender,
+        replyToSender: replyingTo
+          ? (isSenderOne(replyingTo.sender) ? partnerOneName : partnerTwoName)
+          : null,
       });
 
       console.log("📬 Result from server:", result);
@@ -146,7 +155,7 @@ export default function FloatingChat() {
             <div className="flex items-center gap-3">
               <Heart className="h-5 w-5 fill-white" />
               <div>
-                <h3 className="font-semibold text-base">Hunter × Riceee</h3>
+                <h3 className="font-semibold text-base">{bothLabel}</h3>
               </div>
             </div>
             <button
@@ -180,7 +189,7 @@ export default function FloatingChat() {
                 >
                   <div
                     className={`max-w-[75%] rounded-lg px-3 py-2 shadow-sm relative ${
-                      message.sender === "Hunter"
+                      isSenderOne(message.sender)
                         ? "bg-blue-500 text-white rounded-tr-none"
                         : "bg-pink-500 text-white rounded-tl-none"
                     }`}
@@ -194,7 +203,7 @@ export default function FloatingChat() {
                     )}
 
                     <p className="text-[10px] font-medium mb-0.5 opacity-80">
-                      {message.sender === "Hunter" ? "Hunter 💙" : "Riceee 💖"}
+                      {isSenderOne(message.sender) ? `${partnerOneName} 💙` : `${partnerTwoName} 💖`}
                     </p>
                     <p className="text-sm leading-relaxed break-words">
                       {message.content}
@@ -229,7 +238,7 @@ export default function FloatingChat() {
               <div className="mb-2 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-between">
                 <div className="flex-1 overflow-hidden">
                   <p className="text-xs font-medium text-gray-600">
-                    Replying to {replyingTo.sender === "Hunter" ? "💙 Hunter" : "💖 Riceee"}
+                     Replying to {isSenderOne(replyingTo.sender) ? `💙 ${partnerOneName}` : `💖 ${partnerTwoName}`}
                   </p>
                   <p className="text-xs text-gray-500 truncate">{replyingTo.content}</p>
                 </div>
@@ -245,24 +254,24 @@ export default function FloatingChat() {
             {/* Compact sender selection */}
             <div className="flex gap-2 mb-2">
               <button
-                onClick={() => setSender("Hunter")}
+                onClick={() => setSender(PLAYER_IDS.ONE)}
                 className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
-                  sender === "Hunter"
+                  sender === PLAYER_IDS.ONE
                     ? "bg-blue-500 text-white"
                     : "bg-white text-blue-600 border border-blue-300"
                 }`}
               >
-                💙 Hunter
+                💙 {partnerOneName}
               </button>
               <button
-                onClick={() => setSender("Riceee")}
+                onClick={() => setSender(PLAYER_IDS.TWO)}
                 className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
-                  sender === "Riceee"
+                  sender === PLAYER_IDS.TWO
                     ? "bg-pink-500 text-white"
                     : "bg-white text-pink-600 border border-pink-300"
                 }`}
               >
-                💖 Riceee
+                💖 {partnerTwoName}
               </button>
             </div>
 

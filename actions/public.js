@@ -16,26 +16,16 @@ export async function getPixabayImage(query) {
 }
 
 const personalMessages = [
-  "Hey Riceee, remember: you're doing better than you think. Keep going 💗",
-  "Some days are tough, but you're tougher. I believe in you, always.",
-  "Take a deep breath, Riceee. You've got this, one step at a time.",
-  "Your feelings are valid, your thoughts matter, and you're never alone in this.",
-  "Even on hard days, you're still the Riceee I care about most.",
-  "Progress isn't always visible, but you're moving forward. Trust the process.",
-  "It's okay to rest, Riceee. You don't have to be perfect every single day.",
-  "Your smile makes my day brighter, even through a screen 💗",
-  "Whatever's on your mind today, know that I'm here, listening.",
+  "You're doing better than you think. Keep going 💗",
+  "Some days are tough, but you're tougher. Keep believing in yourself.",
+  "Take a deep breath. You've got this, one step at a time.",
+  "Your feelings are valid, your thoughts matter, and you are not alone.",
+  "Progress isn't always visible, but you're still moving forward.",
+  "It's okay to rest. You don't have to be perfect every day.",
+  "Whatever is on your mind today, this is a safe space to share it.",
   "You're stronger than your worries and braver than you realize.",
   "Every entry you write is a step toward understanding yourself better.",
-  "Bad days don't define you, Riceee. You're so much more than a moment.",
-  "Sometimes the bravest thing is just showing up. And you did. Proud of you.",
-  "Your thoughts are safe here, your feelings are heard, and you matter.",
-  "Life gets messy, but that's what makes your story real and beautiful.",
-  "You don't have to have it all figured out today. Just be you.",
-  "I see your effort, even when you don't. You're doing amazing.",
-  "This is your space to be real, be messy, be you. No judgment, ever.",
   "Some days you'll conquer the world. Other days, just existing is enough.",
-  "You're not alone in this journey, Riceee. We're in it together 💗",
 ];
 
 export const getDailyPrompt = unstable_cache(

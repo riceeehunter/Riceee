@@ -3,20 +3,12 @@
 import { db } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { getOrCreateUser } from "@/lib/auth";
-import { PLAYER_IDS, getOtherPlayer, getPlayerDisplayName } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer, getPlayerSenderAliases, normalizePlayerId } from "@/lib/constants/players";
 
-function normalizePlayerId(player) {
-  if (!player) return null;
-  const normalized = player.toLowerCase();
-  if (normalized === "hunter") return PLAYER_IDS.ONE;
-  if (normalized === "riceee") return PLAYER_IDS.TWO;
-  return null;
-}
-
-function getOppositeSenderName(player) {
+function getOppositeSenderAliases(player) {
   const playerId = normalizePlayerId(player);
   const oppositeId = playerId ? getOtherPlayer(playerId) : PLAYER_IDS.ONE;
-  return getPlayerDisplayName(oppositeId);
+  return getPlayerSenderAliases(oppositeId);
 }
 
 export async function sendMessage(data) {
@@ -25,11 +17,12 @@ export async function sendMessage(data) {
     
     const user = await getOrCreateUser();
     console.log("👤 User found:", user?.id);
+    const senderId = normalizePlayerId(data.sender) || PLAYER_IDS.ONE;
 
     const message = await db.message.create({
       data: {
         content: data.content,
-        sender: data.sender,
+        sender: senderId,
         userId: user.id,
         replyTo: data.replyTo || null,
         replyToContent: data.replyToContent || null,
@@ -78,7 +71,7 @@ export async function markMessagesAsRead(sender) {
   try {
     await db.message.updateMany({
       where: {
-        sender: getOppositeSenderName(sender),
+        sender: { in: getOppositeSenderAliases(sender) },
         read: false,
       },
       data: {
@@ -96,7 +89,7 @@ export async function getUnreadCount(forUser) {
   try {
     const count = await db.message.count({
       where: {
-        sender: getOppositeSenderName(forUser),
+        sender: { in: getOppositeSenderAliases(forUser) },
         read: false,
       },
     });

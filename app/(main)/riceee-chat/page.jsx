@@ -117,10 +117,10 @@ export default function RiceeeChat() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="border-b">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
@@ -144,8 +144,8 @@ export default function RiceeeChat() {
       </div>
 
       {/* Chat Container */}
-      <div className="container mx-auto px-4 py-6 max-w-5xl">
-        <div className="h-[calc(100vh-9rem)] flex flex-col rounded-3xl border-2 border-orange-200 bg-orange-50/50 dark:bg-orange-950/10 shadow-xl p-6">
+      <div className="container mx-auto px-4 py-2 max-w-5xl flex-1 min-h-0">
+        <div className="h-full min-h-0 flex flex-col rounded-3xl border-2 border-orange-200 bg-orange-50/50 dark:bg-orange-950/10 shadow-xl p-4 md:p-5">
           {/* Messages Area */}
           <div className="flex-1 overflow-y-auto space-y-4 mb-4">
             {messages.map((message, index) => (

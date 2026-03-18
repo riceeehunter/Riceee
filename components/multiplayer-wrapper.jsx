@@ -112,7 +112,7 @@ export function MultiplayerWrapper({
 
               {/* Player Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-8">
-                {/* Hunter */}
+                {/* Partner 1 */}
                 <button
                   onClick={() => selectPlayer(playerOne.id)}
                   className={`group relative p-8 bg-gradient-to-br ${hunterColor} rounded-2xl border-4 border-orange-300 hover:border-orange-400 transition-all transform hover:scale-105 shadow-lg`}
@@ -122,7 +122,7 @@ export function MultiplayerWrapper({
                   <p className="text-white/90 text-sm">Click to play as {playerOne.displayName}</p>
                 </button>
 
-                {/* Riceee */}
+                {/* Partner 2 */}
                 <button
                   onClick={() => selectPlayer(playerTwo.id)}
                   className={`group relative p-8 bg-gradient-to-br ${riceeeColor} rounded-2xl border-4 border-pink-300 hover:border-pink-400 transition-all transform hover:scale-105 shadow-lg`}

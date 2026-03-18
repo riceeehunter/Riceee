@@ -2,6 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { PLAYER_IDS, normalizePlayerId } from "@/lib/constants/players";
 
 export async function createNotification(data) {
   try {
@@ -42,9 +43,11 @@ export async function getUnreadNotifications() {
 
 export async function markNotificationAsRead(notificationId, reader) {
   try {
-    const updateData = reader === "Hunter" 
-      ? { hunterRead: true } 
-      : { riceeeRead: true };
+    const readerId = normalizePlayerId(reader) || PLAYER_IDS.ONE;
+    const updateData =
+      readerId === PLAYER_IDS.ONE
+        ? { hunterRead: true }
+        : { riceeeRead: true };
 
     const notification = await db.notification.update({
       where: { id: notificationId },

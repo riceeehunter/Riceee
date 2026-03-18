@@ -8,9 +8,11 @@ import UserMenu from "./user-menu";
 import NotificationBell from "./notification-bell";
 import { checkUser } from "@/lib/checkUser";
 import { APP_BRAND } from "@/lib/constants/branding";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 async function Header() {
-  await checkUser();
+  const user = await checkUser();
+  const partnerNames = resolvePartnerNames(user);
 
   return (
     <header className="container mx-auto">
@@ -23,7 +25,7 @@ async function Header() {
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
           <SignedIn>
-            <NotificationBell />
+            <NotificationBell partnerNames={partnerNames} />
             <Link href="/memories">
               <Button variant="outline" className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4">
                 <Camera size={18} />
@@ -71,7 +73,7 @@ async function Header() {
               </h1>
             </Link>
             <SignedIn>
-              <NotificationBell />
+              <NotificationBell partnerNames={partnerNames} />
             </SignedIn>
           </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -16,13 +16,20 @@ import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
-export default function Comments({ entryId, initialComments }) {
+export default function Comments({ entryId, initialComments, partnerNames }) {
+  const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
+  const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
+  const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
   const [comments, setComments] = useState(initialComments || []);
   const [newComment, setNewComment] = useState("");
-  const [author, setAuthor] = useState("Hunter x Riceee");
+  const [author, setAuthor] = useState(bothLabel);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    setAuthor(bothLabel);
+  }, [bothLabel]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -91,9 +98,9 @@ export default function Comments({ entryId, initialComments }) {
                 <SelectValue placeholder="Commenting as..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Hunter">Hunter 💙</SelectItem>
-                <SelectItem value="Riceee">Riceee 💗</SelectItem>
-                <SelectItem value="Hunter x Riceee">Hunter x Riceee 💕</SelectItem>
+                <SelectItem value={partnerOneName}>{partnerOneName} 💙</SelectItem>
+                <SelectItem value={partnerTwoName}>{partnerTwoName} 💗</SelectItem>
+                <SelectItem value={bothLabel}>{bothLabel} 💕</SelectItem>
               </SelectContent>
             </Select>
             

@@ -276,7 +276,7 @@ function TicTacToeGame({ localPlayer, sessionId }) {
             <p className="text-muted-foreground max-w-md mx-auto">
               Classic strategy game in real-time! <span className="font-bold capitalize">{localPlayer}</span> plays as{" "}
               <span className="text-blue-600 font-bold">X</span>, {remotePlayerName} plays as{" "}
-              <span className="text-red-600 font-bold">O</span>. Hunter always goes first!
+              <span className="text-red-600 font-bold">O</span>. Partner 1 always goes first!
             </p>
             
             <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">

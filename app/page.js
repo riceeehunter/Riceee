@@ -14,6 +14,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { getDailyPrompt } from "@/actions/public";
+import { auth } from "@clerk/nextjs/server";
+import { getOrCreateUser } from "@/lib/auth";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 const features = [
   {
@@ -44,26 +47,26 @@ const features = [
 
 export default async function LandingPage() {
   const advice = await getDailyPrompt();
+  const { userId } = await auth();
+  const partnerNames = userId
+    ? resolvePartnerNames(await getOrCreateUser())
+    : null;
+  const titleLineOne = partnerNames
+    ? `For ${partnerNames.partnerOneName}, With Love 💗`
+    : "For You, With Love 💗";
+  const titleLineTwo = partnerNames ? partnerNames.bothLabel : "Built for Two Hearts";
 
   return (
     <div className="relative container mx-auto px-4 pt-16 pb-16 overflow-x-hidden">
       {/* Hero Section */}
       <div className="max-w-5xl mx-auto text-center space-y-8">
-        {/* Title with 3D character on the right */}
+        {/* Title */}
         <div className="relative">
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl gradient-title mb-6 break-words px-2">
-            For Riceee, With Love 💗
+            {titleLineOne}
             <br /> 
-            Riceee x Hunter
+            {titleLineTwo}
           </h1>
-          {/* 3D Character - positioned absolutely on the right for desktop, shows below text on mobile */}
-          <div className="mx-auto w-48 h-48 lg:w-64 lg:h-64 xl:w-72 xl:h-72 lg:absolute lg:-right-20 xl:-right-32 lg:top-1/2 lg:-translate-y-1/3">
-            <img 
-              src="/riceee-character.png" 
-              alt="Riceee" 
-              className="w-full h-full object-contain drop-shadow-2xl animate-float"
-            />
-          </div>
         </div>
         <p className="text-base md:text-lg lg:text-xl text-orange-800 mb-8 px-4 max-w-3xl mx-auto">
           A little world where your words find peace, your moods find meaning, and your heart feels heard.

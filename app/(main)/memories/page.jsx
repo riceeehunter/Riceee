@@ -3,10 +3,12 @@ import { getMemories, getStorageStats } from "@/actions/memory";
 import MemoriesClient from "./_components/memories-client";
 import StorageBar from "./_components/storage-bar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getOrCreateUser } from "@/lib/auth";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 export const metadata = {
   title: "Cosmic Memories | Riceee",
-  description: "Our sweet moments together 💗",
+  description: "Your sweet moments together 💗",
 };
 
 export default async function MemoriesPage() {
@@ -44,7 +46,8 @@ async function StorageBarWrapper() {
 
 async function MemoriesWrapper() {
   const memories = await getMemories();
-  return <MemoriesClient initialMemories={memories} />;
+  const partnerNames = resolvePartnerNames(await getOrCreateUser());
+  return <MemoriesClient initialMemories={memories} partnerNames={partnerNames} />;
 }
 
 function MemoriesLoadingSkeleton() {

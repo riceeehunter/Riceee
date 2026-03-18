@@ -29,7 +29,10 @@ import { toast } from "sonner";
 import Image from "next/image";
 import UploadMemory from "./upload-memory";
 
-export default function MemoriesClient({ initialMemories }) {
+export default function MemoriesClient({ initialMemories, partnerNames }) {
+  const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
+  const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
+  const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
   const [memories, setMemories] = useState(initialMemories);
   const [filteredMemories, setFilteredMemories] = useState(initialMemories);
   const [selectedMemory, setSelectedMemory] = useState(null);
@@ -42,6 +45,9 @@ export default function MemoriesClient({ initialMemories }) {
   const [isScattered, setIsScattered] = useState(false);
 
   const router = useRouter();
+  const isPartnerOne = (value) => value === partnerOneName || value === "Partner 1";
+  const isPartnerTwo = (value) => value === partnerTwoName || value === "Partner 2";
+  const isBothPartners = (value) => value === bothLabel || value === "Both Partners";
 
   // Filter memories
   const applyFilters = () => {
@@ -144,9 +150,9 @@ export default function MemoriesClient({ initialMemories }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Memories</SelectItem>
-              <SelectItem value="Hunter">Hunter's Photos</SelectItem>
-              <SelectItem value="Riceee">Riceee's Photos</SelectItem>
-              <SelectItem value="Hunter x Riceee">Both Together</SelectItem>
+              <SelectItem value={partnerOneName}>{partnerOneName}'s Photos</SelectItem>
+              <SelectItem value={partnerTwoName}>{partnerTwoName}'s Photos</SelectItem>
+              <SelectItem value={bothLabel}>Both Together</SelectItem>
             </SelectContent>
           </Select>
 
@@ -219,16 +225,16 @@ export default function MemoriesClient({ initialMemories }) {
                 {/* Uploader badge */}
                 <div className="absolute top-6 right-6 z-10">
                   <span
-                    className={`text-xs px-2 py-1 rounded-full font-medium shadow-lg ${
-                      memory.uploadedBy === "Hunter"
+                      className={`text-xs px-2 py-1 rounded-full font-medium shadow-lg ${
+                      isPartnerOne(memory.uploadedBy)
                         ? "bg-blue-500 text-white"
-                        : memory.uploadedBy === "Riceee"
+                        : isPartnerTwo(memory.uploadedBy)
                         ? "bg-pink-500 text-white"
                         : "bg-gradient-to-r from-blue-500 to-pink-500 text-white"
                     }`}
                   >
-                    {memory.uploadedBy === "Hunter x Riceee"
-                      ? "H & R"
+                    {isBothPartners(memory.uploadedBy)
+                      ? `${partnerOneName.charAt(0)} & ${partnerTwoName.charAt(0)}`
                       : memory.uploadedBy}
                   </span>
                 </div>
@@ -268,9 +274,9 @@ export default function MemoriesClient({ initialMemories }) {
                   <div>
                     <span
                       className={`text-sm px-3 py-1 rounded-full font-medium ${
-                        selectedMemory.uploadedBy === "Hunter"
+                        isPartnerOne(selectedMemory.uploadedBy)
                           ? "bg-blue-100 text-blue-700"
-                          : selectedMemory.uploadedBy === "Riceee"
+                          : isPartnerTwo(selectedMemory.uploadedBy)
                           ? "bg-pink-100 text-pink-700"
                           : "bg-gradient-to-r from-blue-100 to-pink-100 text-purple-700"
                       }`}
@@ -341,6 +347,7 @@ export default function MemoriesClient({ initialMemories }) {
       {uploadOpen && (
         <UploadMemory
           onClose={() => setUploadOpen(false)}
+          partnerNames={partnerNames}
           onSuccess={(newMemory) => {
             setMemories([newMemory, ...memories]);
             setFilteredMemories([newMemory, ...filteredMemories]);

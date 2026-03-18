@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PLAYER_IDS, getPlayerMeta } from "@/lib/constants/players";
 
 export function LocalMultiplayerWrapper({ 
   gameId, 
@@ -13,8 +14,10 @@ export function LocalMultiplayerWrapper({
   riceeeColor = "from-pink-500 to-rose-600"
 }) {
   const [mode, setMode] = useState("select"); // select, playing
-  const [localPlayer, setLocalPlayer] = useState(null); // "hunter" or "riceee"
+  const [localPlayer, setLocalPlayer] = useState(null);
   const [sessionId] = useState(() => `local-game-${gameId}`);
+  const playerOne = getPlayerMeta(PLAYER_IDS.ONE);
+  const playerTwo = getPlayerMeta(PLAYER_IDS.TWO);
 
   // Check if other player already selected
   useEffect(() => {
@@ -62,24 +65,24 @@ export function LocalMultiplayerWrapper({
 
               {/* Player Selection */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-8">
-                {/* Hunter */}
+                {/* Player One */}
                 <button
-                  onClick={() => selectPlayer("hunter")}
+                  onClick={() => selectPlayer(playerOne.id)}
                   className={`group relative p-8 bg-gradient-to-br ${hunterColor} rounded-2xl border-4 border-orange-300 hover:border-orange-400 transition-all transform hover:scale-105 shadow-lg`}
                 >
-                  <div className="text-7xl mb-4">🦁</div>
-                  <p className="text-3xl font-bold text-white mb-2">Hunter</p>
-                  <p className="text-white/90 text-sm">Click to play as Hunter</p>
+                  <div className="text-7xl mb-4">{playerOne.emoji}</div>
+                  <p className="text-3xl font-bold text-white mb-2">{playerOne.displayName}</p>
+                  <p className="text-white/90 text-sm">Click to play as {playerOne.displayName}</p>
                 </button>
 
-                {/* Riceee */}
+                {/* Player Two */}
                 <button
-                  onClick={() => selectPlayer("riceee")}
+                  onClick={() => selectPlayer(playerTwo.id)}
                   className={`group relative p-8 bg-gradient-to-br ${riceeeColor} rounded-2xl border-4 border-pink-300 hover:border-pink-400 transition-all transform hover:scale-105 shadow-lg`}
                 >
-                  <div className="text-7xl mb-4">💗</div>
-                  <p className="text-3xl font-bold text-white mb-2">Riceee</p>
-                  <p className="text-white/90 text-sm">Click to play as Riceee</p>
+                  <div className="text-7xl mb-4">{playerTwo.emoji}</div>
+                  <p className="text-3xl font-bold text-white mb-2">{playerTwo.displayName}</p>
+                  <p className="text-white/90 text-sm">Click to play as {playerTwo.displayName}</p>
                 </button>
               </div>
             </div>

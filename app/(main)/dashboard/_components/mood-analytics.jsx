@@ -84,7 +84,7 @@ const MoodAnalytics = () => {
   return (
     <>
       <div className="flex justify-between items-center">
-        <h2 className="text-5xl font-bold gradient-title">Welcome Back, Riceee 💗</h2>
+        <h2 className="text-5xl font-bold gradient-title">Welcome Back 💗</h2>
 
         <div className="flex items-center gap-3">
           <Link href="/riceee-chat">

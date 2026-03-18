@@ -32,7 +32,7 @@ export async function uploadMemory(formData) {
     // Get form data
     const file = formData.get("file");
     const caption = formData.get("caption") || null;
-    const uploadedBy = formData.get("uploadedBy") || "Hunter x Riceee";
+    const uploadedBy = formData.get("uploadedBy") || "Both Partners";
     const memoryDateString = formData.get("memoryDate");
     
     // Parse the memory date, default to now if not provided

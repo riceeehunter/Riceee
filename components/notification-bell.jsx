@@ -12,12 +12,16 @@ import { getUnreadNotifications, markNotificationAsRead } from "@/actions/notifi
 import { format } from "date-fns";
 import Link from "next/link";
 import { toast } from "sonner";
+import { PLAYER_IDS } from "@/lib/constants/players";
 
-export default function NotificationBell() {
+export default function NotificationBell({ partnerNames }) {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const nameOne = partnerNames?.partnerOneName || "Partner 1";
+  const nameTwo = partnerNames?.partnerTwoName || "Partner 2";
 
   const fetchNotifications = async () => {
     try {
@@ -36,13 +40,13 @@ export default function NotificationBell() {
     }
   }, [isOpen]);
 
-  const handleMarkAsRead = async (notificationId, reader) => {
+  const handleMarkAsRead = async (notificationId, readerId, readerLabel) => {
     setLoading(true);
-    const result = await markNotificationAsRead(notificationId, reader);
+    const result = await markNotificationAsRead(notificationId, readerId);
     
     if (result.success) {
       await fetchNotifications();
-      toast.success(`Marked as read by ${reader}!`);
+      toast.success(`Marked as read by ${readerLabel}!`);
     } else {
       toast.error("Failed to mark as read");
     }
@@ -97,28 +101,28 @@ export default function NotificationBell() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-600 mr-2">Mark as read:</span>
                   <button
-                    onClick={() => handleMarkAsRead(notification.id, "Hunter")}
+                    onClick={() => handleMarkAsRead(notification.id, PLAYER_IDS.ONE, nameOne)}
                     disabled={loading || notification.hunterRead}
                     className={`h-8 w-8 rounded-full font-bold text-sm transition-all ${
                       notification.hunterRead
                         ? "bg-blue-500 text-white"
                         : "bg-blue-100 text-blue-700 hover:bg-blue-200"
                     }`}
-                    title={notification.hunterRead ? "Hunter has read" : "Mark as read by Hunter"}
+                    title={notification.hunterRead ? `${nameOne} has read` : `Mark as read by ${nameOne}`}
                   >
-                    H
+                    {nameOne.charAt(0).toUpperCase()}
                   </button>
                   <button
-                    onClick={() => handleMarkAsRead(notification.id, "Riceee")}
+                    onClick={() => handleMarkAsRead(notification.id, PLAYER_IDS.TWO, nameTwo)}
                     disabled={loading || notification.riceeeRead}
                     className={`h-8 w-8 rounded-full font-bold text-sm transition-all ${
                       notification.riceeeRead
                         ? "bg-pink-500 text-white"
                         : "bg-pink-100 text-pink-700 hover:bg-pink-200"
                     }`}
-                    title={notification.riceeeRead ? "Riceee has read" : "Mark as read by Riceee"}
+                    title={notification.riceeeRead ? `${nameTwo} has read` : `Mark as read by ${nameTwo}`}
                   >
-                    R
+                    {nameTwo.charAt(0).toUpperCase()}
                   </button>
                 </div>
               </div>

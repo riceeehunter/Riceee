@@ -459,12 +459,12 @@ function WordDuelGame({ localPlayer, sessionId }) {
         });
       }
 
-      // Only Hunter starts the round once both are ready.
+      // Only Partner 1 starts the round once both are ready.
       return;
     }
   };
 
-  // If Hunter is ready and Riceee becomes ready later, start the game.
+  // If Partner 1 is ready and Partner 2 becomes ready later, start the game.
   useEffect(() => {
     if (!channel) return;
     if (gameState !== "menu") return;

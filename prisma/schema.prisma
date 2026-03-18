@@ -12,6 +12,8 @@ model User {
   clerkUserId   String         @unique
   email         String         @unique
   name          String?
+  partnerOneName String?
+  partnerTwoName String?
   imageUrl      String?
   collections   Collection[]
   entries       Entry[]
@@ -43,7 +45,7 @@ model Entry {
   mood          String      // References moods.js constants
   moodScore     Int         // Numeric value from moods.js for analytics
   moodImageUrl  String?     // Pixabay image URL
-  author        String      @default("Hunter x Riceee") // Who wrote this: "Hunter", "Riceee", or "Hunter x Riceee"
+  author        String      @default("Both Partners")
   collection    Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
   collectionId  String?
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -58,7 +60,7 @@ model Draft {
   title         String?
   content       String?   @db.Text
   mood          String?
-  author        String?   @default("Hunter x Riceee") // Who is writing: "Hunter", "Riceee", or "Hunter x Riceee"
+  author        String?   @default("Both Partners")
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId        String    @unique  // One draft per user
   createdAt     DateTime  @default(now())
@@ -68,7 +70,7 @@ model Draft {
 model Comment {
   id            String         @id @default(cuid())
   content       String         @db.Text
-  author        String         // "Hunter", "Riceee", or "Hunter x Riceee"
+  author        String
   entry         Entry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
   entryId       String
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -95,7 +97,7 @@ model Notification {
 model Message {
   id        String   @id @default(cuid())
   content   String   @db.Text
-  sender    String   // "Hunter" or "Riceee"
+  sender    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
   read      Boolean  @default(false)
@@ -110,7 +112,7 @@ model Memory {
   url          String    // R2 public URL
   key          String    // R2 object key for deletion
   caption      String?   @db.Text
-  uploadedBy   String    // "Hunter", "Riceee", or "Hunter x Riceee"
+  uploadedBy   String
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
   fileSize     Int       // Size in bytes for quota tracking

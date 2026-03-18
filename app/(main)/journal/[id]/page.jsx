@@ -8,11 +8,14 @@ import Comments from "./_components/comments";
 import { getMoodById } from "@/app/lib/moods";
 import { getJournalEntry } from "@/actions/journal";
 import { getComments } from "@/actions/comment";
+import { getOrCreateUser } from "@/lib/auth";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 export default async function JournalEntryPage({ params }) {
   const { id } = await params;
   const entry = await getJournalEntry(id);
   const comments = await getComments(id);
+  const partnerNames = resolvePartnerNames(await getOrCreateUser());
   const mood = getMoodById(entry.mood);
 
   return (
@@ -92,7 +95,7 @@ export default async function JournalEntryPage({ params }) {
         </div>
 
         {/* Comments Section */}
-        <Comments entryId={id} initialComments={comments} />
+        <Comments entryId={id} initialComments={comments} partnerNames={partnerNames} />
       </div>
     </>
   );

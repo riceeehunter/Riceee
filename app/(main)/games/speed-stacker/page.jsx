@@ -282,7 +282,7 @@ function StackerGame({ localPlayer, sessionId }) {
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold px-2">
                 {winner === localPlayer && "You Won! 🎉"}
-                {winner && winner !== localPlayer && `${winner === "hunter" ? "Hunter 🦁" : "Riceee 💗"} Won!`}
+                {winner && winner !== localPlayer && `${winner === "hunter" ? "Partner 1 🦁" : "Partner 2 💗"} Won!`}
                 {!winner && "It's a Tie! 🤝"}
               </h2>
               
@@ -292,7 +292,7 @@ function StackerGame({ localPlayer, sessionId }) {
                   localPlayer === "hunter" ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"
                 } ${winner === localPlayer ? "ring-2 sm:ring-4 ring-yellow-400" : ""}`}>
                   <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{localPlayer === "hunter" ? "🦁" : "💗"}</div>
-                  <p className="font-bold text-sm sm:text-lg">{localPlayer === "hunter" ? "Hunter" : "Riceee"}</p>
+                  <p className="font-bold text-sm sm:text-lg">{localPlayer === "hunter" ? "Partner 1" : "Partner 2"}</p>
                   <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">{localScore}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">{localStack.length} blocks</p>
                   {winner === localPlayer && <div className="text-xl sm:text-2xl mt-1 sm:mt-2">🏆</div>}
@@ -302,7 +302,7 @@ function StackerGame({ localPlayer, sessionId }) {
                   remotePlayer === "hunter" ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"
                 } ${winner === remotePlayer ? "ring-2 sm:ring-4 ring-yellow-400" : ""}`}>
                   <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{remotePlayer === "hunter" ? "🦁" : "💗"}</div>
-                  <p className="font-bold text-sm sm:text-lg">{remotePlayer === "hunter" ? "Hunter" : "Riceee"}</p>
+                  <p className="font-bold text-sm sm:text-lg">{remotePlayer === "hunter" ? "Partner 1" : "Partner 2"}</p>
                   <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">{remoteScore}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">{remoteStack.length} blocks</p>
                   {winner === remotePlayer && <div className="text-xl sm:text-2xl mt-1 sm:mt-2">🏆</div>}
@@ -348,7 +348,7 @@ function StackerGame({ localPlayer, sessionId }) {
         </div>
         {!remoteConnected && (
           <p className="text-xs text-muted-foreground mt-2">
-            Open another tab and select {remotePlayer === "hunter" ? "Hunter 🦁" : "Riceee 💗"}
+            Open another tab and select {remotePlayer === "hunter" ? "Partner 1 🦁" : "Partner 2 💗"}
           </p>
         )}
       </div>
@@ -360,7 +360,7 @@ function StackerGame({ localPlayer, sessionId }) {
           <CardHeader className={`${playerColor === "orange" ? "bg-orange-50" : "bg-pink-50"} py-3 sm:py-6`}>
             <CardTitle className="flex items-center justify-between text-base sm:text-xl">
               <span className="flex items-center gap-2">
-                {localPlayer === "hunter" ? "🦁 Hunter" : "💗 Riceee"}
+                {localPlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}
                 {winner === localPlayer && <Crown className="text-yellow-500" size={18} />}
               </span>
               <span className="text-xl sm:text-2xl font-bold">{localScore}</span>
@@ -417,7 +417,7 @@ function StackerGame({ localPlayer, sessionId }) {
           <CardHeader className={`${remoteColor === "orange" ? "bg-orange-50" : "bg-pink-50"} py-3 sm:py-6`}>
             <CardTitle className="flex items-center justify-between text-base sm:text-xl">
               <span className="flex items-center gap-2">
-                {remotePlayer === "hunter" ? "🦁 Hunter" : "💗 Riceee"}
+                {remotePlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}
                 {winner === remotePlayer && <Crown className="text-yellow-500" size={18} />}
               </span>
               <span className="text-xl sm:text-2xl font-bold">{remoteScore}</span>
