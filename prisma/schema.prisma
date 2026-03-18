@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  clerkUserId   String         @unique
+  email         String         @unique
+  name          String?
+  imageUrl      String?
+  collections   Collection[]
+  entries       Entry[]
+  comments      Comment[]
+  messages      Message[]
+  memories      Memory[]
+  currentDraft  Draft?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Collection {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  entries     Entry[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([name, userId])
+}
+
+model Entry {
+  id            String      @id @default(cuid())
+  title         String
+  content       String      @db.Text 
+  mood          String      // References moods.js constants
+  moodScore     Int         // Numeric value from moods.js for analytics
+  moodImageUrl  String?     // Pixabay image URL
+  author        String      @default("Hunter x Riceee") // Who wrote this: "Hunter", "Riceee", or "Hunter x Riceee"
+  collection    Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  collectionId  String?
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  comments      Comment[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Draft {
+  id            String    @id @default(cuid())
+  title         String?
+  content       String?   @db.Text
+  mood          String?
+  author        String?   @default("Hunter x Riceee") // Who is writing: "Hunter", "Riceee", or "Hunter x Riceee"
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String    @unique  // One draft per user
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Comment {
+  id            String         @id @default(cuid())
+  content       String         @db.Text
+  author        String         // "Hunter", "Riceee", or "Hunter x Riceee"
+  entry         Entry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  entryId       String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  notifications Notification[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Notification {
+  id              String   @id @default(cuid())
+  type            String   // "comment"
+  message         String
+  entryId         String
+  entryTitle      String
+  comment         Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId       String?
+  commentAuthor   String   // Who made the comment
+  hunterRead      Boolean  @default(false)
+  riceeeRead      Boolean  @default(false)
+  createdAt       DateTime @default(now())
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String   @db.Text
+  sender    String   // "Hunter" or "Riceee"
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  read      Boolean  @default(false)
+  replyTo   String?  // ID of message being replied to
+  replyToContent String? // Content of replied message
+  replyToSender String? // Sender of replied message
+  createdAt DateTime @default(now())
+}
+
+model Memory {
+  id           String    @id @default(cuid())
+  url          String    // R2 public URL
+  key          String    // R2 object key for deletion
+  caption      String?   @db.Text
+  uploadedBy   String    // "Hunter", "Riceee", or "Hunter x Riceee"
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  fileSize     Int       // Size in bytes for quota tracking
+  mimeType     String    // image/jpeg, image/png, etc.
+  width        Int?      // Image width
+  height       Int?      // Image height
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+}
