@@ -5,18 +5,10 @@ import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { getOrCreateUser } from "@/lib/auth";
 
 export async function getCollections() {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) {
-    throw new Error("User not found");
-  }
+  const user = await getOrCreateUser();
 
   const collections = await db.collection.findMany({
     where: { userId: user.id },
@@ -82,14 +74,7 @@ export async function createCollection(data) {
 
 export async function deleteCollection(id) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Check if collection exists and belongs to user
     const collection = await db.collection.findFirst({

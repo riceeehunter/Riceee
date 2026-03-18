@@ -30,8 +30,6 @@ const Collections = ({ collections = [], entriesByCollection }) => {
     createCollectionFn(data);
   };
 
-  if (collections.length === 0) return <></>;
-
   return (
     <section id="collections" className="space-y-6">
       <h2 className="text-3xl font-bold gradient-title">Collections</h2>

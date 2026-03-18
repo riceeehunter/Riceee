@@ -3,21 +3,14 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
+import { getOrCreateUser } from "@/lib/auth";
 
 export async function sendMessage(data) {
   try {
     console.log("📤 Sending message:", data);
     
-    const { userId } = await auth();
-    console.log("🔐 User ID:", userId);
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
+    const user = await getOrCreateUser();
     console.log("👤 User found:", user?.id);
-
-    if (!user) throw new Error("User not found");
 
     const message = await db.message.create({
       data: {
