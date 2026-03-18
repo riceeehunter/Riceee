@@ -1,11 +1,11 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { uploadToR2, deleteFromR2, generateR2Key } from "@/lib/r2";
 import aj from "@/lib/arcjet";
 import { request } from "@arcjet/next";
+import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
 
 /**
  * Upload a new memory (photo)
@@ -14,8 +14,7 @@ import { request } from "@arcjet/next";
  */
 export async function uploadMemory(formData) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    const userId = await getAuthenticatedUserId();
 
     // Rate limiting
     const req = await request();
@@ -28,11 +27,7 @@ export async function uploadMemory(formData) {
       throw new Error("Request blocked");
     }
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Get form data
     const file = formData.get("file");
@@ -116,14 +111,7 @@ export async function uploadMemory(formData) {
  */
 export async function getMemories(filters = {}) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     const where = { userId: user.id };
 
@@ -158,14 +146,7 @@ export async function getMemories(filters = {}) {
  */
 export async function getStorageStats() {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Get count and sum separately
     const totalCount = await db.memory.count({
@@ -203,14 +184,7 @@ export async function getStorageStats() {
  */
 export async function deleteMemory(memoryId) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Get memory record
     const memory = await db.memory.findUnique({
@@ -243,14 +217,7 @@ export async function deleteMemory(memoryId) {
  */
 export async function updateMemoryCaption(memoryId, caption) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     const memory = await db.memory.findUnique({
       where: { id: memoryId },

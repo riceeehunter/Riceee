@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Pusher from "pusher-js";
 import { Heart, Loader2 } from "lucide-react";
+import {
+  PLAYER_DEFAULT_COLORS,
+  PLAYER_IDS,
+  getOtherPlayer,
+  getPlayerDisplayName,
+  getPlayerLabel,
+  getPlayerMeta,
+} from "@/lib/constants/players";
 
 const PUSHER_KEY = process.env.NEXT_PUBLIC_PUSHER_KEY;
 const PUSHER_CLUSTER = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
@@ -13,14 +21,16 @@ export function PusherMultiplayerWrapper({
   gameId, 
   gameName, 
   children,
-  hunterColor = "from-orange-500 to-red-600",
-  riceeeColor = "from-pink-500 to-rose-600"
+  hunterColor = PLAYER_DEFAULT_COLORS[PLAYER_IDS.ONE],
+  riceeeColor = PLAYER_DEFAULT_COLORS[PLAYER_IDS.TWO]
 }) {
   const [localPlayer, setLocalPlayer] = useState(null);
   const [remotePlayer, setRemotePlayer] = useState(null);
   const [pusher, setPusher] = useState(null);
   const [channel, setChannel] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const playerOne = getPlayerMeta(PLAYER_IDS.ONE);
+  const playerTwo = getPlayerMeta(PLAYER_IDS.TWO);
   
   // Use a simple public channel (no auth required)
   const sessionId = `game-${gameId}-public`;
@@ -167,29 +177,29 @@ export function PusherMultiplayerWrapper({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Hunter */}
               <button
-                onClick={() => handlePlayerSelect("hunter")}
-                className={`group relative overflow-hidden rounded-xl p-8 border-4 border-orange-200 hover:border-orange-400 transition-all hover:scale-105 bg-gradient-to-br ${hunterColor}`}
+                onClick={() => handlePlayerSelect(playerOne.id)}
+                className={`group relative overflow-hidden rounded-xl p-8 border-4 ${playerOne.cardClass} transition-all hover:scale-105 bg-gradient-to-br ${hunterColor}`}
               >
                 <div className="text-center text-white">
                   <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">
-                    🦁
+                    {playerOne.emoji}
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Hunter</h3>
-                  <p className="text-orange-100">The Bold One</p>
+                  <h3 className="text-2xl font-bold mb-2">{playerOne.displayName}</h3>
+                  <p className={playerOne.textClass}>{playerOne.tagline}</p>
                 </div>
               </button>
 
               {/* Riceee */}
               <button
-                onClick={() => handlePlayerSelect("riceee")}
-                className={`group relative overflow-hidden rounded-xl p-8 border-4 border-pink-200 hover:border-pink-400 transition-all hover:scale-105 bg-gradient-to-br ${riceeeColor}`}
+                onClick={() => handlePlayerSelect(playerTwo.id)}
+                className={`group relative overflow-hidden rounded-xl p-8 border-4 ${playerTwo.cardClass} transition-all hover:scale-105 bg-gradient-to-br ${riceeeColor}`}
               >
                 <div className="text-center text-white">
                   <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">
-                    💗
+                    {playerTwo.emoji}
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">Riceee</h3>
-                  <p className="text-pink-100">The Sweet One</p>
+                  <h3 className="text-2xl font-bold mb-2">{playerTwo.displayName}</h3>
+                  <p className={playerTwo.textClass}>{playerTwo.tagline}</p>
                 </div>
               </button>
             </div>
@@ -216,10 +226,10 @@ export function PusherMultiplayerWrapper({
           <CardContent className="p-8 text-center">
             <Loader2 className="inline-block animate-spin text-primary mb-4" size={48} />
             <h2 className="text-2xl font-bold mb-4">
-              {localPlayer === "hunter" ? "🦁 Hunter" : "💗 Riceee"} is ready!
+              {getPlayerLabel(localPlayer)} is ready!
             </h2>
             <p className="text-muted-foreground mb-6">
-              Waiting for {localPlayer === "hunter" ? "Riceee 💗" : "Hunter 🦁"} to join...
+              Waiting for {getPlayerLabel(getOtherPlayer(localPlayer))} to join...
             </p>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm font-semibold text-blue-900 mb-2">
@@ -227,7 +237,7 @@ export function PusherMultiplayerWrapper({
               </p>
               <ol className="text-sm text-left space-y-1 text-blue-800">
                 <li>1. Open this game on their device</li>
-                <li>2. Select {localPlayer === "hunter" ? "Riceee 💗" : "Hunter 🦁"}</li>
+                <li>2. Select {getPlayerLabel(getOtherPlayer(localPlayer))}</li>
                 <li>3. You'll connect automatically! ✨</li>
               </ol>
             </div>

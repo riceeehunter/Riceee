@@ -1,17 +1,10 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
+import { getOrCreateUser } from "@/lib/auth";
 
 export async function getAnalytics(period = "30d") {
-  const { userId } = await auth();
-  if (!userId) throw new Error("Unauthorized");
-
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  if (!user) throw new Error("User not found");
+  const user = await getOrCreateUser();
 
   // Calculate start date based on period
   const startDate = new Date();

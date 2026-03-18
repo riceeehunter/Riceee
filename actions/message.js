@@ -1,9 +1,23 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { getOrCreateUser } from "@/lib/auth";
+import { PLAYER_IDS, getOtherPlayer, getPlayerDisplayName } from "@/lib/constants/players";
+
+function normalizePlayerId(player) {
+  if (!player) return null;
+  const normalized = player.toLowerCase();
+  if (normalized === "hunter") return PLAYER_IDS.ONE;
+  if (normalized === "riceee") return PLAYER_IDS.TWO;
+  return null;
+}
+
+function getOppositeSenderName(player) {
+  const playerId = normalizePlayerId(player);
+  const oppositeId = playerId ? getOtherPlayer(playerId) : PLAYER_IDS.ONE;
+  return getPlayerDisplayName(oppositeId);
+}
 
 export async function sendMessage(data) {
   try {
@@ -64,7 +78,7 @@ export async function markMessagesAsRead(sender) {
   try {
     await db.message.updateMany({
       where: {
-        sender: sender === "Hunter" ? "Riceee" : "Hunter",
+        sender: getOppositeSenderName(sender),
         read: false,
       },
       data: {
@@ -82,7 +96,7 @@ export async function getUnreadCount(forUser) {
   try {
     const count = await db.message.count({
       where: {
-        sender: forUser === "Hunter" ? "Riceee" : "Hunter",
+        sender: getOppositeSenderName(forUser),
         read: false,
       },
     });

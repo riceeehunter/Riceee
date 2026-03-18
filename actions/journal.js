@@ -1,6 +1,5 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getMoodById, MOODS } from "@/app/lib/moods";
@@ -8,11 +7,11 @@ import { getPixabayImage } from "./public";
 import { createNotification } from "./notification";
 import aj from "@/lib/arcjet";
 import { request } from "@arcjet/next";
+import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
 
 export async function createJournalEntry(data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
+    const userId = await getAuthenticatedUserId();
 
     // Get request data for ArcJet
     const req = await request();
@@ -40,13 +39,7 @@ export async function createJournalEntry(data) {
       throw new Error("Request blocked");
     }
 
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = await getOrCreateUser();
 
     // Get mood data
     const mood = MOODS[data.mood.toUpperCase()];
@@ -102,14 +95,7 @@ export async function getJournalEntries({
   orderBy = "desc", // or "asc"
 } = {}) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Build where clause based on filters
     const where = {
@@ -185,14 +171,7 @@ export async function getJournalEntries({
 
 export async function getJournalEntry(id) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     const entry = await db.entry.findFirst({
       where: {
@@ -219,14 +198,7 @@ export async function getJournalEntry(id) {
 
 export async function deleteJournalEntry(id) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Check if entry exists and belongs to user
     const entry = await db.entry.findFirst({
@@ -252,14 +224,7 @@ export async function deleteJournalEntry(id) {
 
 export async function updateJournalEntry(data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Check if entry exists and belongs to user
     const existingEntry = await db.entry.findFirst({
@@ -305,16 +270,7 @@ export async function updateJournalEntry(data) {
 
 export async function getDraft() {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = await getOrCreateUser();
 
     const draft = await db.draft.findUnique({
       where: { userId: user.id },
@@ -328,16 +284,7 @@ export async function getDraft() {
 
 export async function saveDraft(data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) {
-      throw new Error("User not found");
-    }
+    const user = await getOrCreateUser();
 
     const draft = await db.draft.upsert({
       where: { userId: user.id },

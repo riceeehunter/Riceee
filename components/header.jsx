@@ -7,6 +7,7 @@ import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import UserMenu from "./user-menu";
 import NotificationBell from "./notification-bell";
 import { checkUser } from "@/lib/checkUser";
+import { APP_BRAND } from "@/lib/constants/branding";
 
 async function Header() {
   await checkUser();
@@ -17,7 +18,7 @@ async function Header() {
       <nav className="hidden md:flex py-6 px-4 justify-between items-center gap-6">
         <Link href="/" className="flex items-center">
           <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">
-            Riceee 💗
+            {APP_BRAND.name} {APP_BRAND.logoSuffix}
           </h1>
         </Link>
         <div className="flex items-center gap-2 sm:gap-3">
@@ -66,7 +67,7 @@ async function Header() {
           <div className="flex items-center gap-2">
             <Link href="/" className="flex items-center">
               <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">
-                Riceee 💗
+                {APP_BRAND.name} {APP_BRAND.logoSuffix}
               </h1>
             </Link>
             <SignedIn>

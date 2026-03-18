@@ -15,12 +15,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
+import { APP_BRAND } from "@/lib/constants/branding";
 
 export default function RiceeeChat() {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: "Hey there! 👋 I'm Riceee, your relationship mediator.\n\nI'm here to help you work through relationship conflicts. To give you the best advice, I need to understand the full picture.\n\n**Tell me about your conflict:**\n• What happened?\n• How do you feel about it?\n• What do you think your partner's perspective is?\n\nShare as much detail as you can! 💜"
+      content: `Hey there! 👋 I'm ${APP_BRAND.aiAssistantName}, your relationship mediator.\n\nI'm here to help you work through relationship conflicts. To give you the best advice, I need to understand the full picture.\n\n**Tell me about your conflict:**\n• What happened?\n• How do you feel about it?\n• What do you think your partner's perspective is?\n\nShare as much detail as you can! 💜`
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
@@ -132,9 +133,9 @@ export default function RiceeeChat() {
               </div>
               <div className="flex-1">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                  Chat with Riceee AI
+                  Chat with {APP_BRAND.aiName}
                 </h1>
-                <p className="text-sm text-muted-foreground">Your relationship mediator</p>
+                <p className="text-sm text-muted-foreground">{APP_BRAND.aiRoleDescription}</p>
               </div>
               <Sparkles className="h-5 w-5 text-purple-500 animate-pulse" />
             </div>
@@ -188,7 +189,7 @@ export default function RiceeeChat() {
                 <div className="bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800 rounded-2xl px-4 py-3">
                   <div className="flex items-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
-                    <span className="text-sm text-muted-foreground">Riceee is thinking...</span>
+                    <span className="text-sm text-muted-foreground">{APP_BRAND.aiAssistantName} is thinking...</span>
                   </div>
                 </div>
               </div>
@@ -223,7 +224,7 @@ export default function RiceeeChat() {
               </Button>
             </form>
             <p className="text-xs text-center text-muted-foreground mt-3 flex items-center justify-center gap-1">
-              <span>Riceee is here to help. Be open and honest!</span>
+              <span>{APP_BRAND.aiAssistantName} is here to help. Be open and honest!</span>
               <span className="text-purple-500">💜</span>
             </p>
           </div>

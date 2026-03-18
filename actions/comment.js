@@ -1,20 +1,13 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "./notification";
+import { getOrCreateUser } from "@/lib/auth";
 
 export async function addComment(data) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     const comment = await db.comment.create({
       data: {
@@ -71,14 +64,7 @@ export async function getComments(entryId) {
 
 export async function deleteComment(commentId) {
   try {
-    const { userId } = await auth();
-    if (!userId) throw new Error("Unauthorized");
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error("User not found");
+    const user = await getOrCreateUser();
 
     // Check if comment belongs to user
     const comment = await db.comment.findFirst({
