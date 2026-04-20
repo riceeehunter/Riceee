@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Trash2, Edit2, X, Upload, Search, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,7 +69,7 @@ export default function MemoriesClient({ initialMemories, partnerNames }) {
   };
 
   // Apply filters whenever they change
-  useState(() => {
+  useEffect(() => {
     applyFilters();
   }, [searchQuery, filterBy, memories]);
 
@@ -118,7 +118,7 @@ export default function MemoriesClient({ initialMemories, partnerNames }) {
   };
 
   return (
-    <div>
+    <div suppressHydrationWarning>
       {/* Controls */}
       <div className="flex flex-col gap-3 mb-8">
         {/* Search */}
@@ -201,6 +201,10 @@ export default function MemoriesClient({ initialMemories, partnerNames }) {
               className="group relative polaroid-card cursor-pointer"
               style={{
                 animationDelay: `${index * 0.1}s`,
+                "--float-in-rotate": `${((index % 5) - 2) * 1.5}deg`,
+                "--scatter-x": `${(index % 6) * 18 - 45}px`,
+                "--scatter-y": `${Math.floor(index / 6) % 5 * 18 - 36}px`,
+                "--scatter-rotate": `${(index % 7) * 4 - 12}deg`,
               }}
               onClick={() => openLightbox(memory)}
             >
@@ -217,7 +221,7 @@ export default function MemoriesClient({ initialMemories, partnerNames }) {
 
                 {/* Caption on polaroid */}
                 <div className="absolute bottom-3 left-3 right-3 text-center">
-                  <p className="text-xs text-gray-600 line-clamp-2 font-handwriting">
+                  <p className="text-sm text-gray-700 line-clamp-2 font-medium">
                     {memory.caption || "✨ Sweet moment"}
                   </p>
                 </div>
@@ -382,7 +386,7 @@ export default function MemoriesClient({ initialMemories, partnerNames }) {
         .polaroid-card {
           animation: floatIn 0.6s ease-out forwards;
           opacity: 0;
-          transform: translateY(20px) rotate(${Math.random() * 10 - 5}deg);
+          transform: translateY(20px);
         }
 
         .scattered .polaroid-card {
@@ -392,19 +396,15 @@ export default function MemoriesClient({ initialMemories, partnerNames }) {
         @keyframes floatIn {
           to {
             opacity: 1;
-            transform: translateY(0) rotate(${Math.random() * 4 - 2}deg);
+            transform: translateY(0);
           }
         }
 
         @keyframes scatter {
           to {
-            transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px)
-              rotate(${Math.random() * 30 - 15}deg) scale(0.95);
+            transform: translate(var(--scatter-x, 0px), var(--scatter-y, 0px))
+              rotate(var(--scatter-rotate, 0deg)) scale(0.95);
           }
-        }
-
-        .font-handwriting {
-          font-family: 'Brush Script MT', cursive;
         }
       `}</style>
     </div>

@@ -5,7 +5,7 @@
 ### **What's Built:**
 - ✨ **Local Multiplayer System** using localStorage
 - 🎯 **Speed Stacker** with split-screen multiplayer
-- 🦁💗 **Hunter vs Riceee** player selection
+- 🦁💗 **Partner 1 vs Partner 2** player selection
 - 📊 **Real-time score tracking**
 - 🏆 **Winner detection**
 
@@ -24,12 +24,12 @@
    - Go to: `http://localhost:3000/games/speed-stacker`
 
 3. **In TAB 1:**
-   - Click **"Hunter 🦁"** button
+   - Click **"Partner 1 🦁"** button
    - Start playing!
 
 4. **Open TAB 2** (duplicate the tab or open new tab):
    - Go to same URL: `http://localhost:3000/games/speed-stacker`
-   - Click **"Riceee 💗"** button
+   - Click **"Partner 2 💗"** button
    - Start playing!
 
 5. **Watch the Magic! ✨**
@@ -45,8 +45,8 @@
 
 1. Open browser
 2. Split screen (Windows: Win + Arrow keys)
-3. Left window: Select Hunter
-4. Right window: Select Riceee
+3. Left window: Select Partner 1
+4. Right window: Select Partner 2
 5. Play together!
 
 ---
@@ -57,15 +57,15 @@
 ```
 ┌─────────────────────┬─────────────────────┐
 │   Choose Player:    │                     │
-│   🦁 Hunter          │                     │
-│   💗 Riceee          │                     │
+│   🦁 Partner 1       │                     │
+│   💗 Partner 2       │                     │
 └─────────────────────┴─────────────────────┘
 ```
 
 ### **While Playing:**
 ```
 ┌──────────────────────┬──────────────────────┐
-│  🦁 Hunter (YOU)     │  💗 Riceee (Partner)  │
+│  🦁 Partner 1 (YOU)  │  💗 Partner 2 (Partner)│
 │  Score: 150          │  Score: 120           │
 │  ┌─────────────┐    │  ┌─────────────┐      │
 │  │   [blocks]  │    │  │   [blocks]  │      │
@@ -80,7 +80,7 @@
 ┌─────────────────────────────────────────────┐
 │              🏆 You Won!                     │
 │                                              │
-│   🦁 Hunter: 200    💗 Riceee: 180           │
+│   🦁 Partner 1: 200 💗 Partner 2: 180        │
 │   20 blocks         18 blocks                │
 │                                              │
 │   [Play Again]  [Choose Another Game]       │
@@ -117,7 +117,7 @@
 - ✅ Clear browser storage: F12 > Application > Local Storage > Clear
 
 ### "Partner not connecting"
-- ✅ Both tabs must select DIFFERENT players (one Hunter, one Riceee)
+- ✅ Both tabs must select DIFFERENT players (one Partner 1, one Partner 2)
 - ✅ Make sure you're on the same game page
 
 ### "Game feels laggy"

@@ -7,14 +7,15 @@ import { ArrowLeft, X as XIcon, Circle } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 
 const CHANNEL_NAME = "game-tic-tac-toe";
 const getChannelName = (sessionId) => (sessionId ? `${CHANNEL_NAME}-${sessionId}` : CHANNEL_NAME);
 
-function TicTacToeGame({ localPlayer, sessionId }) {
+function TicTacToeGame({ localPlayer, sessionId, getPlayerName }) {
   const [board, setBoard] = useState(Array(9).fill(null));
   const [gameState, setGameState] = useState("menu"); // menu, playing, finished
-  const [currentTurn, setCurrentTurn] = useState("hunter"); // Who's turn it is
+  const [currentTurn, setCurrentTurn] = useState(PLAYER_IDS.ONE); // Who's turn it is
   const [winner, setWinner] = useState(null);
   const [winningLine, setWinningLine] = useState(null);
   const [localScore, setLocalScore] = useState(0);
@@ -24,10 +25,12 @@ function TicTacToeGame({ localPlayer, sessionId }) {
 
   const channelName = getChannelName(sessionId);
 
-  const remotePlayerName = localPlayer === "hunter" ? "riceee" : "hunter";
+  const remotePlayerId = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayerId);
 
   // Determine player symbols
-  const localSymbol = localPlayer === "hunter" ? "X" : "O";
+  const localSymbol = localPlayer === PLAYER_IDS.ONE ? "X" : "O";
   const remoteSymbol = localSymbol === "X" ? "O" : "X";
 
   // Initialize Pusher
@@ -55,7 +58,7 @@ function TicTacToeGame({ localPlayer, sessionId }) {
     channel.bind("game-start", () => {
       setGameState("playing");
       setBoard(Array(9).fill(null));
-      setCurrentTurn("hunter");
+      setCurrentTurn(PLAYER_IDS.ONE);
       setWinner(null);
       setWinningLine(null);
     });
@@ -109,7 +112,7 @@ function TicTacToeGame({ localPlayer, sessionId }) {
 
     setGameState("playing");
     setBoard(Array(9).fill(null));
-    setCurrentTurn("hunter");
+    setCurrentTurn(PLAYER_IDS.ONE);
     setWinner(null);
     setWinningLine(null);
   };
@@ -160,7 +163,7 @@ function TicTacToeGame({ localPlayer, sessionId }) {
     setBoard(newBoard);
 
     const result = checkWinner(newBoard);
-    const nextTurn = currentTurn === "hunter" ? "riceee" : "hunter";
+    const nextTurn = currentTurn === PLAYER_IDS.ONE ? PLAYER_IDS.TWO : PLAYER_IDS.ONE;
 
     if (result) {
       // Game over
@@ -168,8 +171,8 @@ function TicTacToeGame({ localPlayer, sessionId }) {
         result.winner === "draw"
           ? "draw"
           : result.winner === "X"
-          ? "hunter"
-          : "riceee";
+          ? PLAYER_IDS.ONE
+          : PLAYER_IDS.TWO;
 
       setWinner(winnerPlayer);
       setWinningLine(result.line);
@@ -216,20 +219,20 @@ function TicTacToeGame({ localPlayer, sessionId }) {
   };
 
   const playerColors = {
-    hunter: {
+    [PLAYER_IDS.ONE]: {
       border: "border-orange-500",
       bg: "bg-orange-500/20",
       text: "text-orange-500",
     },
-    riceee: {
+    [PLAYER_IDS.TWO]: {
       border: "border-pink-500",
       bg: "bg-pink-500/20",
       text: "text-pink-500",
     },
   };
 
-  const localColor = playerColors[localPlayer] || playerColors.hunter;
-  const remoteColor = playerColors[remotePlayerName] || playerColors.riceee;
+  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
+  const remoteColor = playerColors[remotePlayerId] || playerColors[PLAYER_IDS.TWO];
 
   const renderCell = (index) => {
     const value = board[index];
@@ -274,14 +277,14 @@ function TicTacToeGame({ localPlayer, sessionId }) {
             <div className="text-6xl mb-4">⭕❌</div>
             <h2 className="text-2xl font-bold">Ready to Play?</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Classic strategy game in real-time! <span className="font-bold capitalize">{localPlayer}</span> plays as{" "}
+              Classic strategy game in real-time! <span className="font-bold">{localPlayerName}</span> plays as{" "}
               <span className="text-blue-600 font-bold">X</span>, {remotePlayerName} plays as{" "}
-              <span className="text-red-600 font-bold">O</span>. Partner 1 always goes first!
+              <span className="text-red-600 font-bold">O</span>. First player always goes first!
             </p>
             
             <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
               <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                <div className="font-bold mb-2 capitalize">{localPlayer}</div>
+                <div className="font-bold mb-2">{localPlayerName}</div>
                 <div className="text-3xl mb-1">
                   {localSymbol === "X" ? <XIcon className="w-8 h-8 mx-auto text-blue-600" /> : <Circle className="w-8 h-8 mx-auto text-red-600" />}
                 </div>
@@ -327,7 +330,7 @@ function TicTacToeGame({ localPlayer, sessionId }) {
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold capitalize">{localPlayer}</span>
+                <span className="font-bold">{localPlayerName}</span>
                 {localSymbol === "X" ? <XIcon className="w-6 h-6 text-blue-600" /> : <Circle className="w-6 h-6 text-red-600" />}
               </div>
               <div className="text-2xl font-bold mt-2">{localScore} wins</div>
@@ -337,15 +340,15 @@ function TicTacToeGame({ localPlayer, sessionId }) {
             </div>
             <div
               className={`p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg} ${
-                currentTurn === remotePlayerName && gameState === "playing" ? "ring-2 ring-offset-2 " + remoteColor.text.replace("text-", "ring-") : ""
+                currentTurn === remotePlayerId && gameState === "playing" ? "ring-2 ring-offset-2 " + remoteColor.text.replace("text-", "ring-") : ""
               }`}
             >
               <div className="flex items-center justify-between">
-                <span className="font-bold capitalize">{remotePlayerName}</span>
+                <span className="font-bold">{remotePlayerName}</span>
                 {remoteSymbol === "X" ? <XIcon className="w-6 h-6 text-blue-600" /> : <Circle className="w-6 h-6 text-red-600" />}
               </div>
               <div className="text-2xl font-bold mt-2">{remoteScore} wins</div>
-              {currentTurn === remotePlayerName && gameState === "playing" && (
+              {currentTurn === remotePlayerId && gameState === "playing" && (
                 <div className="text-sm mt-1 font-semibold">Waiting... ⏳</div>
               )}
             </div>
@@ -371,7 +374,7 @@ function TicTacToeGame({ localPlayer, sessionId }) {
                   ? "It's a Draw!"
                   : winner === localPlayer
                   ? "You Won!"
-                  : `${remotePlayerName} Won!`}
+                    : `${remotePlayerName} Won!`}
               </h3>
               <Button onClick={startGame} size="lg">
                 Play Again 🔄

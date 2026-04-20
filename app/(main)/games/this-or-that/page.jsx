@@ -7,6 +7,7 @@ import { ArrowLeft, GitCompare, Check } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 
 const CHANNEL_NAME = "game-this-or-that";
 
@@ -33,7 +34,7 @@ const ALL_QUESTIONS = [
   { this: "Adventure 🗺️", that: "Comfort 🛋️" },
 ];
 
-function ThisOrThatGame({ localPlayer, sessionId }) {
+function ThisOrThatGame({ localPlayer, sessionId, getPlayerName }) {
 
   const [gameState, setGameState] = useState("menu");
   const [questions, setQuestions] = useState([]);
@@ -45,7 +46,9 @@ function ThisOrThatGame({ localPlayer, sessionId }) {
   const [pusherClient, setPusherClient] = useState(null);
   const [channel, setChannel] = useState(null);
 
-  const remotePlayerName = localPlayer === "hunter" ? "riceee" : "hunter";
+  const remotePlayerId = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayerId);
 
   // Initialize Pusher
   useEffect(() => {
@@ -166,12 +169,12 @@ function ThisOrThatGame({ localPlayer, sessionId }) {
   };
 
   const playerColors = {
-    hunter: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
-    riceee: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
+    [PLAYER_IDS.ONE]: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
+    [PLAYER_IDS.TWO]: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
   };
 
-  const localColor = playerColors[localPlayer] || playerColors.hunter;
-  const remoteColor = playerColors[remotePlayerName] || playerColors.riceee;
+  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
+  const remoteColor = playerColors[remotePlayerId] || playerColors[PLAYER_IDS.TWO];
 
   if (questions.length === 0 && gameState === "playing") {
     return <div className="flex items-center justify-center min-h-screen">Loading questions...</div>;
@@ -238,11 +241,11 @@ function ThisOrThatGame({ localPlayer, sessionId }) {
               {/* Status indicators */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
                 <div className={`p-2 sm:p-3 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                  <span className="font-bold capitalize">{localPlayer}</span>
+                  <span className="font-bold">{localPlayerName}</span>
                   <span className="ml-2">{localAnswers.length}/{questions.length}</span>
                 </div>
                 <div className={`p-2 sm:p-3 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
-                  <span className="font-bold capitalize">{remotePlayerName}</span>
+                  <span className="font-bold">{remotePlayerName}</span>
                   <span className="ml-2">{remoteAnswers.length}/{questions.length}</span>
                   {remoteFinished && <Check className="inline ml-1 w-4 h-4 text-green-600" />}
                 </div>
@@ -349,13 +352,13 @@ function ThisOrThatGame({ localPlayer, sessionId }) {
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
                         <div className={`p-2 sm:p-3 rounded-lg border ${localColor.border} ${localColor.bg}`}>
-                          <div className="font-bold capitalize mb-1">{localPlayer}</div>
+                          <div className="font-bold mb-1">{localPlayerName}</div>
                           <div className="truncate">
                             {localChoice === "this" ? q.this : q.that}
                           </div>
                         </div>
                         <div className={`p-2 sm:p-3 rounded-lg border ${remoteColor.border} ${remoteColor.bg}`}>
-                          <div className="font-bold capitalize mb-1">{remotePlayerName}</div>
+                          <div className="font-bold mb-1">{remotePlayerName}</div>
                           <div className="truncate">
                             {remoteChoice === "this" ? q.this : q.that}
                           </div>

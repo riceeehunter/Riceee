@@ -8,6 +8,7 @@ import { ArrowLeft, Trophy, Clock, Zap, Users, Crown } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS, getPlayerMeta } from "@/lib/constants/players";
 
 const WORDS = [
   { word: "PIZZA", category: "Food" },
@@ -67,7 +68,7 @@ async function safeTrigger({ channel, event, data }) {
   }
 }
 
-function WordDuelGame({ localPlayer, sessionId }) {
+function WordDuelGame({ localPlayer, sessionId, getPlayerName }) {
   const [pusherClient, setPusherClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [remotePlayer, setRemotePlayer] = useState(null);
@@ -468,7 +469,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
   useEffect(() => {
     if (!channel) return;
     if (gameState !== "menu") return;
-    if (localPlayer !== "hunter") return;
+    if (localPlayer !== PLAYER_IDS.ONE) return;
     if (!remotePlayer) return;
     if (!localReady || !remoteReady) return;
 
@@ -556,7 +557,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
   // Host advances to the next word when EITHER player completes the current word.
   useEffect(() => {
     if (!channel) return;
-    if (localPlayer !== "hunter") return;
+    if (localPlayer !== PLAYER_IDS.ONE) return;
     if (gameState !== "playing") return;
     if (!matchId) return;
     if (!localCompleted && !remoteCompleted) return;
@@ -660,12 +661,12 @@ function WordDuelGame({ localPlayer, sessionId }) {
   };
 
   const playerColors = {
-    hunter: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
-    riceee: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
+    [PLAYER_IDS.ONE]: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
+    [PLAYER_IDS.TWO]: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
   };
 
-  const localColor = playerColors[localPlayer] || playerColors.hunter;
-  const remoteColor = playerColors[remotePlayer] || playerColors.riceee;
+  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
+  const remoteColor = playerColors[remotePlayer] || playerColors[PLAYER_IDS.TWO];
 
   // Determine winner
   const getWinner = () => {
@@ -721,7 +722,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
-                              channel: CHANNEL_NAME,
+                              channel: channelName,
                               event: 'timer-sync',
                               data: { player: localPlayer, time },
                             }),
@@ -757,7 +758,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
                   ? "Waiting for opponent..."
                   : localReady
                     ? "Ready! Waiting..."
-                    : localPlayer === "hunter" && remoteReady
+                    : localPlayer === PLAYER_IDS.ONE && remoteReady
                       ? "Start Duel"
                       : "Ready"}
               </Button>
@@ -787,7 +788,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
             <Card className={`border-2 ${localColor.border}`}>
               <CardHeader className="pb-2 sm:pb-3">
                 <CardTitle className={`text-base sm:text-xl ${localColor.text} flex items-center gap-2`}>
-                  {localPlayer === "hunter" ? "🦁" : "💗"} {localPlayer} (You)
+                  {getPlayerMeta(localPlayer)?.emoji || "🎮"} {getPlayerName(localPlayer)} (You)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
@@ -866,7 +867,9 @@ function WordDuelGame({ localPlayer, sessionId }) {
             <Card className={`border-2 ${remoteColor.border}`}>
               <CardHeader className="pb-2 sm:pb-3">
                 <CardTitle className={`text-base sm:text-xl ${remoteColor.text} flex items-center gap-2`}>
-                  {remotePlayer === "hunter" ? "🦁" : "💗"} {remotePlayer || "Waiting..."}
+                  {remotePlayer
+                    ? `${getPlayerMeta(remotePlayer)?.emoji || "🎮"} ${getPlayerName(remotePlayer)}`
+                    : "Waiting..."}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 sm:space-y-4">
@@ -967,7 +970,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
                 <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-xl">
-                      {localPlayer === "hunter" ? "🦁" : "💗"} {localPlayer}
+                      {getPlayerMeta(localPlayer)?.emoji || "🎮"} {getPlayerName(localPlayer)}
                     </span>
                     <div className="text-right">
                       <div className="text-2xl font-bold">{localFinalScore}</div>
@@ -980,7 +983,7 @@ function WordDuelGame({ localPlayer, sessionId }) {
                   <div className={`p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xl">
-                        {remotePlayer === "hunter" ? "🦁" : "💗"} {remotePlayer}
+                        {getPlayerMeta(remotePlayer)?.emoji || "🎮"} {getPlayerName(remotePlayer)}
                       </span>
                       <div className="text-right">
                         <div className="text-2xl font-bold">{remoteFinalScore}</div>

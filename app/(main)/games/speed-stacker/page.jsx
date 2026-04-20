@@ -7,13 +7,14 @@ import { ArrowLeft, Layers, Crown, Users } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
 
 const COLORS = [
   "bg-red-500", "bg-blue-500", "bg-green-500", "bg-yellow-500",
   "bg-purple-500", "bg-pink-500", "bg-orange-500", "bg-cyan-500",
 ];
 
-function StackerGame({ localPlayer, sessionId }) {
+function StackerGame({ localPlayer, sessionId, getPlayerName }) {
   const [localStack, setLocalStack] = useState([{ position: 25, width: 50, color: COLORS[0] }]);
   const [localPosition, setLocalPosition] = useState(0);
   const [localDirection, setLocalDirection] = useState(1);
@@ -34,7 +35,11 @@ function StackerGame({ localPlayer, sessionId }) {
   const [pusher, setPusher] = useState(null);
   const [channel, setChannel] = useState(null);
 
-  const remotePlayer = localPlayer === "hunter" ? "riceee" : "hunter";
+  const remotePlayer = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayer);
+  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎮";
+  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎮";
   const channelName = 'game-speed-stacker';
 
   // Initialize Pusher
@@ -261,8 +266,8 @@ function StackerGame({ localPlayer, sessionId }) {
     return () => window.removeEventListener("keydown", handleKeyPress);
   }, [localGameOver, placeBlock]);
 
-  const playerColor = localPlayer === "hunter" ? "orange" : "pink";
-  const remoteColor = remotePlayer === "hunter" ? "orange" : "pink";
+  const playerColor = localPlayer === PLAYER_IDS.ONE ? "orange" : "pink";
+  const remoteColor = remotePlayer === PLAYER_IDS.ONE ? "orange" : "pink";
 
   if (gameState === "finished") {
     return (
@@ -282,27 +287,27 @@ function StackerGame({ localPlayer, sessionId }) {
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold px-2">
                 {winner === localPlayer && "You Won! 🎉"}
-                {winner && winner !== localPlayer && `${winner === "hunter" ? "Partner 1 🦁" : "Partner 2 💗"} Won!`}
+                {winner && winner !== localPlayer && `${getPlayerName(winner)} ${getPlayerMeta(winner)?.emoji || "🎮"} Won!`}
                 {!winner && "It's a Tie! 🤝"}
               </h2>
               
               <div className="grid grid-cols-2 gap-3 sm:gap-6 max-w-md mx-auto mt-4 sm:mt-6">
                 {/* Always show both players' scores */}
                 <div className={`p-3 sm:p-6 rounded-lg ${
-                  localPlayer === "hunter" ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"
+                  localPlayer === PLAYER_IDS.ONE ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"
                 } ${winner === localPlayer ? "ring-2 sm:ring-4 ring-yellow-400" : ""}`}>
-                  <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{localPlayer === "hunter" ? "🦁" : "💗"}</div>
-                  <p className="font-bold text-sm sm:text-lg">{localPlayer === "hunter" ? "Partner 1" : "Partner 2"}</p>
+                  <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{localEmoji}</div>
+                  <p className="font-bold text-sm sm:text-lg">{localPlayerName}</p>
                   <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">{localScore}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">{localStack.length} blocks</p>
                   {winner === localPlayer && <div className="text-xl sm:text-2xl mt-1 sm:mt-2">🏆</div>}
                 </div>
                 
                 <div className={`p-3 sm:p-6 rounded-lg ${
-                  remotePlayer === "hunter" ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"
+                  remotePlayer === PLAYER_IDS.ONE ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"
                 } ${winner === remotePlayer ? "ring-2 sm:ring-4 ring-yellow-400" : ""}`}>
-                  <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{remotePlayer === "hunter" ? "🦁" : "💗"}</div>
-                  <p className="font-bold text-sm sm:text-lg">{remotePlayer === "hunter" ? "Partner 1" : "Partner 2"}</p>
+                  <div className="text-3xl sm:text-4xl mb-1 sm:mb-2">{remoteEmoji}</div>
+                  <p className="font-bold text-sm sm:text-lg">{remotePlayerName}</p>
                   <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">{remoteScore}</p>
                   <p className="text-xs sm:text-sm text-muted-foreground mt-1">{remoteStack.length} blocks</p>
                   {winner === remotePlayer && <div className="text-xl sm:text-2xl mt-1 sm:mt-2">🏆</div>}
@@ -348,7 +353,7 @@ function StackerGame({ localPlayer, sessionId }) {
         </div>
         {!remoteConnected && (
           <p className="text-xs text-muted-foreground mt-2">
-            Open another tab and select {remotePlayer === "hunter" ? "Partner 1 🦁" : "Partner 2 💗"}
+            Open another tab and select {`${remotePlayerName} ${remoteEmoji}`}
           </p>
         )}
       </div>
@@ -360,7 +365,7 @@ function StackerGame({ localPlayer, sessionId }) {
           <CardHeader className={`${playerColor === "orange" ? "bg-orange-50" : "bg-pink-50"} py-3 sm:py-6`}>
             <CardTitle className="flex items-center justify-between text-base sm:text-xl">
               <span className="flex items-center gap-2">
-                {localPlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}
+                {`${localEmoji} ${localPlayerName}`}
                 {winner === localPlayer && <Crown className="text-yellow-500" size={18} />}
               </span>
               <span className="text-xl sm:text-2xl font-bold">{localScore}</span>
@@ -417,7 +422,7 @@ function StackerGame({ localPlayer, sessionId }) {
           <CardHeader className={`${remoteColor === "orange" ? "bg-orange-50" : "bg-pink-50"} py-3 sm:py-6`}>
             <CardTitle className="flex items-center justify-between text-base sm:text-xl">
               <span className="flex items-center gap-2">
-                {remotePlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}
+                {`${remoteEmoji} ${remotePlayerName}`}
                 {winner === remotePlayer && <Crown className="text-yellow-500" size={18} />}
               </span>
               <span className="text-xl sm:text-2xl font-bold">{remoteScore}</span>

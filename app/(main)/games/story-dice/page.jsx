@@ -7,6 +7,7 @@ import { ArrowLeft, Dices, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
 
 const STORY_ELEMENTS = {
   characters: ["🧙‍♂️ A wizard", "🦸‍♀️ A superhero", "🐉 A dragon", "👸 A princess", "🤖 A robot", "🧛‍♂️ A vampire", "🦊 A clever fox", "👻 A friendly ghost"],
@@ -15,7 +16,7 @@ const STORY_ELEMENTS = {
   twists: ["but everything was a dream", "and discovered a hidden power", "while time was running backwards", "as reality started glitching", "and made an unlikely friend", "but had to make a sacrifice", "and learned a valuable lesson", "while the world watched"],
 };
 
-function StoryDiceGame({ localPlayer, sessionId }) {
+function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
   const [gameState, setGameState] = useState("lobby");
   const [rolledStory, setRolledStory] = useState(null);
   const [userStory, setUserStory] = useState("");
@@ -41,7 +42,11 @@ function StoryDiceGame({ localPlayer, sessionId }) {
     gameStateRef.current = gameState;
   }, [gameState]);
 
-  const remotePlayer = localPlayer === "hunter" ? "riceee" : "hunter";
+  const remotePlayer = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayer);
+  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎮";
+  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎮";
   const channelName = `game-story-dice-${sessionId}`;
 
   const safeTrigger = useCallback(
@@ -242,8 +247,8 @@ function StoryDiceGame({ localPlayer, sessionId }) {
     }
   }, [gameState, localFinished, remoteFinished]);
 
-  const playerColor = localPlayer === "hunter" ? "orange" : "pink";
-  const remoteColor = remotePlayer === "hunter" ? "orange" : "pink";
+  const playerColor = localPlayer === PLAYER_IDS.ONE ? "orange" : "pink";
+  const remoteColor = remotePlayer === PLAYER_IDS.ONE ? "orange" : "pink";
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-4xl">
@@ -277,15 +282,15 @@ function StoryDiceGame({ localPlayer, sessionId }) {
               </p>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-md mx-auto my-4 sm:my-6">
                 <div className={`p-3 sm:p-4 ${playerColor === "orange" ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"} rounded-lg`}>
-                  <div className="text-2xl sm:text-3xl mb-2">{localPlayer === "hunter" ? "🦁" : "💗"}</div>
-                  <p className="text-xs sm:text-sm font-bold">{localPlayer === "hunter" ? "Partner 1" : "Partner 2"}</p>
+                  <div className="text-2xl sm:text-3xl mb-2">{localEmoji}</div>
+                  <p className="text-xs sm:text-sm font-bold">{localPlayerName}</p>
                   <p className={`mt-1 text-xs ${localReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
                     {localReady ? "Ready" : "Not ready"}
                   </p>
                 </div>
                 <div className={`p-3 sm:p-4 ${remoteColor === "orange" ? "bg-orange-50 border-2 border-orange-300" : "bg-pink-50 border-2 border-pink-300"} rounded-lg ${!remoteConnected && "opacity-50"}`}>
-                  <div className="text-2xl sm:text-3xl mb-2">{remotePlayer === "hunter" ? "🦁" : "💗"}</div>
-                  <p className="text-xs sm:text-sm font-bold">{remotePlayer === "hunter" ? "Partner 1" : "Partner 2"}</p>
+                  <div className="text-2xl sm:text-3xl mb-2">{remoteEmoji}</div>
+                  <p className="text-xs sm:text-sm font-bold">{remotePlayerName}</p>
                   <p className={`mt-1 text-xs ${remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
                     {remoteConnected ? (remoteReady ? "Ready" : "Not ready") : "Not connected"}
                   </p>
@@ -358,7 +363,7 @@ function StoryDiceGame({ localPlayer, sessionId }) {
                     <Card className={`border-4 ${playerColor === "orange" ? "border-orange-400" : "border-pink-400"}`}>
                       <CardHeader className={`${playerColor === "orange" ? "bg-orange-50" : "bg-pink-50"}`}>
                         <CardTitle className="flex items-center gap-2">
-                          <span>{localPlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}'s Story</span>
+                          <span>{`${localEmoji} ${localPlayerName}`}'s Story</span>
                           <Sparkles className="text-green-500" size={20} />
                         </CardTitle>
                       </CardHeader>
@@ -392,7 +397,7 @@ function StoryDiceGame({ localPlayer, sessionId }) {
                     <Card className={`border-4 ${remoteColor === "orange" ? "border-orange-400" : "border-pink-400"} ${!remoteConnected && "opacity-50"}`}>
                       <CardHeader className={`${remoteColor === "orange" ? "bg-orange-50" : "bg-pink-50"}`}>
                         <CardTitle className="flex items-center gap-2">
-                          <span>{remotePlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}'s Story</span>
+                          <span>{`${remoteEmoji} ${remotePlayerName}`}'s Story</span>
                           <Sparkles className="text-green-500" size={20} />
                         </CardTitle>
                       </CardHeader>
@@ -402,7 +407,7 @@ function StoryDiceGame({ localPlayer, sessionId }) {
                             <div className="w-full h-64 p-4 rounded-lg border-2 border-gray-200 bg-gray-50 overflow-y-auto whitespace-pre-wrap">
                               {remoteStory || (
                                 <span className="text-muted-foreground italic">
-                                  {remotePlayer === "hunter" ? "Partner 1" : "Partner 2"} is writing...
+                                  {remotePlayerName} is writing...
                                 </span>
                               )}
                             </div>
@@ -464,7 +469,7 @@ function StoryDiceGame({ localPlayer, sessionId }) {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className={`border-4 ${playerColor === "orange" ? "border-orange-400" : "border-pink-400"}`}>
                   <CardHeader className={`${playerColor === "orange" ? "bg-orange-50" : "bg-pink-50"}`}>
-                    <CardTitle>{localPlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}'s Story</CardTitle>
+                    <CardTitle>{`${localEmoji} ${localPlayerName}`}'s Story</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="w-full min-h-64 p-4 rounded-lg border-2 border-gray-200 bg-gray-50 whitespace-pre-wrap">
@@ -475,7 +480,7 @@ function StoryDiceGame({ localPlayer, sessionId }) {
 
                 <Card className={`border-4 ${remoteColor === "orange" ? "border-orange-400" : "border-pink-400"}`}>
                   <CardHeader className={`${remoteColor === "orange" ? "bg-orange-50" : "bg-pink-50"}`}>
-                    <CardTitle>{remotePlayer === "hunter" ? "🦁 Partner 1" : "💗 Partner 2"}'s Story</CardTitle>
+                    <CardTitle>{`${remoteEmoji} ${remotePlayerName}`}'s Story</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4">
                     <div className="w-full min-h-64 p-4 rounded-lg border-2 border-gray-200 bg-gray-50 whitespace-pre-wrap">

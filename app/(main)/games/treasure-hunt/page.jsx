@@ -7,6 +7,7 @@ import { ArrowLeft, Package, Star, Clock, Trophy } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 
 const ALL_CHALLENGES = [
   { type: "math", question: "What is 15 + 27?", answer: "42", emoji: "🧮" },
@@ -28,7 +29,7 @@ const ALL_CHALLENGES = [
 
 const CHANNEL_NAME = 'game-treasure-hunt';
 
-function TreasureHuntGame({ localPlayer, sessionId }) {
+function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
   const [pusherClient, setPusherClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [remotePlayer, setRemotePlayer] = useState(null);
@@ -49,7 +50,9 @@ function TreasureHuntGame({ localPlayer, sessionId }) {
   const [remoteCurrentChallenge, setRemoteCurrentChallenge] = useState(0);
   const [remoteFinished, setRemoteFinished] = useState(false);
 
-  const remotePlayerName = localPlayer === "hunter" ? "riceee" : "hunter";
+  const remotePlayerId = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayer || remotePlayerId);
 
   // Initialize Pusher
   useEffect(() => {
@@ -234,12 +237,12 @@ function TreasureHuntGame({ localPlayer, sessionId }) {
   const challenge = challenges[currentChallenge];
 
   const playerColors = {
-    hunter: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
-    riceee: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
+    [PLAYER_IDS.ONE]: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
+    [PLAYER_IDS.TWO]: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
   };
 
-  const localColor = playerColors[localPlayer] || playerColors.hunter;
-  const remoteColor = playerColors[remotePlayerName] || playerColors.riceee;
+  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
+  const remoteColor = playerColors[remotePlayer || remotePlayerId] || playerColors[PLAYER_IDS.TWO];
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -293,7 +296,7 @@ function TreasureHuntGame({ localPlayer, sessionId }) {
                 {/* Local Player */}
                 <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold capitalize">{localPlayer} (You)</span>
+                    <span className="font-bold">{localPlayerName} (You)</span>
                     <span className={`text-lg font-bold ${localColor.text}`}>
                       {score} pts
                     </span>
@@ -389,7 +392,7 @@ function TreasureHuntGame({ localPlayer, sessionId }) {
               <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
                 {/* Local Player Final Stats */}
                 <div className={`p-6 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                  <div className="font-bold mb-2 capitalize text-lg">{localPlayer}</div>
+                  <div className="font-bold mb-2 text-lg">{localPlayerName}</div>
                   <div className="text-3xl font-bold mb-2">{score} pts</div>
                   <div className="text-sm">💎 {treasuresFound}/{challenges.length} treasures</div>
                 </div>

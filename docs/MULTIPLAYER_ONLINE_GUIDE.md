@@ -27,12 +27,12 @@
 1. **Device 1 (Your Phone):**
    - Open browser, go to your deployed app URL
    - Navigate to Games → Speed Stacker Online
-   - Select "Hunter 🦁"
+   - Select "Partner 1 🦁"
    - Copy the URL shown on waiting screen
 
 2. **Device 2 (Partner's Phone/Computer):**
    - Open the same URL
-   - Select "Riceee 💗"
+   - Select "Partner 2 💗"
    - Both players should see "Connected via Pusher" ✅
 
 3. **Play Together:**
@@ -41,15 +41,15 @@
    - Both see the same final scores and winner
 
 ### Option 2: Two Browsers (Same Computer)
-1. **Browser 1 (Chrome):** Select Hunter
-2. **Browser 2 (Firefox/Edge):** Open same URL, select Riceee
+1. **Browser 1 (Chrome):** Select Partner 1
+2. **Browser 2 (Firefox/Edge):** Open same URL, select Partner 2
 3. Position windows side by side
 4. Play simultaneously!
 
 ### Option 3: One Device, Two Tabs
 ⚠️ **Note:** This uses the same localStorage session, so it's more for UI testing
-- Tab 1: Select Hunter
-- Tab 2: Select Riceee
+- Tab 1: Select Partner 1
+- Tab 2: Select Partner 2
 - Works, but real-time sync is better across devices
 
 ---
@@ -139,7 +139,7 @@ NEXT_PUBLIC_PUSHER_CLUSTER=ap2
 
 ## 💡 Next Steps
 
-- Test with Hunter on her device!
+- Test with Partner 1 on one device and Partner 2 on another!
 - If it works, we can add multiplayer to other games:
   - Word Duel Arena (competitive word game)
   - Quick Draw Battle (drawing challenge)
@@ -164,4 +164,4 @@ git push origin main  # (if auto-deploy is set up)
 
 ---
 
-Ready to test? Open the game and let Hunter join from her phone! 🚀✨
+Ready to test? Open the game and let your second player join from another device! 🚀✨

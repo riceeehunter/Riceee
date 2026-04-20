@@ -1,232 +1,71 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  ArrowLeft, 
-  Send, 
-  Sparkles, 
-  Loader2,
-  MessageCircle,
-  User,
-  Bot
-} from "lucide-react";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
+import { ArrowLeft, Sparkles, Clock3, Heart, WandSparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { APP_BRAND } from "@/lib/constants/branding";
 
 export default function RiceeeChat() {
-  const [messages, setMessages] = useState([
-    {
-      role: "assistant",
-      content: `Hey there! 👋 I'm ${APP_BRAND.aiAssistantName}, your relationship mediator.\n\nI'm here to help you work through relationship conflicts. To give you the best advice, I need to understand the full picture.\n\n**Tell me about your conflict:**\n• What happened?\n• How do you feel about it?\n• What do you think your partner's perspective is?\n\nShare as much detail as you can! 💜`
-    }
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [inputMessage, setInputMessage] = useState("");
-  const messagesEndRef = useRef(null);
-  const textareaRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    // Auto-focus textarea
-    textareaRef.current?.focus();
-  }, [isLoading]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!inputMessage.trim() || isLoading) return;
-
-    const userMessage = {
-      role: "user",
-      content: inputMessage.trim()
-    };
-    
-    setMessages(prev => [...prev, userMessage]);
-    setInputMessage("");
-    setIsLoading(true);
-
-    try {
-      // Call the Next.js API route which proxies to Python AI
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minute timeout
-      
-      const response = await fetch('/api/riceee-ai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: userMessage.content  // Send as conversational message
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get AI response');
-      }
-
-      const data = await response.json();
-      
-      const aiResponse = {
-        role: "assistant",
-        content: data.advice
-      };
-      
-      setMessages(prev => [...prev, aiResponse]);
-    } catch (error) {
-      console.error("Error getting AI response:", error);
-      
-      let errorMessage = "Oops! Something went wrong. 🤔\n\n";
-      
-      if (error.name === 'AbortError') {
-        errorMessage += "The request took too long. The AI might be processing on CPU (slow). Please try again or check if the Python server is running properly.";
-      } else if (error.message.includes('Failed to fetch')) {
-        errorMessage += "Can't connect to the AI server. Make sure:\n• Python server is running: `python riceee_api.py`\n• Server is on http://localhost:8000";
-      } else {
-        errorMessage += error.message;
-      }
-      
-      setMessages(prev => [...prev, {
-        role: "assistant",
-        content: errorMessage
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
-    }
-  };
-
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="icon" className="rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
-            <div className="flex items-center gap-3 flex-1">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl shadow-md">
-                <MessageCircle className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent">
-                  Chat with {APP_BRAND.aiName}
-                </h1>
-                <p className="text-sm text-muted-foreground">{APP_BRAND.aiRoleDescription}</p>
-              </div>
-              <Sparkles className="h-5 w-5 text-purple-500 animate-pulse" />
+    <div className="h-full overflow-hidden px-4 py-4 md:py-5">
+      <div className="mx-auto flex h-full w-full max-w-3xl flex-col">
+        <div className="mb-3 flex items-center gap-3 md:mb-4">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="icon" className="rounded-full border border-orange-200 bg-white/80">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          <p className="text-sm font-medium text-orange-700">Back to Dashboard</p>
+        </div>
+
+        <div className="relative flex flex-1 flex-col justify-center rounded-3xl border-2 border-orange-200/80 bg-white/85 p-4 shadow-xl backdrop-blur sm:p-6 md:p-8">
+          <div className="pointer-events-none absolute -top-10 -left-8 h-40 w-40 rounded-full bg-orange-200/25 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-10 -right-8 h-36 w-36 rounded-full bg-pink-200/25 blur-2xl" />
+          <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-400 to-pink-500 text-white shadow-lg md:mb-4 md:h-16 md:w-16">
+            <WandSparkles className="h-7 w-7 md:h-8 md:w-8" />
+          </div>
+
+          <div className="text-center">
+            <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-pink-200 bg-pink-50 px-3 py-1 text-[11px] font-semibold tracking-wide text-pink-700 md:mb-3 md:px-4 md:text-xs">
+              <Sparkles className="h-4 w-4" />
+              FEATURE IN PROGRESS
+            </p>
+
+            <h1 className="text-3xl font-black tracking-tight text-slate-800 sm:text-4xl md:text-[3rem] md:leading-none">
+              {APP_BRAND.aiName} is Coming Soon
+            </h1>
+
+            <p className="mx-auto mt-3 max-w-xl text-sm leading-relaxed text-slate-600 sm:text-base md:mt-4 md:text-lg">
+              We are crafting a sweet, supportive AI space for couples with better guidance, softer conversations, and a more lovable experience.
+            </p>
+          </div>
+
+          <div className="mt-5 grid gap-2.5 sm:grid-cols-3 md:mt-6 md:gap-3">
+            <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-center">
+              <Clock3 className="mx-auto mb-1.5 h-4 w-4 text-orange-500 md:h-5 md:w-5" />
+              <p className="text-xs font-semibold text-orange-700 md:text-sm">Smart Session Memory</p>
+            </div>
+            <div className="rounded-2xl border border-pink-200 bg-pink-50 p-4 text-center">
+              <Heart className="mx-auto mb-1.5 h-4 w-4 text-pink-500 md:h-5 md:w-5" />
+              <p className="text-xs font-semibold text-pink-700 md:text-sm">Gentle Conflict Support</p>
+            </div>
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center">
+              <Sparkles className="mx-auto mb-1.5 h-4 w-4 text-amber-500 md:h-5 md:w-5" />
+              <p className="text-xs font-semibold text-amber-700 md:text-sm">Personalized Advice Flow</p>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Chat Container */}
-      <div className="container mx-auto px-4 py-2 max-w-5xl flex-1 min-h-0">
-        <div className="h-full min-h-0 flex flex-col rounded-3xl border-2 border-orange-200 bg-orange-50/50 dark:bg-orange-950/10 shadow-xl p-4 md:p-5">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto space-y-4 mb-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-3 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                } animate-in fade-in slide-in-from-bottom-2 duration-300`}
-              >
-                {message.role === "assistant" && (
-                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
-                    <Bot className="h-5 w-5 text-white" />
-                  </div>
-                )}
-                
-                <div
-                  className={`max-w-[75%] rounded-2xl px-4 py-3 ${
-                    message.role === "user"
-                      ? "bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md"
-                      : "bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800"
-                  }`}
-                >
-                  <div className="whitespace-pre-wrap text-sm leading-relaxed prose prose-sm max-w-none dark:prose-invert prose-p:my-1 prose-strong:text-orange-600 dark:prose-strong:text-orange-400">
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
-                  </div>
-                </div>
-
-                {message.role === "user" && (
-                  <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-amber-400 flex items-center justify-center shadow-md">
-                    <User className="h-5 w-5 text-white" />
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex gap-3 justify-start animate-in fade-in slide-in-from-bottom-2 duration-300">
-                <div className="flex-shrink-0 w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
-                  <Bot className="h-5 w-5 text-white" />
-                </div>
-                <div className="bg-white dark:bg-gray-800 border-2 border-orange-200 dark:border-orange-800 rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
-                    <span className="text-sm text-muted-foreground">{APP_BRAND.aiAssistantName} is thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="border-t-2 border-orange-200 pt-4">
-            <form onSubmit={handleSubmit} className="flex items-center gap-3">
-              <Textarea
-                ref={textareaRef}
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="resize-none border-2 border-orange-300 focus:border-orange-500 focus:ring-orange-500 rounded-2xl bg-white dark:bg-gray-800 text-sm"
-                rows={1}
-                disabled={isLoading}
-              />
-              <Button
-                type="submit"
-                disabled={!inputMessage.trim() || isLoading}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 rounded-2xl px-6 h-12 shadow-md hover:shadow-lg transition-all flex-shrink-0"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
+          <div className="mt-5 flex flex-col items-center justify-center gap-2.5 sm:mt-6 sm:flex-row sm:gap-3">
+            <Link href="/dashboard">
+              <Button className="h-10 w-52 rounded-2xl bg-gradient-to-r from-orange-500 to-pink-500 px-6 hover:from-orange-600 hover:to-pink-600 md:h-11 md:w-56">
+                Explore Dashboard
               </Button>
-            </form>
-            <p className="text-xs text-center text-muted-foreground mt-3 flex items-center justify-center gap-1">
-              <span>{APP_BRAND.aiAssistantName} is here to help. Be open and honest!</span>
-              <span className="text-purple-500">💜</span>
-            </p>
+            </Link>
+            <Link href="/games">
+              <Button variant="outline" className="h-10 w-52 rounded-2xl border-orange-300 bg-white px-6 text-orange-700 hover:bg-orange-50 md:h-11 md:w-56">
+                Play Couple Games
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

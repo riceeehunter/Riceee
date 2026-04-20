@@ -5,12 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Pusher from "pusher-js";
 import { Heart, Loader2 } from "lucide-react";
+import { getCurrentGameSetup } from "@/actions/onboarding";
+import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 import {
   PLAYER_DEFAULT_COLORS,
   PLAYER_IDS,
+  getPlayerDisplayNameFromSettings,
+  getPlayerLabelFromSettings,
   getOtherPlayer,
-  getPlayerDisplayName,
-  getPlayerLabel,
   getPlayerMeta,
 } from "@/lib/constants/players";
 
@@ -29,8 +31,39 @@ export function PusherMultiplayerWrapper({
   const [pusher, setPusher] = useState(null);
   const [channel, setChannel] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [partnerNames, setPartnerNames] = useState({
+    ...DEFAULT_PARTNER_NAMES,
+    bothLabel: `${DEFAULT_PARTNER_NAMES.partnerOneName} x ${DEFAULT_PARTNER_NAMES.partnerTwoName}`,
+  });
   const playerOne = getPlayerMeta(PLAYER_IDS.ONE);
   const playerTwo = getPlayerMeta(PLAYER_IDS.TWO);
+  const playerOneName = getPlayerDisplayNameFromSettings(PLAYER_IDS.ONE, partnerNames);
+  const playerTwoName = getPlayerDisplayNameFromSettings(PLAYER_IDS.TWO, partnerNames);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const setup = await getCurrentGameSetup();
+        if (!mounted || !setup) {
+          return;
+        }
+
+        if (setup.partnerNames) {
+          setPartnerNames(setup.partnerNames);
+        }
+
+        if (setup.assignedPlayerId) {
+          setLocalPlayer(setup.assignedPlayerId);
+        }
+      } catch {
+        // Keep defaults when unavailable.
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
   
   // Use a simple public channel (no auth required)
   const sessionId = `game-${gameId}-public`;
@@ -184,7 +217,7 @@ export function PusherMultiplayerWrapper({
                   <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">
                     {playerOne.emoji}
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">{playerOne.displayName}</h3>
+                  <h3 className="text-2xl font-bold mb-2">{playerOneName}</h3>
                   <p className={playerOne.textClass}>{playerOne.tagline}</p>
                 </div>
               </button>
@@ -198,7 +231,7 @@ export function PusherMultiplayerWrapper({
                   <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">
                     {playerTwo.emoji}
                   </div>
-                  <h3 className="text-2xl font-bold mb-2">{playerTwo.displayName}</h3>
+                  <h3 className="text-2xl font-bold mb-2">{playerTwoName}</h3>
                   <p className={playerTwo.textClass}>{playerTwo.tagline}</p>
                 </div>
               </button>
@@ -226,10 +259,10 @@ export function PusherMultiplayerWrapper({
           <CardContent className="p-8 text-center">
             <Loader2 className="inline-block animate-spin text-primary mb-4" size={48} />
             <h2 className="text-2xl font-bold mb-4">
-              {getPlayerLabel(localPlayer)} is ready!
+              {getPlayerLabelFromSettings(localPlayer, partnerNames)} is ready!
             </h2>
             <p className="text-muted-foreground mb-6">
-              Waiting for {getPlayerLabel(getOtherPlayer(localPlayer))} to join...
+              Waiting for {getPlayerLabelFromSettings(getOtherPlayer(localPlayer), partnerNames)} to join...
             </p>
             <div className="p-4 bg-blue-50 rounded-lg">
               <p className="text-sm font-semibold text-blue-900 mb-2">
@@ -237,7 +270,7 @@ export function PusherMultiplayerWrapper({
               </p>
               <ol className="text-sm text-left space-y-1 text-blue-800">
                 <li>1. Open this game on their device</li>
-                <li>2. Select {getPlayerLabel(getOtherPlayer(localPlayer))}</li>
+                <li>2. Select {getPlayerLabelFromSettings(getOtherPlayer(localPlayer), partnerNames)}</li>
                 <li>3. You'll connect automatically! ✨</li>
               </ol>
             </div>
@@ -252,5 +285,7 @@ export function PusherMultiplayerWrapper({
     localPlayer,
     sessionId,
     channel,
+    partnerNames,
+    getPlayerName: (playerId) => getPlayerDisplayNameFromSettings(playerId, partnerNames),
   });
 }

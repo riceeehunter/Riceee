@@ -8,6 +8,7 @@ import Link from "next/link";
 import Pusher from "pusher-js";
 import { toast } from "sonner";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
+import { PLAYER_IDS } from "@/lib/constants/players";
 
 const BOARD_SIZE = 100;
 
@@ -41,13 +42,20 @@ function getChannelName(sessionId) {
   return `snakes-ladders-${sessionId}`;
 }
 
-function SnakesAndLaddersGame({ localPlayer, sessionId }) {
+function SnakesAndLaddersGame({ localPlayer, sessionId, getPlayerName }) {
+  const PARTNER_ONE_KEY = "Partner 1";
+  const PARTNER_TWO_KEY = "Partner 2";
+  const partnerOneDisplayName = getPlayerName(PLAYER_IDS.ONE);
+  const partnerTwoDisplayName = getPlayerName(PLAYER_IDS.TWO);
+  const partnerOneInitial = (partnerOneDisplayName?.[0] || "1").toUpperCase();
+  const partnerTwoInitial = (partnerTwoDisplayName?.[0] || "2").toUpperCase();
+
   const [uiState, setUiState] = useState("lobby"); // lobby | playing | finished
   const [matchId, setMatchId] = useState(null);
 
   const [player1Pos, setPlayer1Pos] = useState(0);
   const [player2Pos, setPlayer2Pos] = useState(0);
-  const [currentTurn, setCurrentTurn] = useState("Partner 1");
+  const [currentTurn, setCurrentTurn] = useState(PARTNER_ONE_KEY);
   const [diceValue, setDiceValue] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
   const [winner, setWinner] = useState(null);
@@ -68,14 +76,16 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
   const channelName = useMemo(() => getChannelName(sessionId), [sessionId]);
 
   const playerName = useMemo(
-    () => (localPlayer === "hunter" ? "Partner 1" : "Partner 2"),
+    () => (localPlayer === PLAYER_IDS.ONE ? PARTNER_ONE_KEY : PARTNER_TWO_KEY),
     [localPlayer]
   );
   const remotePlayerName = useMemo(
-    () => (playerName === "Partner 1" ? "Partner 2" : "Partner 1"),
+    () => (playerName === PARTNER_ONE_KEY ? PARTNER_TWO_KEY : PARTNER_ONE_KEY),
     [playerName]
   );
-  const isHost = localPlayer === "hunter";
+  const localDisplayName = playerName === PARTNER_ONE_KEY ? partnerOneDisplayName : partnerTwoDisplayName;
+  const remoteDisplayName = playerName === PARTNER_ONE_KEY ? partnerTwoDisplayName : partnerOneDisplayName;
+  const isHost = localPlayer === PLAYER_IDS.ONE;
 
   const safeTrigger = useCallback(
     async (event, data, keepalive = false) => {
@@ -99,7 +109,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
       setMatchId(null);
       setPlayer1Pos(0);
       setPlayer2Pos(0);
-      setCurrentTurn("Partner 1");
+      setCurrentTurn(PARTNER_ONE_KEY);
       setDiceValue(null);
       setWinner(null);
       setIsRolling(false);
@@ -158,7 +168,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
       setMatchId(data.matchId);
       setPlayer1Pos(0);
       setPlayer2Pos(0);
-      setCurrentTurn("Partner 1");
+      setCurrentTurn(PARTNER_ONE_KEY);
       setDiceValue(null);
       setWinner(null);
       setIsRolling(false);
@@ -172,7 +182,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
       if (!data) return;
       if (!data.matchId || data.matchId !== matchIdRef.current) return;
 
-      if (data.player === "Partner 1") {
+      if (data.player === PARTNER_ONE_KEY) {
         setPlayer1Pos(data.position);
       } else {
         setPlayer2Pos(data.position);
@@ -251,7 +261,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
     const dice = Math.floor(Math.random() * 6) + 1;
     setDiceValue(dice);
 
-    const currentPos = playerName === "Partner 1" ? player1Pos : player2Pos;
+    const currentPos = playerName === PARTNER_ONE_KEY ? player1Pos : player2Pos;
     let newPos = currentPos + dice;
 
     // Can't go beyond 100
@@ -275,7 +285,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
     const gameWinner = newPos === BOARD_SIZE ? playerName : null;
 
     // Update position
-    if (playerName === "Partner 1") {
+    if (playerName === PARTNER_ONE_KEY) {
       setPlayer1Pos(newPos);
     } else {
       setPlayer2Pos(newPos);
@@ -291,7 +301,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
         player: playerName,
         position: newPos,
         dice,
-        nextTurn: playerName === "Partner 1" ? "Partner 2" : "Partner 1",
+        nextTurn: playerName === PARTNER_ONE_KEY ? PARTNER_TWO_KEY : PARTNER_ONE_KEY,
         winner: gameWinner,
       }),
     });
@@ -314,7 +324,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
     setMatchId(nextMatchId);
     setPlayer1Pos(0);
     setPlayer2Pos(0);
-    setCurrentTurn("Partner 1");
+    setCurrentTurn(PARTNER_ONE_KEY);
     setDiceValue(null);
     setWinner(null);
     setIsRolling(false);
@@ -322,7 +332,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
     setLocalReady(false);
     setRemoteReady(false);
 
-    await safeTrigger("game-start", { matchId: nextMatchId, startedBy: "Partner 1", ts: Date.now() });
+    await safeTrigger("game-start", { matchId: nextMatchId, startedBy: PARTNER_ONE_KEY, ts: Date.now() });
   };
 
   const backToLobby = async () => {
@@ -409,12 +419,12 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
             <div className="absolute bottom-1 right-1 flex gap-0.5 z-10">
               {hasPlayer1 && (
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white shadow-lg flex items-center justify-center text-[9px] font-bold text-white animate-bounce">
-                  H
+                  {partnerOneInitial}
                 </div>
               )}
               {hasPlayer2 && (
                 <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white shadow-lg flex items-center justify-center text-[9px] font-bold text-white animate-bounce">
-                  R
+                  {partnerTwoInitial}
                 </div>
               )}
             </div>
@@ -455,12 +465,12 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
                 <Card className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                      H
+                      {partnerOneInitial}
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-gray-700">Partner 1 💙</p>
-                      <p className={`text-xs ${playerName === "Partner 1" && localReady ? "text-green-700 font-bold" : playerName === "Partner 1" ? "text-muted-foreground" : remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
-                        {playerName === "Partner 1" ? (localReady ? "Ready" : "Not ready") : remoteReady ? "Ready" : remoteConnected ? "Not ready" : "Not connected"}
+                      <p className="font-bold text-gray-700">{partnerOneDisplayName} 💙</p>
+                      <p className={`text-xs ${playerName === PARTNER_ONE_KEY && localReady ? "text-green-700 font-bold" : playerName === PARTNER_ONE_KEY ? "text-muted-foreground" : remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
+                        {playerName === PARTNER_ONE_KEY ? (localReady ? "Ready" : "Not ready") : remoteReady ? "Ready" : remoteConnected ? "Not ready" : "Not connected"}
                       </p>
                     </div>
                   </div>
@@ -469,12 +479,12 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
                 <Card className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                      R
+                      {partnerTwoInitial}
                     </div>
                     <div className="flex-1 text-left">
-                      <p className="font-bold text-gray-700">Partner 2 💖</p>
-                      <p className={`text-xs ${playerName === "Partner 2" && localReady ? "text-green-700 font-bold" : playerName === "Partner 2" ? "text-muted-foreground" : remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
-                        {playerName === "Partner 2" ? (localReady ? "Ready" : "Not ready") : remoteReady ? "Ready" : remoteConnected ? "Not ready" : "Not connected"}
+                      <p className="font-bold text-gray-700">{partnerTwoDisplayName} 💖</p>
+                      <p className={`text-xs ${playerName === PARTNER_TWO_KEY && localReady ? "text-green-700 font-bold" : playerName === PARTNER_TWO_KEY ? "text-muted-foreground" : remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
+                        {playerName === PARTNER_TWO_KEY ? (localReady ? "Ready" : "Not ready") : remoteReady ? "Ready" : remoteConnected ? "Not ready" : "Not connected"}
                       </p>
                     </div>
                   </div>
@@ -483,7 +493,7 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
 
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  You are playing as <span className="font-bold">{playerName}</span>.
+                  You are playing as <span className="font-bold">{localDisplayName}</span>.
                 </p>
                 <div className="flex gap-3 justify-center flex-wrap">
                   <Button onClick={toggleReady} variant={localReady ? "outline" : "default"}>
@@ -500,14 +510,14 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
                     </Button>
                   ) : (
                     <Button disabled className="bg-gradient-to-r from-rose-500 to-pink-600 opacity-60">
-                      Waiting for Partner 1 to start...
+                      Waiting for host to start...
                     </Button>
                   )}
                 </div>
 
                 {!remoteConnected && (
                   <p className="text-xs text-muted-foreground">
-                    Waiting for {remotePlayerName} to open the game.
+                    Waiting for {remoteDisplayName} to open the game.
                   </p>
                 )}
               </div>
@@ -516,18 +526,18 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
             <>
               {/* Game Info */}
               <div className="grid grid-cols-2 gap-4 mb-6">
-                <Card className={`p-4 transition-all ${currentTurn === "Partner 1" ? "ring-4 ring-blue-400 shadow-lg shadow-blue-300/50 scale-105" : "opacity-75"}`}>
+                <Card className={`p-4 transition-all ${currentTurn === PARTNER_ONE_KEY ? "ring-4 ring-blue-400 shadow-lg shadow-blue-300/50 scale-105" : "opacity-75"}`}>
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                        H
+                        {partnerOneInitial}
                       </div>
-                      {currentTurn === "Partner 1" && (
+                      {currentTurn === PARTNER_ONE_KEY && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-gray-700">Partner 1 💙</p>
+                      <p className="font-bold text-gray-700">{partnerOneDisplayName} 💙</p>
                       <div className="flex items-baseline gap-2">
                         <p className="text-3xl font-bold text-blue-600">{player1Pos}</p>
                         <p className="text-xs text-gray-500">/ 100</p>
@@ -542,18 +552,18 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
                   </div>
                 </Card>
 
-                <Card className={`p-4 transition-all ${currentTurn === "Partner 2" ? "ring-4 ring-pink-400 shadow-lg shadow-pink-300/50 scale-105" : "opacity-75"}`}>
+                <Card className={`p-4 transition-all ${currentTurn === PARTNER_TWO_KEY ? "ring-4 ring-pink-400 shadow-lg shadow-pink-300/50 scale-105" : "opacity-75"}`}>
                   <div className="flex items-center gap-3">
                     <div className="relative">
                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                        R
+                        {partnerTwoInitial}
                       </div>
-                      {currentTurn === "Partner 2" && (
+                      {currentTurn === PARTNER_TWO_KEY && (
                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
                       )}
                     </div>
                     <div className="flex-1">
-                      <p className="font-bold text-gray-700">Partner 2 💖</p>
+                      <p className="font-bold text-gray-700">{partnerTwoDisplayName} 💖</p>
                       <div className="flex items-baseline gap-2">
                         <p className="text-3xl font-bold text-pink-600">{player2Pos}</p>
                         <p className="text-xs text-gray-500">/ 100</p>
@@ -603,10 +613,10 @@ function SnakesAndLaddersGame({ localPlayer, sessionId }) {
                       <div className={`w-3 h-3 rounded-full ${currentTurn === playerName ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
                       <p className="text-lg font-semibold">
                         {!remoteConnected
-                          ? `⏳ Waiting for ${remotePlayerName}...`
+                          ? `⏳ Waiting for ${remoteDisplayName}...`
                           : currentTurn === playerName
                           ? "🎯 Your turn!"
-                          : `⏳ ${currentTurn}'s turn`}
+                          : `⏳ ${(currentTurn === PARTNER_ONE_KEY ? partnerOneDisplayName : partnerTwoDisplayName)}'s turn`}
                       </p>
                     </div>
                     <Button

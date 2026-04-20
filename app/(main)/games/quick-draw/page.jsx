@@ -7,6 +7,7 @@ import { ArrowLeft, Pencil, Clock, Eraser, RotateCcw, Users, Crown } from "lucid
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
+import { PLAYER_IDS } from "@/lib/constants/players";
 
 const DRAWING_PROMPTS = [
   "Draw a cat riding a bicycle 🚴",
@@ -44,7 +45,7 @@ function midpoint(a, b) {
   return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
 }
 
-function QuickDrawGame({ localPlayer, sessionId }) {
+function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
   const [pusherClient, setPusherClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [remotePlayer, setRemotePlayer] = useState(null);
@@ -82,7 +83,9 @@ function QuickDrawGame({ localPlayer, sessionId }) {
     matchIdRef.current = matchId;
   }, [matchId]);
 
-  const isHost = localPlayer === "hunter";
+  const isHost = localPlayer === PLAYER_IDS.ONE;
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = remotePlayer ? getPlayerName(remotePlayer) : "Opponent";
 
   const localStrokeRef = useRef({ last: null, prev: null });
   const remoteStrokeRef = useRef({ last: null, prev: null });
@@ -581,13 +584,13 @@ function QuickDrawGame({ localPlayer, sessionId }) {
   };
 
   const playerColors = {
-    hunter: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
-    riceee: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
+    [PLAYER_IDS.ONE]: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
+    [PLAYER_IDS.TWO]: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
   };
 
-  const localColor = playerColors[localPlayer] || playerColors.hunter;
-  const remoteColor = playerColors[remotePlayer] || playerColors.riceee;
-  const remoteName = remotePlayer || "Opponent";
+  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
+  const remoteColor = playerColors[remotePlayer] || playerColors[PLAYER_IDS.TWO];
+  const remoteName = remotePlayer ? remotePlayerName : "Opponent";
   const bothFinishedMatch = drawings.length >= 3 && remoteDrawings.length >= 3;
 
   if (gameState === "lobby") {
@@ -616,13 +619,13 @@ function QuickDrawGame({ localPlayer, sessionId }) {
 
             <div className="grid grid-cols-2 gap-4 max-w-xl mx-auto">
               <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                <p className={`font-bold capitalize ${localColor.text}`}>{localPlayer} (You)</p>
+                <p className={`font-bold ${localColor.text}`}>{localPlayerName} (You)</p>
                 <p className={`text-xs mt-1 ${localReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
                   {localReady ? "Ready" : "Not ready"}
                 </p>
               </div>
               <div className={`p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg} ${remoteConnected ? "" : "opacity-60"}`}>
-                <p className={`font-bold capitalize ${remoteColor.text}`}>{remotePlayer || "Opponent"}</p>
+                <p className={`font-bold ${remoteColor.text}`}>{remotePlayerName}</p>
                 <p className={`text-xs mt-1 ${remoteConnected ? (remoteReady ? "text-green-700 font-bold" : "text-muted-foreground") : "text-muted-foreground"}`}>
                   {remoteConnected ? (remoteReady ? "Ready" : "Not ready") : "Waiting..."}
                 </p>
@@ -654,12 +657,12 @@ function QuickDrawGame({ localPlayer, sessionId }) {
                 className="text-lg px-8"
                 disabled={!isHost || !remoteConnected || !localReady || !remoteReady}
               >
-                {isHost ? "Start Drawing! ✏️" : "Waiting for Partner 1..."}
+                {isHost ? "Start Drawing! ✏️" : "Waiting for host to start..."}
               </Button>
             </div>
 
             <p className="text-xs text-muted-foreground">
-              {remoteConnected ? "Both ready → Partner 1 starts." : "Open this game on the other device."}
+              {remoteConnected ? "Both ready → host starts." : "Open this game on the other device."}
             </p>
           </CardContent>
         </Card>
@@ -700,7 +703,7 @@ function QuickDrawGame({ localPlayer, sessionId }) {
               {/* Local Player Canvas */}
               <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`font-bold capitalize ${localColor.text}`}>{localPlayer} (You)</span>
+                  <span className={`font-bold ${localColor.text}`}>{localPlayerName} (You)</span>
                 </div>
 
                 {localRoundComplete && (
@@ -773,9 +776,7 @@ function QuickDrawGame({ localPlayer, sessionId }) {
               {/* Remote Player Canvas */}
               <div className={`p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
                 <div className="flex items-center justify-between mb-3">
-                  <span className={`font-bold capitalize ${remoteColor.text}`}>
-                    {remotePlayer || "Opponent"}
-                  </span>
+                  <span className={`font-bold ${remoteColor.text}`}>{remotePlayerName}</span>
                   <span className="text-sm text-muted-foreground">
                     {remoteGameState === "playing" ? "Drawing..." : "Waiting..."}
                   </span>
@@ -825,7 +826,7 @@ function QuickDrawGame({ localPlayer, sessionId }) {
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Waiting for Partner 1 to start the next round...
+                Waiting for host to start the next round...
               </p>
             )}
           </CardContent>
@@ -888,20 +889,16 @@ function QuickDrawGame({ localPlayer, sessionId }) {
                     <div className="grid md:grid-cols-2 gap-4">
                       {/* Local Player Drawing */}
                       <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                        <p className={`text-sm font-bold mb-2 capitalize ${localColor.text}`}>
-                          {localPlayer}
-                        </p>
+                        <p className={`text-sm font-bold mb-2 ${localColor.text}`}>{localPlayerName}</p>
                         <div className="bg-white border-2 rounded overflow-hidden">
-                          <img src={localDrawing.image} alt={`${localPlayer} Round ${localDrawing.round}`} className="w-full" />
+                          <img src={localDrawing.image} alt={`${localPlayerName} Round ${localDrawing.round}`} className="w-full" />
                         </div>
                       </div>
 
                       {/* Remote Player Drawing */}
                       {remoteDrawing && (
                         <div className={`p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
-                          <p className={`text-sm font-bold mb-2 capitalize ${remoteColor.text}`}>
-                            {remoteName}
-                          </p>
+                          <p className={`text-sm font-bold mb-2 ${remoteColor.text}`}>{remoteName}</p>
                           <div className="bg-white border-2 rounded overflow-hidden">
                             <img src={remoteDrawing.image} alt={`${remoteName} Round ${remoteDrawing.round}`} className="w-full" />
                           </div>

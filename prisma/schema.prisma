@@ -20,9 +20,44 @@ model User {
   comments      Comment[]
   messages      Message[]
   memories      Memory[]
+  identities    UserIdentity[]
+  spaceInvites  SpaceInvite[]
   currentDraft  Draft?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+model UserIdentity {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+}
+
+model SpaceInvite {
+  id                  String       @id @default(cuid())
+  token               String       @unique
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId              String
+  status              InviteStatus @default(PENDING)
+  expiresAt           DateTime
+  acceptedAt          DateTime?
+  acceptedByClerkId   String?
+  createdByClerkId    String
+  createdAt           DateTime     @default(now())
+
+  @@index([userId, status])
+  @@index([expiresAt])
 }
 
 model Collection {
