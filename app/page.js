@@ -3,10 +3,12 @@ import Header from "@/components/header";
 import { checkUser } from "@/lib/checkUser";
 import { plusJakarta, manrope } from "@/lib/fonts";
 import QuoteSection from "@/components/quote-section";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 export default async function LandingPage() {
   const user = await checkUser();
   const isLoggedIn = !!user;
+  const partnerNames = resolvePartnerNames(user);
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');`}</style>
@@ -51,9 +53,9 @@ export default async function LandingPage() {
                       </>
                     ) : (
                       <>
-                        Aditya <br />
+                        {partnerNames.partnerOneName} <br />
                         <span className="text-[#ab4400] italic font-light">x</span>{" "}
-                        <span className="text-[#9d4867]">Tanya</span>
+                        <span className="text-[#9d4867]">{partnerNames.partnerTwoName}</span>
                       </>
                     )}
                   </h1>
