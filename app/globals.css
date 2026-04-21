@@ -7,6 +7,19 @@ html, body {
   max-width: 100vw;
 }
 
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+  overflow: auto !important;
+  overflow-y: scroll !important;
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -80,6 +93,21 @@ body {
   .gradient-title {
     @apply font-extrabold bg-gradient-to-br from-orange-500 via-orange-300 to-orange-400 bg-clip-text tracking-tighter text-transparent pr-2 pb-2;
   }
+
+  .page-shell {
+    max-width: 1440px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 768px) {
+    .page-shell {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
 }
 
 .ql-toolbar {
@@ -99,6 +127,86 @@ body {
   flex: 1;
   overflow-y: auto;
   width: 100%;
+}
+
+.journal-editor .ql-toolbar.ql-snow {
+  border: 0;
+  border-bottom: 1px solid #ffdfcf;
+  background: linear-gradient(180deg, #fff8f2 0%, #fff1f6 100%);
+  padding: 10px 12px;
+}
+
+.journal-editor .ql-snow .ql-picker,
+.journal-editor .ql-snow .ql-picker-label,
+.journal-editor .ql-snow .ql-picker-item,
+.journal-editor .ql-snow .ql-stroke,
+.journal-editor .ql-snow .ql-fill {
+  color: #6a2700;
+  stroke: #6a2700;
+}
+
+.journal-editor .ql-snow .ql-picker-label {
+  border: 1px solid #ffdfcf;
+  border-radius: 10px;
+  background: #fffbff;
+  font-family: "Poppins", sans-serif;
+  font-size: 13px;
+}
+
+.journal-editor .ql-snow .ql-picker.ql-expanded .ql-picker-label {
+  border-color: #ffb995;
+}
+
+.journal-editor .ql-snow .ql-picker-options {
+  border: 1px solid #ffdfcf;
+  border-radius: 12px;
+  background: #fffbff;
+  box-shadow: 0 12px 28px rgba(57, 56, 50, 0.12);
+  padding: 6px;
+}
+
+.journal-editor .ql-snow .ql-picker-item {
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: #393832;
+}
+
+.journal-editor .ql-snow .ql-picker-item:hover {
+  background: #fff1e8;
+  color: #ab4400;
+}
+
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="1"]::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="2"]::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-item[data-value="3"]::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-item:not([data-value])::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="1"]::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="2"]::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-label[data-value="3"]::before,
+.journal-editor .ql-snow .ql-picker.ql-header .ql-picker-label:not([data-value])::before {
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.journal-editor .ql-container.ql-snow {
+  border: 0;
+  min-height: 300px;
+}
+
+.journal-editor .ql-editor {
+  font-family: "Poppins", sans-serif;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #393832;
+  padding: 18px 18px 22px;
+}
+
+.journal-editor .ql-editor.ql-blank::before {
+  color: #9b948d;
+  font-style: italic;
 }
 
 html {

@@ -18,12 +18,17 @@ import { format, parseISO } from "date-fns";
 import useFetch from "@/hooks/use-fetch";
 import MoodAnalyticsSkeleton from "./analytics-loading";
 import { useUser } from "@clerk/nextjs";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import Link from "next/link";
 import ReminderDialog from "./reminder-dialog";
-import { Check, ChevronDown, MessageCircle, Sparkles } from "lucide-react";
+import { MessageCircle, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { plusJakarta } from "@/lib/fonts";
 
 const timeOptions = [
   { value: "7d", label: "Last 7 Days" },
@@ -33,7 +38,6 @@ const timeOptions = [
 
 const MoodAnalytics = () => {
   const [period, setPeriod] = useState("7d");
-  const [periodMenuOpen, setPeriodMenuOpen] = useState(false);
 
   const {
     loading,
@@ -75,14 +79,14 @@ const MoodAnalytics = () => {
       const entriesValue = payload[1]?.value;
       
       return (
-        <div className="bg-[#fffbff] p-4 border border-[#ffae88]/35 rounded-xl shadow-[0_12px_24px_rgba(57,56,50,0.12)]">
-          <p className="font-semibold text-[#6a2700]">
+        <div className="bg-white p-4 border rounded-lg shadow-lg">
+          <p className="font-medium">
             {format(parseISO(label), "MMM d, yyyy")}
           </p>
           {moodValue !== null && moodValue !== undefined && (
-            <p className="text-[#ab4400]">Average Mood: {moodValue}</p>
+            <p className="text-orange-600">Average Mood: {moodValue}</p>
           )}
-          <p className="text-[#9d4867]">Entries: {entriesValue || 0}</p>
+          <p className="text-blue-600">Entries: {entriesValue || 0}</p>
         </div>
       );
     }
@@ -91,73 +95,50 @@ const MoodAnalytics = () => {
 
   return (
     <>
-      <div className="flex justify-between items-center flex-wrap gap-4">
-        <h2 className={`${plusJakarta.className} text-4xl md:text-6xl font-bold text-[#ab4400] tracking-tight`}>
-          Welcome Back
-        </h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-5xl font-bold gradient-title">Welcome Back 💗</h2>
 
         <div className="flex items-center gap-3">
           <Link href="/riceee-chat">
-            <Button className="rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] text-white shadow-[0_8px_20px_rgba(171,68,0,0.22)]">
+            <Button className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white">
               <MessageCircle className="mr-2 h-4 w-4" />
               Riceee AI
               <Sparkles className="ml-2 h-4 w-4" />
             </Button>
           </Link>
           <ReminderDialog />
-          <Popover open={periodMenuOpen} onOpenChange={setPeriodMenuOpen}>
-            <PopoverTrigger asChild>
-              <button
-                type="button"
-                className="w-[160px] h-10 rounded-full border border-[#ffae88]/45 bg-white/90 text-[#6a2700] px-4 flex items-center justify-between hover:bg-[#fff4ec]"
-              >
-                <span className="font-medium">{selectedPeriodLabel}</span>
-                <ChevronDown className="h-4 w-4 opacity-70" />
-              </button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-[200px] p-2 bg-[#fffbff] border border-[#ffae88]/35 rounded-xl shadow-[0_10px_24px_rgba(57,56,50,0.14)]">
-              <div className="space-y-1">
-                {timeOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => {
-                      setPeriod(option.value);
-                      setPeriodMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 rounded-md text-left flex items-center justify-between transition-colors ${
-                      period === option.value
-                        ? "bg-[#f2f2f4] text-[#121118]"
-                        : "text-[#1e1c24] hover:bg-[#f5efea]"
-                    }`}
-                  >
-                    <span>{option.label}</span>
-                    {period === option.value && <Check className="h-4 w-4" />}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {isNewUser && (
-        <Card className="bg-white/70 border-[#ffae88]/30 rounded-3xl shadow-[0_10px_28px_rgba(57,56,50,0.08)]">
+        <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-1">
-              <p className={`${plusJakarta.className} text-xl font-semibold text-[#393832]`}>
+              <p className="text-lg font-medium">
                 No entries in {selectedPeriodLabel} yet.
               </p>
-              <p className="text-sm text-[#66645e]">
+              <p className="text-sm text-muted-foreground">
                 Start with one quick note and we’ll turn this into meaningful insights.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/journal/write">
-                <Button className="rounded-full bg-[#ab4400] hover:bg-[#973b00] text-white">Write your first entry</Button>
+                <Button>Write your first entry</Button>
               </Link>
               <Link href="/dashboard#collections">
-                <Button variant="outline" className="rounded-full border-[#ffae88]/50 text-[#6a2700] hover:bg-[#fff0e8]">Create a collection</Button>
+                <Button variant="outline">Create a collection</Button>
               </Link>
             </div>
           </CardContent>
@@ -165,22 +146,22 @@ const MoodAnalytics = () => {
       )}
 
       {isInactiveForSelectedPeriod && (
-        <Card className="bg-white/70 border-[#ffae88]/30 rounded-3xl shadow-[0_10px_28px_rgba(57,56,50,0.08)]">
+        <Card>
           <CardContent className="pt-6 space-y-4">
             <div className="space-y-1">
-              <p className={`${plusJakarta.className} text-xl font-semibold text-[#393832]`}>
+              <p className="text-lg font-medium">
                 Your journal’s been a little quiet — no entries in {selectedPeriodLabel}. 😭
               </p>
-              <p className="text-sm text-[#66645e]">
+              <p className="text-sm text-muted-foreground">
                 You’ve written before. Add one new entry to continue your mood streak.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/journal/write">
-                <Button className="rounded-full bg-[#ab4400] hover:bg-[#973b00] text-white">Write a new entry</Button>
+                <Button>Write a new entry</Button>
               </Link>
               <Link href="/dashboard#collections">
-                <Button variant="outline" className="rounded-full border-[#ffae88]/50 text-[#6a2700] hover:bg-[#fff0e8]">Browse collections</Button>
+                <Button variant="outline">Browse collections</Button>
               </Link>
             </div>
           </CardContent>
@@ -189,44 +170,44 @@ const MoodAnalytics = () => {
 
       <div className="space-y-6">
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-[#6a2700]">
+              <CardTitle className="text-sm font-medium">
                 Total Entries
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`${plusJakarta.className} text-3xl font-semibold text-[#ab4400]`}>{stats.totalEntries}</div>
-              <p className="text-xs text-[#66645e]">
+              <div className="text-2xl font-bold">{stats.totalEntries}</div>
+              <p className="text-xs text-muted-foreground">
                 ~{stats.dailyAverage} entries per day
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-[#6a2700]">
+              <CardTitle className="text-sm font-medium">
                 Average Mood
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`${plusJakarta.className} text-3xl font-semibold text-[#ab4400]`}>{averageMoodText}</div>
-              <p className="text-xs text-[#66645e]">
+              <div className="text-2xl font-bold">{averageMoodText}</div>
+              <p className="text-xs text-muted-foreground">
                 {hasEntriesInPeriod ? "Overall mood score" : "No mood score in selected period"}
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-[#6a2700]">
+              <CardTitle className="text-sm font-medium">
                 Mood Summary
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-start gap-2">
                 <span className="text-xl leading-none mt-0.5">{moodSummaryEmoji}</span>
-                <p className={`${plusJakarta.className} text-lg md:text-xl font-semibold leading-snug tracking-tight text-balance text-[#393832]`}>
+                <p className="text-lg md:text-xl font-semibold leading-snug tracking-tight text-balance">
                   {moodSummaryText}
                 </p>
               </div>
@@ -234,9 +215,9 @@ const MoodAnalytics = () => {
           </Card>
         </div>
 
-        <Card className="bg-white/75 border-[#ffae88]/28 rounded-3xl shadow-[0_12px_30px_rgba(57,56,50,0.08)]">
+        <Card>
           <CardHeader>
-            <CardTitle className={`${plusJakarta.className} text-[#ab4400]`}>Mood Timeline</CardTitle>
+            <CardTitle>Mood Timeline</CardTitle>
           </CardHeader>
           <CardContent>
             {hasEntriesInPeriod || isInactiveForSelectedPeriod ? (
@@ -251,18 +232,16 @@ const MoodAnalytics = () => {
                       bottom: 5,
                     }}
                   >
-                    <CartesianGrid strokeDasharray="4 4" stroke="#f1e8de" />
+                    <CartesianGrid strokeDasharray="3 3" />
                     <XAxis
                       dataKey="date"
                       tickFormatter={(date) => format(parseISO(date), "MMM d")}
-                      stroke="#9d4867"
                     />
-                    <YAxis yAxisId="left" domain={[0, 10]} stroke="#ab4400" />
+                    <YAxis yAxisId="left" domain={[0, 10]} />
                     <YAxis
                       yAxisId="right"
                       orientation="right"
                       domain={[0, "auto"]}
-                      stroke="#9d4867"
                     />
                     <Tooltip content={<CustomTooltip />} />
                     <Legend />
@@ -270,9 +249,9 @@ const MoodAnalytics = () => {
                       yAxisId="left"
                       type="monotone"
                       dataKey="averageScore"
-                      stroke="#ab4400"
+                      stroke="#f97316"
                       name="Average Mood"
-                      strokeWidth={3}
+                      strokeWidth={2}
                       connectNulls={true}
                       dot={{ r: 4 }}
                       activeDot={{ r: 6 }}
@@ -281,9 +260,9 @@ const MoodAnalytics = () => {
                       yAxisId="right"
                       type="monotone"
                       dataKey="entryCount"
-                      stroke="#9d4867"
+                      stroke="#3b82f6"
                       name="Number of Entries"
-                      strokeWidth={3}
+                      strokeWidth={2}
                       dot={{ r: 4 }}
                       activeDot={{ r: 6 }}
                     />
@@ -291,10 +270,10 @@ const MoodAnalytics = () => {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-[300px] w-full rounded-2xl border border-dashed border-[#ffae88]/40 bg-[#fdf9f4] flex items-center justify-center px-4 text-center">
+              <div className="h-[300px] w-full rounded-md border border-dashed flex items-center justify-center px-4 text-center">
                 <div className="space-y-1">
-                  <p className={`${plusJakarta.className} font-semibold text-[#393832]`}>Your mood timeline will appear here.</p>
-                  <p className="text-sm text-[#66645e]">
+                  <p className="font-medium">Your mood timeline will appear here.</p>
+                  <p className="text-sm text-muted-foreground">
                     Add your first entry to start tracking your emotional journey.
                   </p>
                 </div>

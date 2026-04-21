@@ -8,23 +8,150 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  clerkUserId   String         @unique
-  email         String         @unique
-  name          String?
+  id             String         @id @default(cuid())
+  clerkUserId    String         @unique
+  email          String         @unique
+  name           String?
+  imageUrl       String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
   partnerOneName String?
   partnerTwoName String?
-  imageUrl      String?
-  collections   Collection[]
-  entries       Entry[]
-  comments      Comment[]
-  messages      Message[]
-  memories      Memory[]
-  identities    UserIdentity[]
-  spaceInvites  SpaceInvite[]
-  currentDraft  Draft?
+  collections    Collection[]
+  comments       Comment[]
+  currentDraft   Draft?
+  entries        Entry[]
+  memories       Memory[]
+  messages       Message[]
+  spaceInvites   SpaceInvite[]
+  identities     UserIdentity[]
+}
+
+model UserIdentity {
+  id          String   @id @default(cuid())
+  clerkUserId String   @unique
+  userId      String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model SpaceInvite {
+  id                String       @id @default(cuid())
+  token             String       @unique
+  userId            String
+  status            InviteStatus @default(PENDING)
+  expiresAt         DateTime
+  acceptedAt        DateTime?
+  acceptedByClerkId String?
+  createdByClerkId  String
+  createdAt         DateTime     @default(now())
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([expiresAt])
+}
+
+model Collection {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries     Entry[]
+
+  @@unique([name, userId])
+}
+
+model Entry {
+  id           String      @id @default(cuid())
+  title        String
+  content      String
+  mood         String
+  moodScore    Int
+  moodImageUrl String?
+  author       String      @default("Both Partners")
+  collectionId String?
+  userId       String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  comments     Comment[]
+  collection   Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Draft {
+  id        String   @id @default(cuid())
+  title     String?
+  content   String?
+  mood      String?
+  author    String?  @default("Both Partners")
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id            String         @id @default(cuid())
+  content       String
+  author        String
+  entryId       String
+  userId        String
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  entry         Entry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications Notification[]
+}
+
+model Notification {
+  id            String   @id @default(cuid())
+  type          String
+  message       String
+  entryId       String
+  entryTitle    String
+  commentId     String?
+  commentAuthor String
+  hunterRead    Boolean  @default(false)
+  riceeeRead    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  comment       Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  content        String
+  sender         String
+  userId         String
+  read           Boolean  @default(false)
+  replyTo        String?
+  replyToContent String?
+  replyToSender  String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Memory {
+  id         String   @id @default(cuid())
+  url        String
+  key        String
+  caption    String?
+  uploadedBy String
+  userId     String
+  fileSize   Int
+  mimeType   String
+  width      Int?
+  height     Int?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 enum InviteStatus {
@@ -32,131 +159,4 @@ enum InviteStatus {
   ACCEPTED
   REVOKED
   EXPIRED
-}
-
-model UserIdentity {
-  id          String   @id @default(cuid())
-  clerkUserId String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  createdAt   DateTime @default(now())
-
-  @@index([userId])
-}
-
-model SpaceInvite {
-  id                  String       @id @default(cuid())
-  token               String       @unique
-  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId              String
-  status              InviteStatus @default(PENDING)
-  expiresAt           DateTime
-  acceptedAt          DateTime?
-  acceptedByClerkId   String?
-  createdByClerkId    String
-  createdAt           DateTime     @default(now())
-
-  @@index([userId, status])
-  @@index([expiresAt])
-}
-
-model Collection {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId      String
-  entries     Entry[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@unique([name, userId])
-}
-
-model Entry {
-  id            String      @id @default(cuid())
-  title         String
-  content       String      @db.Text 
-  mood          String      // References moods.js constants
-  moodScore     Int         // Numeric value from moods.js for analytics
-  moodImageUrl  String?     // Pixabay image URL
-  author        String      @default("Both Partners")
-  collection    Collection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  collectionId  String?
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  comments      Comment[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-}
-
-model Draft {
-  id            String    @id @default(cuid())
-  title         String?
-  content       String?   @db.Text
-  mood          String?
-  author        String?   @default("Both Partners")
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String    @unique  // One draft per user
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-}
-
-model Comment {
-  id            String         @id @default(cuid())
-  content       String         @db.Text
-  author        String
-  entry         Entry          @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  entryId       String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId        String
-  notifications Notification[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-}
-
-model Notification {
-  id              String   @id @default(cuid())
-  type            String   // "comment"
-  message         String
-  entryId         String
-  entryTitle      String
-  comment         Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
-  commentId       String?
-  commentAuthor   String   // Who made the comment
-  hunterRead      Boolean  @default(false)
-  riceeeRead      Boolean  @default(false)
-  createdAt       DateTime @default(now())
-}
-
-model Message {
-  id        String   @id @default(cuid())
-  content   String   @db.Text
-  sender    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId    String
-  read      Boolean  @default(false)
-  replyTo   String?  // ID of message being replied to
-  replyToContent String? // Content of replied message
-  replyToSender String? // Sender of replied message
-  createdAt DateTime @default(now())
-}
-
-model Memory {
-  id           String    @id @default(cuid())
-  url          String    // R2 public URL
-  key          String    // R2 object key for deletion
-  caption      String?   @db.Text
-  uploadedBy   String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId       String
-  fileSize     Int       // Size in bytes for quota tracking
-  mimeType     String    // image/jpeg, image/png, etc.
-  width        Int?      // Image width
-  height       Int?      // Image height
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  @@index([userId])
-  @@index([createdAt])
 }

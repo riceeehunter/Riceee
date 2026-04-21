@@ -1,35 +1,42 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Heart, X, Send } from "lucide-react";
+import { CirclePlus, Heart, SendHorizonal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { sendMessage, getMessages, markMessagesAsRead, getUnreadCount } from "@/actions/message";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import Pusher from "pusher-js";
 import { PLAYER_IDS } from "@/lib/constants/players";
+import { plusJakarta } from "@/lib/fonts";
 
 export default function FloatingChat({ partnerNames }) {
   const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
   const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
-  const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
+
+  // Single-side UI assumes each interface has its own sender identity.
+  const [sender, setSender] = useState(PLAYER_IDS.ONE);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  const [sender, setSender] = useState(PLAYER_IDS.ONE);
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [replyingTo, setReplyingTo] = useState(null);
+  const [replyingTo, setReplyingTo] = useState(null); // For reply feature
   const messagesEndRef = useRef(null);
   const isOpenRef = useRef(isOpen);
+
+  const activePartnerName = sender === PLAYER_IDS.ONE ? partnerOneName : partnerTwoName;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const isSenderOne = (value) =>
-    value === PLAYER_IDS.ONE || value === "Partner 1";
+  useEffect(() => {
+    const storedSender = localStorage.getItem("riceee-chat-sender");
+    if (storedSender === PLAYER_IDS.ONE || storedSender === PLAYER_IDS.TWO) {
+      setSender(storedSender);
+    }
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -95,31 +102,23 @@ export default function FloatingChat({ partnerNames }) {
     if (!newMessage.trim()) return;
 
     setIsSending(true);
-    console.log("🚀 Sending message:", newMessage);
     try {
       const result = await sendMessage({
         content: newMessage,
         sender,
-        replyTo: replyingTo?.id,
-        replyToContent: replyingTo?.content,
-        replyToSender: replyingTo
-          ? (isSenderOne(replyingTo.sender) ? partnerOneName : partnerTwoName)
-          : null,
+        replyTo: replyingTo?.id || null,
+        replyToContent: replyingTo?.content || null,
+        replyToSender: replyingTo?.sender || null,
       });
-
-      console.log("📬 Result from server:", result);
 
       if (result.success) {
         setNewMessage("");
         setReplyingTo(null);
-        console.log("✅ Message sent successfully");
         // Pusher will handle adding the message in real-time
       } else {
-        console.error("❌ Failed:", result.error);
         toast.error("Failed to send message: " + (result.error || "Unknown error"));
       }
     } catch (error) {
-      console.error("💥 Send error:", error);
       toast.error("Failed to send message");
     }
     setIsSending(false);
@@ -137,7 +136,7 @@ export default function FloatingChat({ partnerNames }) {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg hover:shadow-xl transition-all hover:scale-110 flex items-center justify-center z-50 group"
+          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-[#ab4400] to-[#9d4867] shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center z-50 group"
         >
           <Heart className="h-7 w-7 sm:h-8 sm:w-8 text-white fill-white group-hover:scale-110 transition-transform" />
           {unreadCount > 0 && (
@@ -149,13 +148,25 @@ export default function FloatingChat({ partnerNames }) {
       )}
 
       {isOpen && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 h-[32rem] sm:h-[36rem] bg-white rounded-3xl shadow-2xl flex flex-col z-50 overflow-hidden">
-          {/* Simple WhatsApp-style header */}
-          <div className="bg-gradient-to-r from-pink-500 to-rose-500 text-white p-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Heart className="h-5 w-5 fill-white" />
-              <div>
-                <h3 className="font-semibold text-base">{bothLabel}</h3>
+        <div className="fixed top-20 bottom-4 right-4 sm:top-24 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-[26rem] bg-[#fffbff] rounded-[2rem] shadow-2xl flex flex-col z-50 overflow-hidden border border-[#ffdfcf]">
+          <div className="bg-gradient-to-r from-[#ab4400] to-[#9d4867] text-white px-4 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-11 w-11 rounded-full border border-white/40 bg-white/15 flex items-center justify-center font-semibold text-lg">
+                {activePartnerName.charAt(0).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h3
+                  className={`${plusJakarta.className} font-semibold text-[1.15rem] sm:text-[1.25rem] leading-tight truncate max-w-[120px] sm:max-w-[180px] bg-white/10 px-3 py-1 rounded-xl shadow-sm`}
+                  title={activePartnerName}
+                >
+                  {activePartnerName.length > 16
+                    ? activePartnerName.slice(0, 14) + "..."
+                    : activePartnerName}
+                </h3>
+                <p className="text-xs sm:text-sm text-white/90 mt-1 flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  Active now
+                </p>
               </div>
             </div>
             <button
@@ -166,9 +177,8 @@ export default function FloatingChat({ partnerNames }) {
             </button>
           </div>
 
-          {/* Clean WhatsApp-style messages */}
           <div 
-            className="flex-1 overflow-y-auto p-4 space-y-2 relative bg-[#fef3f0]"
+            className="flex-1 overflow-y-auto px-4 py-5 space-y-2 relative bg-[#fffaf6]"
             style={{
               backgroundImage: `
                 url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E")
@@ -177,121 +187,130 @@ export default function FloatingChat({ partnerNames }) {
             }}
           >
             {messages.length === 0 ? (
-              <div className="text-center text-gray-400 mt-32 relative z-10">
+              <div className="text-center text-[#9f8f83] mt-24 relative z-10">
                 <Heart className="h-12 w-12 mx-auto mb-2 opacity-30" />
-                <p className="text-sm">No messages yet</p>
+                <p className="text-sm">Start your first sweet note.</p>
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === sender ? "justify-end" : "justify-start"} relative z-10 group`}
-                >
-                  <div
-                    className={`max-w-[75%] rounded-lg px-3 py-2 shadow-sm relative ${
-                      isSenderOne(message.sender)
-                        ? "bg-blue-500 text-white rounded-tr-none"
-                        : "bg-pink-500 text-white rounded-tl-none"
-                    }`}
-                  >
-                    {/* Reply preview */}
-                    {message.replyTo && (
-                      <div className="bg-black/20 rounded px-2 py-1.5 mb-2 border-l-2 border-white/50">
-                        <p className="text-[9px] opacity-70 font-medium">{message.replyToSender}</p>
-                        <p className="text-[11px] opacity-80 line-clamp-1">{message.replyToContent}</p>
+              // Group messages by date
+              (() => {
+                const groups = [];
+                let lastDate = null;
+                messages.forEach((message, idx) => {
+                  const msgDate = new Date(message.createdAt);
+                  const dateStr = msgDate.toDateString();
+                  if (dateStr !== lastDate) {
+                    groups.push({ type: "date", date: msgDate });
+                    lastDate = dateStr;
+                  }
+                  groups.push({ type: "msg", message });
+                });
+                return groups.map((item, idx) => {
+                  if (item.type === "date") {
+                    // WhatsApp-style date label
+                    const today = new Date();
+                    const yesterday = new Date();
+                    yesterday.setDate(today.getDate() - 1);
+                    let label = format(item.date, "MMMM d, yyyy");
+                    if (item.date.toDateString() === today.toDateString()) label = "Today";
+                    else if (item.date.toDateString() === yesterday.toDateString()) label = "Yesterday";
+                    return (
+                      <div key={"date-" + item.date} className="flex justify-center my-2">
+                        <span className="bg-[#ffe8db] text-[#ab4400] text-xs px-3 py-1 rounded-full shadow-sm">{label}</span>
                       </div>
-                    )}
-
-                    <p className="text-[10px] font-medium mb-0.5 opacity-80">
-                      {isSenderOne(message.sender) ? `${partnerOneName} 💙` : `${partnerTwoName} 💖`}
-                    </p>
-                    <p className="text-sm leading-relaxed break-words">
-                      {message.content}
-                    </p>
-                    <p className="text-[10px] mt-1 opacity-70 text-right">
-                      {format(new Date(message.createdAt), "h:mm a")}
-                    </p>
-
-                    {/* Reply button - only show on hover and for other person's messages */}
-                    {message.sender !== sender && (
-                      <button
-                        onClick={() => setReplyingTo(message)}
-                        className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-200 hover:bg-gray-300 rounded-full p-1.5 shadow-md"
-                        title="Reply"
+                    );
+                  }
+                  const { message } = item;
+                  return (
+                    <div
+                      key={message.id}
+                      className="flex justify-start relative z-10 group"
+                      onMouseEnter={() => {}}
+                    >
+                      <div
+                        className={`max-w-[82%] rounded-[1.25rem] px-4 py-3 shadow-sm relative ${
+                          message.sender === PLAYER_IDS.ONE || message.sender === "Partner 1"
+                            ? "bg-[#ffd9e2] text-[#8c4f68]"
+                            : "bg-[#f9b187] text-[#6a3e2a]"
+                        }`}
                       >
-                        <svg className="h-4 w-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))
+                        {/* Reply preview in bubble */}
+                        {message.replyToContent && (
+                          <div className="border-l-4 border-[#ab4400]/40 pl-2 mb-1 text-xs text-[#ab4400]/80 bg-[#fff7f2] rounded">
+                            <span className="font-semibold">
+                              {message.replyToSender === PLAYER_IDS.ONE || message.replyToSender === "Partner 1" ? partnerOneName : partnerTwoName}
+                            </span>
+                            {": "}{message.replyToContent.length > 60 ? message.replyToContent.slice(0, 60) + "..." : message.replyToContent}
+                          </div>
+                        )}
+                        <p className="text-sm leading-relaxed break-words">
+                          {message.content}
+                        </p>
+                        <div className="flex items-center justify-between mt-1.5">
+                          <p className="text-[11px] opacity-70">
+                            {format(new Date(message.createdAt), "h:mm a")}
+                          </p>
+                          <button
+                            className="text-xs text-[#ab4400]/70 hover:underline ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setReplyingTo(message)}
+                            title="Reply"
+                          >
+                            Reply
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()
             )}
             <div ref={messagesEndRef} />
           </div>
 
-          {/* WhatsApp-style input */}
-          <div className="p-3 border-t border-gray-200 bg-gray-50">
-            {/* Reply preview bar */}
+          <div className="px-3 py-3 border-t border-[#ffe8db] bg-[#fff3e8]">
+            {/* Reply preview above input */}
             {replyingTo && (
-              <div className="mb-2 bg-white border border-gray-200 rounded-lg p-2 flex items-center justify-between">
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-xs font-medium text-gray-600">
-                     Replying to {isSenderOne(replyingTo.sender) ? `💙 ${partnerOneName}` : `💖 ${partnerTwoName}`}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{replyingTo.content}</p>
+              <div className="flex items-center mb-2 bg-[#fff7f2] border-l-4 border-[#ab4400]/40 rounded px-2 py-1">
+                <div className="flex-1 text-xs text-[#ab4400]/90">
+                  <span className="font-semibold">
+                    {replyingTo.sender === PLAYER_IDS.ONE || replyingTo.sender === "Partner 1" ? partnerOneName : partnerTwoName}
+                  </span>
+                  {": "}{replyingTo.content.length > 60 ? replyingTo.content.slice(0, 60) + "..." : replyingTo.content}
                 </div>
                 <button
+                  className="ml-2 text-[#ab4400]/60 hover:text-[#ab4400] text-xs"
                   onClick={() => setReplyingTo(null)}
-                  className="ml-2 text-gray-400 hover:text-gray-600 p-1"
+                  title="Cancel reply"
                 >
                   <X className="h-4 w-4" />
                 </button>
               </div>
             )}
-
-            {/* Compact sender selection */}
-            <div className="flex gap-2 mb-2">
+            <div className="flex items-center gap-2">
               <button
-                onClick={() => setSender(PLAYER_IDS.ONE)}
-                className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
-                  sender === PLAYER_IDS.ONE
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-blue-600 border border-blue-300"
-                }`}
+                type="button"
+                onClick={() => toast.info("Media upload in chat is coming soon")}
+                className="h-9 w-9 rounded-full bg-white text-[#7a3320] border border-[#e7d4c3] flex items-center justify-center"
+                aria-label="Add attachment"
               >
-                💙 {partnerOneName}
+                <CirclePlus className="h-5 w-5" />
               </button>
-              <button
-                onClick={() => setSender(PLAYER_IDS.TWO)}
-                className={`flex-1 py-1.5 px-3 rounded-full text-xs font-medium transition-all ${
-                  sender === PLAYER_IDS.TWO
-                    ? "bg-pink-500 text-white"
-                    : "bg-white text-pink-600 border border-pink-300"
-                }`}
-              >
-                💖 {partnerTwoName}
-              </button>
-            </div>
 
-            {/* Message input */}
-            <div className="flex gap-2 items-end">
-              <Textarea
+              <input
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                className="flex-1 resize-none text-sm border border-gray-300 rounded-3xl bg-white px-4 py-2 focus:border-pink-400"
-                rows={1}
+                onKeyDown={handleKeyPress}
+                placeholder="Write a sweet note..."
+                className="flex-1 h-10 rounded-full border border-[#e7d4c3] bg-white px-4 text-sm text-[#5a4a3d] placeholder:text-[#a49589] focus:outline-none focus:ring-2 focus:ring-[#ffb995]/40"
                 disabled={isSending}
               />
+
               <Button
                 onClick={handleSend}
                 disabled={!newMessage.trim() || isSending}
-                className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 h-10 w-10 rounded-full shadow-md disabled:opacity-50 p-0"
+                className="h-9 w-9 rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] shadow-md disabled:opacity-50 p-0"
               >
-                <Send className="h-4 w-4" />
+                <SendHorizonal className="h-4 w-4" />
               </Button>
             </div>
           </div>

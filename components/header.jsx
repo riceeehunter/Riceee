@@ -1,118 +1,53 @@
 import React from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { PenBox, FolderOpen, Camera, Gamepad2 } from "lucide-react";
-import Image from "next/image";
+import { PenBox } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import UserMenu from "./user-menu";
 import NotificationBell from "./notification-bell";
 import { checkUser } from "@/lib/checkUser";
-import { APP_BRAND } from "@/lib/constants/branding";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
+import { plusJakarta } from "@/lib/fonts";
 
 async function Header() {
   const user = await checkUser();
   const partnerNames = resolvePartnerNames(user);
 
   return (
-    <header className="container mx-auto">
-      {/* Desktop Layout - Single Row */}
-      <nav className="hidden md:flex py-6 px-4 justify-between items-center gap-6">
-        <Link href="/" className="flex items-center">
-          <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">
-            {APP_BRAND.name} {APP_BRAND.logoSuffix}
-          </h1>
+    <header className={`${plusJakarta.className} fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-5xl z-50`}>
+      <nav className="flex items-center gap-2 p-2 rounded-full bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]">
+        <Link href="/" className="flex items-center px-6 py-2 rounded-full bg-white/60 shadow-sm border border-white/40">
+          <div className="text-xl font-semibold text-[#ab4400] tracking-tighter leading-none">Coupling</div>
         </Link>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <SignedIn>
-            <NotificationBell partnerNames={partnerNames} />
-            <Link href="/memories">
-              <Button variant="outline" className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4">
-                <Camera size={18} />
-                <span className="hidden md:inline">Memories</span>
-              </Button>
-            </Link>
-            <Link href="/dashboard#collections">
-              <Button variant="outline" className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4">
-                <FolderOpen size={18} />
-                <span className="hidden md:inline">Collections</span>
-              </Button>
-            </Link>
-            <Link href="/games">
-              <Button variant="outline" className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border-purple-200">
-                <Gamepad2 size={18} className="text-purple-600" />
-                <span className="hidden md:inline text-purple-700 font-semibold">Games</span>
-              </Button>
-            </Link>
-          </SignedIn>
-          <Link href="/journal/write">
-            <Button variant="journal" className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4">
-              <PenBox size={18} />
-              <span className="hidden md:inline">Write Your Heart</span>
-            </Button>
+
+        <div className="hidden md:flex flex-1 items-center justify-center gap-1 font-medium text-[13px] tracking-wide leading-none">
+          <div className="flex items-center gap-1 p-1 bg-stone-100/30 rounded-full border border-stone-200/20">
+            <Link className="px-5 py-2 rounded-full text-stone-500 hover:text-[#ab4400] transition-colors font-medium text-[13px] tracking-wide" href="/memories">Memories</Link>
+            <Link className="px-5 py-2 rounded-full text-stone-500 hover:text-[#ab4400] transition-colors font-medium text-[13px] tracking-wide" href="/dashboard#collections">Collections</Link>
+            <Link className="px-5 py-2 rounded-full text-stone-500 hover:text-[#ab4400] transition-colors font-medium text-[13px] tracking-wide" href="/games">Games</Link>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link href="/journal/write" className="relative group hidden sm:block">
+            <div className="absolute -inset-0.5 bg-gradient-to-r from-[#ab4400] to-orange-400 rounded-full blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
+            <div className="relative bg-[#ab4400] text-white px-6 py-2.5 rounded-full text-xs font-extrabold uppercase tracking-widest shadow-lg flex items-center gap-2">
+              <PenBox size={16} />
+              <span>Write your hearts out</span>
+            </div>
           </Link>
           <SignedOut>
             <SignInButton forceRedirectUrl="/dashboard">
-              <Button variant="outline">Login</Button>
+              <Button variant="outline" className="rounded-full">Login</Button>
             </SignInButton>
           </SignedOut>
+          <div className="h-8 w-[1px] bg-stone-200/50 mx-1 hidden md:block" />
           <SignedIn>
-            <UserMenu />
-          </SignedIn>
-        </div>
-      </nav>
-
-      {/* Mobile Layout - Two Rows */}
-      <nav className="md:hidden py-4 px-4">
-        {/* Row 1: Logo + Bell on left, Icons + Profile on right */}
-        <div className="flex justify-between items-center mb-3">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-500 via-rose-400 to-pink-600 bg-clip-text text-transparent whitespace-nowrap">
-                {APP_BRAND.name} {APP_BRAND.logoSuffix}
-              </h1>
-            </Link>
-            <SignedIn>
+            <div className="flex items-center gap-2 pr-1">
               <NotificationBell partnerNames={partnerNames} />
-            </SignedIn>
-          </div>
-
-          {/* Memories, Collections, Games + Profile */}
-          <div className="flex items-center gap-2">
-            <SignedIn>
-              <Link href="/memories">
-                <Button variant="outline" size="icon" className="h-10 w-10">
-                  <Camera size={18} />
-                </Button>
-              </Link>
-              <Link href="/dashboard#collections">
-                <Button variant="outline" size="icon" className="h-10 w-10">
-                  <FolderOpen size={18} />
-                </Button>
-              </Link>
-              <Link href="/games">
-                <Button variant="outline" size="icon" className="h-10 w-10 bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 border-purple-200">
-                  <Gamepad2 size={18} className="text-purple-600" />
-                </Button>
-              </Link>
               <UserMenu />
-            </SignedIn>
-            <SignedOut>
-              <SignInButton forceRedirectUrl="/dashboard">
-                <Button variant="outline" size="sm">Login</Button>
-              </SignInButton>
-            </SignedOut>
-          </div>
-        </div>
-
-        {/* Row 2: Write Your Hearts - aligned with the 3 icons above */}
-        <div className="flex justify-end">
-          <Link href="/journal/write" style={{ width: '154px' }}>
-            <Button variant="journal" className="w-full flex items-center justify-center gap-2 h-10">
-              <PenBox size={16} />
-              <span className="text-sm font-medium">Write Hearts</span>
-            </Button>
-          </Link>
+            </div>
+          </SignedIn>
         </div>
       </nav>
     </header>
