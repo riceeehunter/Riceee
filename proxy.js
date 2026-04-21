@@ -24,8 +24,6 @@ export default clerkMiddleware(async (auth, req) => {
   return NextResponse.next();
 });
 
-export const runtime = 'nodejs';
-
 export const config = {
   matcher: [
     // Skip Next.js internals and all static files
