@@ -17,7 +17,7 @@ async function Header() {
     <header className={`${plusJakarta.className} fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-5xl z-50`}>
       <nav className="flex items-center gap-2 p-2 rounded-full bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]">
         <Link href="/" className="flex items-center px-6 py-2 rounded-full bg-white/60 shadow-sm border border-white/40">
-          <div className="text-xl font-semibold text-[#ab4400] tracking-tighter leading-none">Coupling</div>
+          <div className="text-xl font-semibold text-[#ab4400] tracking-tighter leading-none">Riceee</div>
         </Link>
 
         <div className="hidden md:flex flex-1 items-center justify-center gap-1 font-medium text-[13px] tracking-wide leading-none">

@@ -29,7 +29,7 @@ export default function LandingPage() {
         <nav className="fixed top-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-5xl z-50">
           <div className="flex items-center gap-2 p-2 rounded-full bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]">
             <div className="flex items-center px-6 py-2 rounded-full bg-white/60 shadow-sm border border-white/40">
-              <div className={`${plusJakarta.className} text-xl font-extrabold text-orange-800 tracking-tighter`}>Coupling</div>
+              <div className={`${plusJakarta.className} text-xl font-extrabold text-orange-800 tracking-tighter`}>Riceee</div>
             </div>
 
             <div className={`${plusJakarta.className} hidden md:flex flex-1 items-center justify-center gap-1 font-bold text-[13px] tracking-wide`}>
@@ -178,7 +178,7 @@ export default function LandingPage() {
         <footer className="w-full py-10 px-10 mt-10 bg-stone-50/70 backdrop-blur-sm border-t border-stone-200/40 text-[12px] font-medium uppercase tracking-wider text-stone-400">
           <div className="flex flex-col md:flex-row justify-between items-center gap-10 max-w-[1440px] mx-auto">
             <div className={`${plusJakarta.className} font-bold text-stone-700 tracking-tighter normal-case text-lg`}>
-              Coupling
+              Riceee
             </div>
             <div className="flex gap-10 items-center">
               <a className="hover:text-[#ab4400] transition-all" href="#">Privacy Policy</a>
@@ -186,7 +186,7 @@ export default function LandingPage() {
               <a className="hover:text-[#ab4400] transition-all" href="#">Support</a>
               <a className="hover:text-[#ab4400] transition-all" href="#">Our Mission</a>
             </div>
-            <div className="normal-case text-stone-500">© 2026 Coupling. Handcrafted with love.</div>
+            <div className="normal-case text-stone-500">© 2026 Riceee. Handcrafted with love.</div>
           </div>
         </footer>
       </div>

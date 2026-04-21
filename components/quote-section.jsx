@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 const QUOTES = [
   {
     text: "In you, I found the home I never knew I was searching for.",
-    author: "— for Aditya & Tanya",
+    author: "— with you, always",
   },
   {
     text: "Every love story is beautiful, but ours is my favourite.",
@@ -48,7 +48,7 @@ export default function QuoteSection({ plusJakartaClassName }) {
         setCurrent((prev) => (prev + 1) % QUOTES.length);
         setVisible(true);
       }, 700);
-    }, 5000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 

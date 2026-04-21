@@ -1,9 +1,12 @@
 import Link from "next/link";
 import Header from "@/components/header";
+import { checkUser } from "@/lib/checkUser";
 import { plusJakarta, manrope } from "@/lib/fonts";
 import QuoteSection from "@/components/quote-section";
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const user = await checkUser();
+  const isLoggedIn = !!user;
   return (
     <>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');`}</style>
@@ -38,16 +41,28 @@ export default function LandingPage() {
                     Our Sanctuary
                   </div>
                   <h1 className={`${plusJakarta.className} text-7xl md:text-[9.5rem] font-extrabold text-[#393832] tracking-tighter leading-[0.8]`}>
-                    Aditya <br />
-                    <span className="text-[#ab4400] italic font-light">x</span>{" "}
-                    <span className="text-[#9d4867]">Tanya</span>
+                    {!isLoggedIn ? (
+                      <>
+                        Riceee <br />
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          <span className="text-[#ab4400] italic font-light">X</span>{" "}
+                          <span className="text-[#9d4867]">Hunter</span>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        Aditya <br />
+                        <span className="text-[#ab4400] italic font-light">x</span>{" "}
+                        <span className="text-[#9d4867]">Tanya</span>
+                      </>
+                    )}
                   </h1>
                   <p className="text-xl text-[#66645e] max-w-lg leading-relaxed font-medium">
                     A digital keepsake for your shared laughter, quiet moments, and the beautiful journey of &ldquo;us&rdquo;.
                   </p>
                   <div className="flex gap-6 pt-4">
                     <Link
-                      href="/journal/write"
+                      href={isLoggedIn ? "/journal/write" : "/sign-in"}
                       className="bg-[#ab4400] text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-[#ab4400]/20 hover:shadow-[#ab4400]/30 transition-all flex items-center gap-3 text-base"
                     >
                       <span className="material-symbols-outlined">edit_note</span>
@@ -156,7 +171,7 @@ export default function LandingPage() {
         <footer className="w-full py-10 px-10 mt-10 bg-stone-50/70 backdrop-blur-sm border-t border-stone-200/40 text-[12px] font-medium uppercase tracking-wider text-stone-400">
           <div className="page-shell flex flex-col md:flex-row justify-between items-center gap-10">
             <div className={`${plusJakarta.className} font-bold text-stone-700 tracking-tighter normal-case text-lg`}>
-              Coupling
+              Riceee
             </div>
             <div className="flex gap-10 items-center">
               <Link className="hover:text-[#ab4400] transition-all" href="/settings">Privacy Policy</Link>
@@ -164,7 +179,7 @@ export default function LandingPage() {
               <Link className="hover:text-[#ab4400] transition-all" href="/settings">Support</Link>
               <Link className="hover:text-[#ab4400] transition-all" href="/dashboard">Our Mission</Link>
             </div>
-            <div className="normal-case text-stone-500">© 2026 Coupling. Handcrafted with love.</div>
+            <div className="normal-case text-stone-500">© 2026 Riceee. Handcrafted with love.</div>
           </div>
         </footer>
       </div>
