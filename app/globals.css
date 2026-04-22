@@ -8,8 +8,11 @@ html, body {
 }
 
 html {
-  overflow-y: scroll;
-  scrollbar-gutter: stable;
+  scrollbar-width: none; /* Firefox */
+}
+
+html::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 body[data-scroll-locked] {
@@ -22,6 +25,12 @@ body[data-scroll-locked] {
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 @layer base {

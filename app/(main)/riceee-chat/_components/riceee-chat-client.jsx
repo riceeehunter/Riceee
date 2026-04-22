@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import Pusher from "pusher-js";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { ArrowLeft, Bell, CirclePlus, SendHorizonal, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { SendHorizonal } from "lucide-react";
 import { sendMessage, getMessages, markMessagesAsRead } from "@/actions/message";
 import { PLAYER_IDS } from "@/lib/constants/players";
-import { plusJakarta, manrope } from "@/lib/fonts";
 
-export default function RiceeeChatClient({ partnerNames }) {
+export default function RiceeeChatClient({ partnerNames, spaceGrotesk, inter }) {
   const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
   const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
 
@@ -99,35 +96,118 @@ export default function RiceeeChatClient({ partnerNames }) {
     }
   };
 
-  const onEnter = (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      onSend();
-    }
-  };
-
   return (
-    <div className={`${manrope.className} px-4 pb-8`}>
-      <div className="mx-auto w-full max-w-[430px] rounded-[2rem] border border-[#ffdfcf] bg-[#fff9f4] shadow-[0_20px_50px_rgba(57,56,50,0.12)] overflow-hidden">
-        <div className="bg-gradient-to-r from-[#ab4400] to-[#9d4867] text-white px-4 py-6 flex flex-col items-center justify-center text-center">
-          <div className="h-16 w-16 rounded-full overflow-hidden border-2 border-white/40 bg-white/15 flex items-center justify-center text-2xl font-semibold mb-3">
-            🤖
-          </div>
-          <p className={`${plusJakarta.className} text-2xl font-bold`}>Riceee AI</p>
-          <p className="text-white/85 text-sm mt-1">Coming Soon</p>
-        </div>
+    <>
 
-        <div className="px-4 py-8 flex flex-col items-center justify-center">
-          <p className="text-[#7a3320] text-center">This feature is under development.</p>
-          <Link
-            href="/dashboard"
-            className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] text-white text-sm font-semibold hover:from-[#973b00] hover:to-[#ff8b57] transition-all"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Dashboard
-          </Link>
-        </div>
+      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-3 pb-32 relative">
+        {loading ? (
+          <div className="flex justify-center items-center h-full opacity-50">
+            <div className="w-6 h-6 border-2 border-[#dfd5ff]/20 border-t-[#dfd5ff] rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          <>
+            {messages.length === 0 && !isSending ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 z-20 -mt-24">
+                 <h3 className={`text-[28px] text-[#e3e0f8] font-medium opacity-90 ${spaceGrotesk.className}`}>What's on your mind today?</h3>
+                 
+                 {/* Centered Input Area for Empty State */}
+                 <div className="w-full max-w-2xl px-6">
+                   <div className="relative group bg-[#333345]/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] focus-within:border-[#c4b5fd]/50 transition-all duration-300">
+                    <textarea 
+                      className={`w-full bg-transparent border-none rounded-2xl px-5 py-4 pr-14 text-[16px] text-[#e3e0f8] placeholder-[#938f9a] focus:outline-none focus:ring-0 resize-none ${inter.className}`}
+                      placeholder="Ask anything..." 
+                      rows="1"
+                      value={newMessage}
+                      onChange={(e) => {
+                         setNewMessage(e.target.value);
+                         e.target.style.height = 'auto';
+                         e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!isSending) onSend();
+                        }
+                      }}
+                      style={{ minHeight: '56px', maxHeight: '200px' }}
+                    />
+                    <button 
+                      onClick={onSend}
+                      disabled={isSending || !newMessage.trim()}
+                      className="absolute right-3 bottom-3 p-2 bg-[#e3e0f8] text-[#121222] rounded-full hover:bg-white hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
+                    >
+                      <SendHorizonal size={16} />
+                    </button>
+                  </div>
+                 </div>
+              </div>
+            ) : null}
+
+            {prettyMessages.map((message, index) => (
+              <div key={index} className={`flex ${message.isOne ? "justify-end" : "justify-start"} relative z-10`}>
+                <div className={`
+                  p-4 max-w-[80%] text-[16px] leading-[1.6] ${inter.className}
+                  ${message.isOne 
+                    ? "bg-[#333345] text-[#e3e0f8] rounded-xl rounded-tr-sm border border-white/5" 
+                    : "bg-[rgba(30,30,47,0.6)] backdrop-blur-[24px] border border-white/15 shadow-[0_0_40px_rgba(196,181,253,0.05)] rounded-xl rounded-tl-sm border-l-2 border-l-[#c4b5fd] text-[#e7deff]"
+                  }
+                `}>
+                  <p>{message.content}</p>
+                </div>
+              </div>
+            ))}
+            {isSending && (
+              <div className="flex justify-start opacity-70 relative z-10">
+                <div className="bg-[rgba(30,30,47,0.6)] backdrop-blur-[24px] border border-white/15 shadow-[0_0_40px_rgba(196,181,253,0.05)] rounded-xl rounded-tl-sm border-l-2 border-l-[#c4b5fd] p-4 max-w-[80%]">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-[#c4b5fd] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-1.5 h-1.5 bg-[#c4b5fd] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-1.5 h-1.5 bg-[#c4b5fd] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={endRef} />
+          </>
+        )}
       </div>
-    </div>
+
+      {/* Floating Bottom Input Area (Visible only when chat is active) */}
+      {(messages.length > 0 || isSending) && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 w-full max-w-3xl px-6 z-20">
+
+          <div className="relative group bg-[#333345]/80 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] focus-within:border-[#c4b5fd]/50 transition-all duration-300">
+            <textarea 
+              className={`w-full bg-transparent border-none rounded-2xl px-5 py-4 pr-14 text-[16px] text-[#e3e0f8] placeholder-[#938f9a] focus:outline-none focus:ring-0 resize-none ${inter.className}`}
+              placeholder="Ask anything..." 
+              rows="1"
+              value={newMessage}
+              onChange={(e) => {
+                 setNewMessage(e.target.value);
+                 e.target.style.height = 'auto';
+                 e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!isSending) onSend();
+                }
+              }}
+              style={{ minHeight: '56px', maxHeight: '200px' }}
+            />
+            <button 
+              onClick={onSend}
+              disabled={isSending || !newMessage.trim()}
+              className="absolute right-3 bottom-3 p-2 bg-[#e3e0f8] text-[#121222] rounded-full hover:bg-white hover:scale-105 transition-all disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center"
+            >
+              <SendHorizonal size={16} />
+            </button>
+          </div>
+          <div className="text-center mt-2">
+             <span className={`text-[10px] text-[#938f9a] ${inter.className}`}>Riceee AI can make mistakes. Consider verifying important information.</span>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
