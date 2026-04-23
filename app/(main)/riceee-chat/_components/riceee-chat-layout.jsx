@@ -223,7 +223,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
         </div>
 
         {/* Dashboard Layout */}
-        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24 lg:pb-12">
+        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12 lg:pb-6">
           {activeTab === "solo-vent" ? (
             <>
               {/* SOLO CHAT (Active Chat Area) */}
@@ -239,8 +239,10 @@ export default function RiceeeChatLayout({ partnerNames }) {
           ) : (
             <>
               {/* Full Digital Courtroom */}
-              <section className="lg:col-span-12 flex flex-col min-h-[716px] bg-white border border-[#ffae88]/20 shadow-sm rounded-xl relative overflow-hidden">
-                <DigitalCourtroom isPreview={false} setActiveTab={setActiveTab} poppins={poppins} />
+              <section className="lg:col-span-12 flex flex-col items-center overflow-visible">
+                <div className="w-full max-w-6xl">
+                  <DigitalCourtroom partnerNames={partnerNames} poppins={poppins} />
+                </div>
               </section>
             </>
           )}

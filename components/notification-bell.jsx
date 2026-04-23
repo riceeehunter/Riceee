@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, CheckCircle2, Heart, Sparkles } from "lucide-react";
+import { Bell, CheckCircle2, Heart, Sparkles, Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -111,10 +111,22 @@ export default function NotificationBell({ partnerNames }) {
                 className={`px-4 py-2.5 ${index !== notifications.length - 1 ? "border-b border-[#ffede2]" : ""}`}
               >
                 <Link
-                  href={`/journal/${notification.entryId}`}
+                  href={notification.type?.startsWith("COURTROOM") ? "/riceee-chat" : `/journal/${notification.entryId}`}
                   onClick={() => setIsOpen(false)}
                   className="block rounded-2xl border border-[#ffdfcf] bg-white/80 px-4 py-3 shadow-[0_8px_16px_rgba(57,56,50,0.05)] hover:border-[#ffba99] hover:bg-[#fff7f2] transition-colors"
                 >
+                  <div className="flex items-center gap-2 mb-1">
+                    {notification.type === "COURTROOM_CASE" ? (
+                      <Gavel className="h-3.5 w-3.5 text-[#9d4867]" />
+                    ) : notification.type === "COURTROOM_JUDGEMENT" ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
+                    ) : (
+                      <Heart className="h-3.5 w-3.5 text-[#d3567f]" />
+                    )}
+                    <span className="text-[10px] font-bold text-[#9d4867]/60 uppercase tracking-widest">
+                      {notification.type === "COURTROOM_CASE" ? "New Dispute" : notification.type === "COURTROOM_JUDGEMENT" ? "AI Verdict" : "Journal Update"}
+                    </span>
+                  </div>
                   <p className={`${plusJakarta.className} text-sm font-semibold text-[#393832] mb-1 leading-snug`}>
                     {notification.message}
                   </p>

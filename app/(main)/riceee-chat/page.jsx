@@ -9,6 +9,10 @@ export const metadata = {
   title: "Riceee AI | Relationship Assistant",
 };
 
-export default function RiceeeChatPage() {
-  return <RiceeeChatLayout />;
+export default async function RiceeeChatPage() {
+  const user = await getOrCreateUser();
+  const resolved = resolvePartnerNames(user);
+  const partnerNames = [resolved.partnerOneName, resolved.partnerTwoName];
+  
+  return <RiceeeChatLayout partnerNames={partnerNames} />;
 }
