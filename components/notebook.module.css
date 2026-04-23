@@ -1,0 +1,90 @@
+.wrap {
+  width: 100%;
+  display: block;
+}
+
+
+/* Cell wrapper and shadow similar to the reference */
+.cell-shadow {
+  /* subtle lifted look with a warm offset and soft yellow glow */
+  box-shadow: 2px 4px 0px 0px #e8deb8, 0 10px 24px rgba(250,204,21,0.06);
+}
+
+.cellWrapper { margin-bottom: 24px; position: relative; }
+
+.actionRow {
+  position: absolute;
+  right: 14px;
+  top: -14px;
+  display: flex;
+  gap: 8px;
+  z-index: 20;
+}
+
+.actionRun {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #fef08a;
+  border: 1px solid #facc15;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #92400e;
+  box-shadow: 0 6px 18px rgba(250,204,21,0.08);
+}
+
+.actionStop, .actionMore { width: 30px; height: 30px; border-radius: 999px; background: #fff; border: 1px solid #e5e7eb; display: inline-flex; align-items: center; justify-content: center; color: #6b7280; }
+
+.stopBox { width: 9px; height: 9px; border: 1px solid #d1d5db; border-radius: 2px; }
+
+
+.inputBlock {
+  background: #fff;
+  border-radius: 12px; /* similar to rounded-xl */
+  border: 1px solid var(--cell-border, #e5e7eb);
+  display: flex;
+  overflow: hidden;
+  position: relative;
+  padding: 0; /* keep columns handling spacing */
+}
+
+.numCol { width: 48px; background: #e0f2fe; display: flex; align-items: center; justify-content: center; border-right: 1px solid rgba(229,231,235,0.9); }
+
+.numInner { width: 28px; height: 18px; background: #bfdbfe; color: #0ea5e9; display: flex; align-items: center; justify-content: center; border-radius: 4px; margin-left: 6px; }
+
+.numText { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+.contentCol { padding: 8px 14px; flex: 1 1 auto; display: flex; align-items: center; }
+
+.inputInner { display: flex; }
+
+.actionsInline { display: flex; gap: 8px; align-items: center; margin-left: 12px; }
+
+.textarea {
+  flex: 1 1 auto;
+  min-width: 0; /* allow flex items to shrink and enable horizontal scrolling inside input */
+  border: none;
+  outline: none;
+  font-family: 'Poppins', Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans";
+  font-size: 15px;
+  line-height: 1.15;
+  background: transparent;
+  color: #374151;
+  padding: 0 6px 0 0;
+  min-height: 18px;
+}
+
+.textarea::placeholder { color: #9ca3af; }
+
+.staticInput { white-space: pre-wrap; color: #374151; font-family: 'Poppins', Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; font-size: 15px; }
+
+.aiResponse { display: flex; padding: 4px 12px 24px 4px; align-items: flex-start; gap: 12px; }
+
+.brainWrap img { width: 20px; height: 20px; opacity: 0.75; }
+
+.aiText { color: #111827; font-size: 15px; line-height: 1.6; }
+
+.thinking { color: rgba(0,0,0,0.45); }
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(6px);} to { opacity: 1; transform: translateY(0);} }

@@ -1,0 +1,409 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+/* =========================================
+   1. Notebook Cell (Expanded State)
+   ========================================= */
+.notebook-cell {
+  background: white;
+  border: 1.5px solid #fef08a; /* Warm border like example */
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(254, 240, 138, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100;
+  width: 100%;
+  height: fit-content; /* Prevent stretching */
+}
+
+.notebook-cell:hover {
+  box-shadow: 0 20px 25px -5px rgba(254, 240, 138, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+.cell-header {
+  display: flex;
+  min-height: 42px; /* Reduced from 54px */
+  position: relative;
+}
+
+.line-number {
+  width: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f9ff;
+  color: #7dd3fc;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 13px;
+  border-right: 1px solid #e0f2fe;
+  user-select: none;
+  border-top-left-radius: 10px;
+  border-bottom-left-radius: 10px;
+}
+
+.input-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 8px 16px; /* Reduced vertical padding */
+}
+
+.input-wrapper textarea {
+  width: 100%;
+  border: none;
+  background: transparent;
+  outline: none;
+  resize: none;
+  font-family: 'Poppins', sans-serif;
+  font-size: 14px; /* Slightly smaller font */
+  color: #1e293b;
+  line-height: 1.5;
+  min-height: 20px;
+  overflow-y: hidden; /* Hide scrollbar while growing */
+}
+
+.floating-actions {
+  position: absolute;
+  top: 50%;
+  right: -50px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 110;
+}
+
+.action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  color: #64748b;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.action-btn:hover {
+  transform: scale(1.1);
+  border-color: #cbd5e1;
+}
+
+.action-btn.run {
+  background: #fefce8;
+  color: #854d0e;
+  border-color: #fef08a;
+}
+
+.sync-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #94a3b8;
+  opacity: 0.3;
+  transition: opacity 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.sync-btn:hover { opacity: 1; }
+
+.cell-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #fcfcfd;
+  border-top: 1px solid #f1f5f9;
+}
+
+.footer-left { display: flex; gap: 8px; }
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.tool-btn.active {
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-color: #dbeafe;
+}
+
+/* =========================================
+   2. 3D Bubble (Grid Tilt State)
+   ========================================= */
+.container-ai-input {
+  --perspective: 1000px;
+  --translateY: 45px;
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  min-height: 200px; /* Space for the 3D bubble */
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.container-ai-input.is-expanded {
+  min-height: 0;
+  height: auto;
+  max-width: none;
+}
+
+.grid-tilt-container {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  transform-style: preserve-3d;
+  z-index: 10;
+}
+
+/* Hide grid when expanded so it doesn't interfere with layout */
+.container-ai-input.is-expanded .grid-tilt-container {
+  display: none;
+}
+
+.area {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+
+.container-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  z-index: 9;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.3s ease;
+}
+
+.container-wrap:hover { padding: 0; }
+.container-wrap:active { transform: translateX(-50%) translateY(-50%) scale(0.95); }
+
+.container-wrap:after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-55%);
+  width: 12rem;
+  height: 11rem;
+  background-color: #dedfe0;
+  border-radius: 3.2rem;
+  transition: all 0.3s ease;
+}
+
+.container-wrap:hover:after {
+  transform: translateX(-50%) translateY(-50%);
+  height: 12rem;
+}
+
+.card {
+  width: 12rem;
+  height: 12rem;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: all 0.6s ease;
+  border-radius: 3rem;
+  display: flex;
+  align-items: center;
+  transform: translateZ(50px);
+  justify-content: center;
+}
+
+.card:hover {
+  box-shadow: 0 10px 40px rgba(0, 0, 60, 0.25), inset 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.background-blur-balls {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  width: 100%;
+  height: 100%;
+  z-index: -10;
+  border-radius: 3rem;
+  transition: all 0.3s ease;
+  background-color: rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+}
+
+.balls {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%);
+  animation: rotate-background-balls 10s linear infinite;
+}
+
+.container-wrap:hover .balls { animation-play-state: paused; }
+
+.background-blur-balls .ball {
+  width: 6rem;
+  height: 6rem;
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(30px);
+}
+
+.background-blur-balls .ball.violet { top: 0; left: 50%; transform: translateX(-50%); background-color: #9147ff; }
+.background-blur-balls .ball.green { bottom: 0; left: 50%; transform: translateX(-50%); background-color: #34d399; }
+.background-blur-balls .ball.rosa { top: 50%; left: 0; transform: translateY(-50%); background-color: #ec4899; }
+.background-blur-balls .ball.cyan { top: 50%; right: 0; transform: translateY(-50%); background-color: #05e0f5; }
+
+.content-card {
+  width: 12rem;
+  height: 12rem;
+  display: flex;
+  border-radius: 3rem;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.background-blur-card {
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(50px);
+}
+
+.eyes {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  gap: 2rem;
+  transition: all 0.3s ease;
+}
+
+.eye {
+  width: 26px;
+  height: 52px;
+  background-color: #fff;
+  border-radius: 16px;
+  animation: animate-eyes 10s infinite linear;
+  transition: all 0.3s ease;
+}
+
+.eyes.happy {
+  display: none;
+  color: #fff;
+  gap: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.eyes.happy svg { width: 60px; }
+
+.container-wrap:hover .eyes:not(.happy) { display: none; }
+.container-wrap:hover .eyes.happy { display: flex; }
+
+/* 3D Tilt Logic from User Code */
+.area:nth-child(15):hover ~ .container-wrap .card,
+.area:nth-child(15):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(15deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(14):hover ~ .container-wrap .card,
+.area:nth-child(14):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(7deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(13):hover ~ .container-wrap .card,
+.area:nth-child(13):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(0) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(12):hover ~ .container-wrap .card,
+.area:nth-child(12):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(-7deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(11):hover ~ .container-wrap .card,
+.area:nth-child(11):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(-15deg) rotateY(-15deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(10):hover ~ .container-wrap .card,
+.area:nth-child(10):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(0) rotateY(15deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(9):hover ~ .container-wrap .card,
+.area:nth-child(9):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(0) rotateY(7deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(8):hover ~ .container-wrap .card,
+.area:nth-child(8):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(0) rotateY(0) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(7):hover ~ .container-wrap .card,
+.area:nth-child(7):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(0) rotateY(-7deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(6):hover ~ .container-wrap .card,
+.area:nth-child(6):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(0) rotateY(-15deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(5):hover ~ .container-wrap .card,
+.area:nth-child(5):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(15deg) rotateY(15deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(4):hover ~ .container-wrap .card,
+.area:nth-child(4):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(15deg) rotateY(7deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(3):hover ~ .container-wrap .card,
+.area:nth-child(3):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(15deg) rotateY(0) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(2):hover ~ .container-wrap .card,
+.area:nth-child(2):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(15deg) rotateY(-7deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+.area:nth-child(1):hover ~ .container-wrap .card,
+.area:nth-child(1):hover ~ .container-wrap .eyes .eye {
+  transform: perspective(var(--perspective)) rotateX(15deg) rotateY(-15deg) translateZ(var(--translateY)) scale3d(1, 1, 1);
+}
+
+@keyframes rotate-background-balls {
+  from { transform: translateX(-50%) translateY(-50%) rotate(360deg); }
+  to { transform: translateX(-50%) translateY(-50%) rotate(0); }
+}
+
+@keyframes animate-eyes {
+  0%, 46%, 50%, 96%, 100% { height: 52px; }
+  48%, 98% { height: 20px; }
+}
+
+.spinning { animation: spin 2s linear infinite; }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

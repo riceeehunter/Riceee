@@ -1,10 +1,19 @@
 import "./globals.css";
-import { Inter } from "next/font/google";
+import { Inter, Poppins, JetBrains_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "sonner";
 import "react-quill-new/dist/quill.snow.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const poppins = Poppins({ 
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-poppins" 
+});
+const jetbrainsMono = JetBrains_Mono({ 
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono" 
+});
 
 export const metadata = {
   title: "Riceee - A Journal Made with Love",
@@ -32,7 +41,7 @@ export default async function RootLayout({ children }) {
     >
       <html lang="en">
         <body
-          className={`${inter.className} min-h-screen flex flex-col overflow-x-hidden`}
+          className={`${poppins.className} ${poppins.variable} ${jetbrainsMono.variable} min-h-screen flex flex-col overflow-x-hidden`}
         >
           <main className="flex-1 min-h-0 overflow-x-hidden">{children}</main>
           <Toaster richColors />
