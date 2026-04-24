@@ -103,31 +103,32 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
   const closedCases = cases.filter(c => c.status === "CLOSED");
 
   return (
-    <div className={`bg-white rounded-3xl p-6 shadow-xl border border-stone-100 flex flex-col gap-6 h-auto min-h-[400px] overflow-hidden ${poppins?.className}`}>
+    <div className={`flex-1 w-full max-w-5xl mx-auto flex flex-col gap-8 pb-4 px-4 md:px-6 ${poppins?.className}`}>
       
-      {/* STATIC NAVIGATION HEADER (Does not move) */}
-      <div className="flex items-center justify-between border-b border-stone-100 pb-4 min-h-[64px]">
+      {/* Premium Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pt-4">
         {view === "list" ? (
           <>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#9d4867]/10 flex items-center justify-center text-[#9d4867]">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-[#9d4867]/10 flex items-center justify-center text-[#9d4867] flex-shrink-0">
                 <Gavel size={20} />
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-stone-800">Digital Courtroom</h2>
-                <p className="text-[11px] text-stone-400">Resolve disputes with AI-powered neutrality</p>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-bold text-stone-800 tracking-tight leading-none">Courtroom</h2>
+                <p className="text-[11px] text-stone-400 font-medium mt-1.5 leading-none">Resolve disputes with AI neutrality</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              {/* Dev Identity Switcher */}
-              <div className="flex items-center bg-stone-50 rounded-xl p-1 border border-stone-100">
+
+            <div className="flex items-center gap-3 ml-11 md:ml-0">
+              {/* Minimalist Identity Switcher */}
+              <div className="flex items-center bg-stone-100/50 backdrop-blur-sm rounded-full p-1 border border-stone-200/20">
                 {partnerNames.map((name, idx) => (
                   <button
                     key={name}
                     onClick={() => setCurrentUserIdx(idx)}
-                    className={`px-3 py-1 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all ${
+                    className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest rounded-full transition-all ${
                       currentUserIdx === idx 
-                        ? "bg-white text-[#9d4867] shadow-sm ring-1 ring-stone-100" 
+                        ? "bg-white text-[#9d4867] shadow-sm" 
                         : "text-stone-400 hover:text-stone-600"
                     }`}
                   >
@@ -138,10 +139,10 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
 
               <button 
                 onClick={() => setView("file")}
-                className="flex items-center gap-2 px-4 py-2 bg-[#ffae88] text-[#9d4867] rounded-xl text-[11px] font-bold shadow-lg shadow-[#ffae88]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#ab4400] text-white rounded-full text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-[#ab4400]/20 hover:scale-[1.02] active:scale-95 transition-all"
               >
-                <PlusCircle size={16} />
-                File New Case
+                <PlusCircle size={14} />
+                New Case
               </button>
             </div>
           </>
@@ -151,37 +152,13 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
               onClick={() => setView("list")} 
               className="group text-stone-400 text-[10px] font-bold uppercase tracking-[0.2em] hover:text-[#9d4867] flex items-center gap-2 transition-all"
             >
-              <div className="w-6 h-6 rounded-full bg-stone-50 flex items-center justify-center group-hover:bg-[#9d4867]/10 group-hover:text-[#9d4867] transition-all">
-                <ChevronRight size={12} className="rotate-180" /> 
+              <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center group-hover:bg-[#9d4867]/10 group-hover:text-[#9d4867] transition-all">
+                <ChevronRight size={14} className="rotate-180" /> 
               </div>
-              Back to Dashboard
+              Back to Courtroom
             </button>
 
-            {view === "file" ? (
-              <motion.button 
-                whileHover={{ scale: 1.02, translateY: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleFileCase}
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-[#ab4400] text-white rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 hover:shadow-2xl hover:shadow-[#ab4400]/30 active:scale-95 transition-all disabled:opacity-50 relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
-                {isSubmitting ? "Filing..." : "File Case"}
-                <Send size={12} />
-              </motion.button>
-            ) : view === "respond" && activeCase?.sideAAuthor !== currentUserRole ? (
-              <motion.button 
-                whileHover={{ scale: 1.02, translateY: -1 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleSubmitResponse(activeCase.id)}
-                disabled={isSubmitting}
-                className="px-8 py-3 bg-[#ab4400] text-white rounded-2xl font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 hover:shadow-2xl hover:shadow-[#ab4400]/30 active:scale-95 transition-all disabled:opacity-50 relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
-                {isSubmitting ? "Judging..." : "Submit Response"}
-                <Gavel size={14} />
-              </motion.button>
-            ) : <div />}
+            {view === "file" ? null : view === "respond" && activeCase?.sideAAuthor !== currentUserRole ? null : <div />}
           </>
         )}
       </div>
@@ -197,17 +174,17 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
             className="flex-1 flex flex-col gap-6"
           >
             {isLoading ? (
-              <div className="flex-1 flex items-center justify-center py-10">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#ffae88]" />
+              <div className="flex-1 flex items-center justify-center py-20">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#ab4400]" />
               </div>
             ) : cases.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 py-10">
-                <div className="w-14 h-14 rounded-full bg-stone-50 flex items-center justify-center text-stone-200">
-                  <Gavel size={30} />
+              <div className="flex-1 flex flex-col items-center justify-center text-center gap-6 py-20">
+                <div className="w-20 h-20 rounded-full bg-[#ab4400]/5 flex items-center justify-center border border-[#ab4400]/10 shadow-inner">
+                  <Gavel size={40} className="text-[#ab4400]/30 stroke-[1.5]" />
                 </div>
-                <div className="max-w-xs">
-                  <p className="text-stone-500 text-sm font-medium">The courtroom is quiet.</p>
-                  <p className="text-[11px] text-stone-400 mt-1">Start a new case to resolve your conflict fairly.</p>
+                <div className="space-y-2">
+                  <p className="text-stone-800 text-lg font-bold">The courtroom is quiet</p>
+                  <p className="text-sm text-stone-400 max-w-xs mx-auto leading-relaxed">Everything seems peaceful for now. Start a new case if you need help resolving a conflict fairly.</p>
                 </div>
               </div>
             ) : (
@@ -291,7 +268,7 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
                     </div>
                     <div className="flex-1 p-5">
                       <textarea 
-                        rows={6}
+                        rows={12}
                         placeholder="YOUR PERSPECTIVE: Describe what happened in detail..."
                         value={newPerspective}
                         onChange={(e) => setNewPerspective(e.target.value)}
@@ -301,13 +278,26 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
                   </div>
                 </div>
 
-                <div className="flex items-center justify-center gap-3 px-1 py-2">
-                  <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-stone-100" />
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={12} className="text-[#ffae88] animate-pulse" />
-                    <p className="text-[9px] text-stone-400 font-bold uppercase tracking-[0.2em]">Confidential Dispute Entry</p>
+                <div className="flex flex-col items-center gap-6">
+                  <div className="flex items-center justify-center gap-3 w-full">
+                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-stone-100" />
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={12} className="text-[#ffae88] animate-pulse" />
+                      <p className="text-[9px] text-stone-400 font-bold uppercase tracking-[0.2em]">Confidential Dispute Entry</p>
+                    </div>
+                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-stone-100" />
                   </div>
-                  <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-stone-100" />
+
+                  <motion.button 
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleFileCase}
+                    disabled={isSubmitting}
+                    className="px-10 py-3 bg-[#ab4400] text-white rounded-full font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-[#ab4400]/20 hover:shadow-xl active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {isSubmitting ? "Filing..." : "File Case"}
+                    <Send size={12} />
+                  </motion.button>
                 </div>
              </div>
           </motion.div>
@@ -365,7 +355,7 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
                         </div>
                         <div className="flex-1 p-5">
                           <textarea 
-                            rows={6}
+                            rows={12}
                             placeholder="YOUR PERSPECTIVE: Describe what happened in detail..."
                             value={newPerspective}
                             onChange={(e) => setNewPerspective(e.target.value)}
@@ -375,13 +365,26 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-center gap-3 px-1 py-2">
-                      <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-stone-100" />
-                      <div className="flex items-center gap-2">
-                        <Sparkles size={12} className="text-[#ffae88] animate-pulse" />
-                        <p className="text-[9px] text-stone-400 font-bold uppercase tracking-[0.2em]">Confidential Dispute Entry</p>
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="flex items-center justify-center gap-3 w-full">
+                        <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-stone-100" />
+                        <div className="flex items-center gap-2">
+                          <Sparkles size={12} className="text-[#ffae88] animate-pulse" />
+                          <p className="text-[9px] text-stone-400 font-bold uppercase tracking-[0.2em]">Confidential Dispute Entry</p>
+                        </div>
+                        <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-stone-100" />
                       </div>
-                      <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-stone-100" />
+
+                      <motion.button 
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleSubmitResponse(activeCase.id)}
+                        disabled={isSubmitting}
+                        className="px-10 py-3 bg-[#9d4867] text-white rounded-full font-bold text-[10px] uppercase tracking-[0.2em] flex items-center gap-2 shadow-lg shadow-[#9d4867]/20 hover:shadow-xl active:scale-95 transition-all disabled:opacity-50"
+                      >
+                        {isSubmitting ? "Judging..." : "Submit Response"}
+                        <Gavel size={14} />
+                      </motion.button>
                     </div>
                   </div>
                 )}
@@ -444,149 +447,221 @@ function JudgementView({ caseData, partnerNames, resolveName }) {
   try {
     j = JSON.parse(caseData.judgement || "{}");
   } catch (e) {
-    j = { summary: caseData.judgement }; // Fallback for old cases
+    j = { summary: caseData.judgement };
   }
 
-  // Helper to replace placeholders in text
   const replacePlaceholders = (text) => {
     if (!text) return "";
     return text.replace(/{{P1}}/g, partnerNames[0]).replace(/{{P2}}/g, partnerNames[1]);
   };
 
   return (
-    <div className="space-y-8 pb-6">
-      {/* CASE HEADER */}
-      <div className="text-center space-y-2">
-        <div className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.3em]">Case #{caseData.id?.slice(-6).toUpperCase()} • RESOLVED</div>
-        <h2 className="text-2xl font-bold text-stone-800">{resolveName(caseData.sideAAuthor)} vs. {resolveName(caseData.sideBAuthor)}</h2>
-        <p className="text-sm text-stone-400 italic">"{caseData.title}"</p>
-      </div>
-
-      {/* PERSPECTIVES SIDE BY SIDE */}
-      <div className="grid lg:grid-cols-2 gap-6 relative items-stretch">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-stone-100 border border-stone-200 flex items-center justify-center text-[10px] font-bold text-stone-400 z-10 hidden lg:flex shadow-sm">VS</div>
+    <div className="space-y-8 pb-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* 🏛️ CINEMATIC VERDICT HERO */}
+      <div className="relative py-6 flex flex-col items-center text-center space-y-6 overflow-hidden">
+        {/* Animated Background Glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#ab4400]/10 blur-[100px] rounded-full animate-pulse" />
         
-        <div className="bg-stone-50/50 rounded-[2rem] p-6 border border-stone-100 relative group hover:border-[#9d4867]/20 transition-all flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h4 className="text-sm font-bold text-stone-800">{resolveName(caseData.sideAAuthor)}</h4>
-              <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Plaintiff</span>
-            </div>
-            <div className="px-3 py-1 bg-[#9d4867]/10 text-[#9d4867] text-[9px] font-bold rounded-full">SIDE A</div>
+        <div className="relative space-y-2">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#ab4400] text-white text-[10px] font-black uppercase tracking-[0.3em] shadow-xl shadow-[#ab4400]/20">
+            <Sparkles size={12} className="animate-spin-slow" />
+            Final Verdict
           </div>
-          <div className="flex-1 space-y-4">
-            <div>
-              <span className="text-[10px] font-bold text-[#9d4867] uppercase tracking-wider">The Perspective:</span>
-              <p className="text-xs text-stone-600 leading-relaxed mt-1 italic">"{caseData.sideAPerspective}"</p>
-            </div>
-          </div>
-          <div className="pt-4 border-t border-stone-200/50 mt-4">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider italic">Precedent: Heart-First Logic</span>
-          </div>
+          <h2 className="text-4xl md:text-5xl font-black text-stone-900 tracking-tight leading-tight">
+            The Decision <br />
+            <span className="text-[#ab4400]">Is Delivered</span>
+          </h2>
         </div>
 
-        <div className="bg-stone-50/50 rounded-[2rem] p-6 border border-stone-100 relative group hover:border-[#ffae88]/20 transition-all flex flex-col">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h4 className="text-sm font-bold text-stone-800">{resolveName(caseData.sideBAuthor)}</h4>
-              <span className="text-[9px] text-stone-400 font-bold uppercase tracking-widest">Defendant</span>
-            </div>
-            <div className="px-3 py-1 bg-[#ffae88]/20 text-[#ab4400] text-[9px] font-bold rounded-full">SIDE B</div>
-          </div>
-          <div className="flex-1 space-y-4">
-            <div>
-              <span className="text-[10px] font-bold text-[#ab4400] uppercase tracking-wider">The Perspective:</span>
-              <p className="text-xs text-stone-600 leading-relaxed mt-1 italic">"{caseData.sideBPerspective}"</p>
-            </div>
-          </div>
-          <div className="pt-4 border-t border-stone-200/50 mt-4">
-            <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider italic">Precedent: Practical Boundaries</span>
+        <div className="flex flex-col items-center space-y-1">
+          <p className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.4em]">Case Reference</p>
+          <div className="px-6 py-2 bg-stone-100 rounded-2xl border border-stone-200/50 text-xs font-mono font-bold text-stone-600 shadow-inner">
+            #{caseData.id?.slice(-8).toUpperCase()}
           </div>
         </div>
       </div>
 
-      {/* AI VERDICT & ANALYSIS BANNER */}
-      <div className="bg-[#fffbf8] rounded-[2.5rem] border border-[#ffdfcf] overflow-hidden shadow-sm">
-        <div className="px-8 py-6 border-b border-[#ffdfcf] flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 rounded-full bg-[#ab4400] text-white flex items-center justify-center shadow-lg shadow-[#ab4400]/20">
-               <Sparkles size={20} />
-             </div>
-             <div>
-               <h3 className="text-lg font-bold text-stone-800">AI Verdict & Analysis</h3>
-               <p className="text-[11px] text-stone-400 font-medium">Synthesized Neutral Recommendation</p>
-             </div>
+      {/* ⚖️ BALANCE OF JUSTICE VISUALIZER */}
+      <div className="max-w-2xl mx-auto space-y-6">
+        <div className="flex justify-between items-end px-2">
+          <div className="text-left">
+            <p className="text-[10px] font-black text-[#9d4867] uppercase tracking-widest mb-1">{resolveName(caseData.sideAAuthor)}</p>
+            <div className="text-3xl font-black text-[#9d4867]">{j.balance?.sideA || 50}%</div>
           </div>
-          <div className="flex-1 max-w-xs space-y-2">
-            <div className="flex justify-between text-[9px] font-bold uppercase tracking-widest text-stone-400">
-               <span>{resolveName(caseData.sideAAuthor)} ({j.balance?.sideA || 50}%)</span>
-               <span>{resolveName(caseData.sideBAuthor)} ({j.balance?.sideB || 50}%)</span>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-[#ab4400] uppercase tracking-widest mb-1">{resolveName(caseData.sideBAuthor)}</p>
+            <div className="text-3xl font-black text-[#ab4400]">{j.balance?.sideB || 50}%</div>
+          </div>
+        </div>
+        
+        <div className="h-4 w-full bg-stone-100 rounded-full p-1 border border-stone-200/50 shadow-inner overflow-hidden flex">
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${j.balance?.sideA || 50}%` }}
+            transition={{ duration: 1.5, ease: "circOut" }}
+            className="h-full bg-gradient-to-r from-[#9d4867] to-[#9d4867]/80 rounded-l-full relative"
+          >
+             <div className="absolute inset-0 bg-white/20 animate-pulse" />
+          </motion.div>
+          <motion.div 
+            initial={{ width: 0 }}
+            animate={{ width: `${j.balance?.sideB || 50}%` }}
+            transition={{ duration: 1.5, ease: "circOut", delay: 0.2 }}
+            className="h-full bg-gradient-to-l from-[#ab4400] to-[#ab4400]/80 rounded-r-full relative"
+          >
+             <div className="absolute inset-0 bg-white/20 animate-pulse" />
+          </motion.div>
+        </div>
+        
+        <p className="text-center text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] italic">Neutrality Weight Distribution</p>
+      </div>
+
+      {/* 📖 SIDE-BY-SIDE TESTIMONIES */}
+      <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+        <div className="bg-white rounded-[2rem] p-6 border border-[#9d4867]/10 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.05] -rotate-12 group-hover:rotate-0 transition-transform duration-500">
+             <MessageSquare size={48} className="text-[#9d4867]" />
+          </div>
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-[#9d4867] uppercase tracking-widest px-2 py-0.5 bg-[#9d4867]/5 rounded-full">Side A Statement</span>
             </div>
-            <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden flex">
-               <div style={{ width: `${j.balance?.sideA || 50}%` }} className="h-full bg-[#9d4867]" />
-               <div style={{ width: `${j.balance?.sideB || 50}%` }} className="h-full bg-[#ab4400]" />
+            <h5 className="text-sm font-bold text-stone-800">{resolveName(caseData.sideAAuthor)}'s Perspective</h5>
+            <p className="text-xs text-stone-500 leading-relaxed italic">
+              "{caseData.sideAPerspective}"
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-[2rem] p-6 border border-[#ab4400]/10 shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-[0.05] -rotate-12 group-hover:rotate-0 transition-transform duration-500">
+             <MessageSquare size={48} className="text-[#ab4400]" />
+          </div>
+          <div className="space-y-3 relative z-10">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-[#ab4400] uppercase tracking-widest px-2 py-0.5 bg-[#ab4400]/5 rounded-full">Side B Statement</span>
+            </div>
+            <h5 className="text-sm font-bold text-stone-800">{resolveName(caseData.sideBAuthor)}'s Perspective</h5>
+            <p className="text-xs text-stone-500 leading-relaxed italic">
+              "{caseData.sideBPerspective}"
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 💬 THE CORE VERDICT CARD */}
+      <div className="bg-white rounded-[3rem] border-2 border-[#ab4400]/10 overflow-hidden shadow-2xl shadow-[#ab4400]/5 relative">
+        <div className="absolute top-0 right-0 p-8 opacity-[0.03] rotate-12">
+          <Gavel size={120} />
+        </div>
+        
+        <div className="p-8 md:p-12 space-y-10 relative z-10">
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+               <div className="w-10 h-10 rounded-full bg-[#ab4400]/10 flex items-center justify-center text-[#ab4400]">
+                 <Gavel size={20} />
+               </div>
+               <h3 className="text-xs font-bold text-stone-400 uppercase tracking-[0.3em]">AI Summary</h3>
+            </div>
+            <h4 className="text-2xl md:text-3xl font-bold text-stone-800 leading-tight">
+              {j.verdict || "The Court has spoken."}
+            </h4>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-12">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-6 bg-[#9d4867] rounded-full" />
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-stone-900">The Understanding</h5>
+              </div>
+              <p className="text-sm text-stone-600 leading-relaxed font-medium">
+                {replacePlaceholders(j.analysis?.understanding)}
+              </p>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-6 bg-[#ab4400] rounded-full" />
+                <h5 className="text-[10px] font-black uppercase tracking-widest text-stone-900">Strategic Reasoning</h5>
+              </div>
+              <p className="text-sm text-stone-600 leading-relaxed font-medium">
+                {replacePlaceholders(j.analysis?.reasoning)}
+              </p>
             </div>
           </div>
         </div>
-        <div className="p-8">
-           <h4 className="text-xl font-bold text-[#ab4400] mb-8">{j.verdict || "Evaluating..."}</h4>
-           
-           <div className="grid md:grid-cols-2 gap-12">
-             <div className="space-y-4">
-               <div className="flex items-center gap-2 text-stone-800">
-                 <MessageSquare size={16} className="text-[#9d4867]" />
-                 <h5 className="text-xs font-bold uppercase tracking-widest">Understanding</h5>
-               </div>
-               <p className="text-sm text-stone-600 leading-relaxed font-medium">
-                 {replacePlaceholders(j.analysis?.understanding)}
-               </p>
-             </div>
-             <div className="space-y-4">
-               <div className="flex items-center gap-2 text-stone-800">
-                 <Sparkles size={16} className="text-[#ab4400]" />
-                 <h5 className="text-xs font-bold uppercase tracking-widest">Reasoning Analysis</h5>
-               </div>
-               <p className="text-sm text-stone-600 leading-relaxed font-medium">
-                 {replacePlaceholders(j.analysis?.reasoning)}
-               </p>
-             </div>
-           </div>
+      </div>
 
-           <div className="mt-12 pt-12 border-t border-stone-100 grid md:grid-cols-2 gap-8">
-             <div className="space-y-4">
-               <h5 className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">{resolveName(caseData.sideAAuthor)}'s Strengths</h5>
-               <ul className="space-y-3">
-                 {j.strengths?.sideA?.map((s, idx) => (
-                   <li key={idx} className="flex items-start gap-3 text-sm text-stone-600">
-                     <div className="w-1.5 h-1.5 rounded-full bg-[#9d4867] mt-1.5 flex-shrink-0" />
-                     {replacePlaceholders(s)}
-                   </li>
-                 ))}
-               </ul>
-             </div>
-             <div className="space-y-4">
-               <h5 className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em]">{resolveName(caseData.sideBAuthor)}'s Strengths</h5>
-               <ul className="space-y-3">
-                 {j.strengths?.sideB?.map((s, idx) => (
-                   <li key={idx} className="flex items-start gap-3 text-sm text-stone-600">
-                     <div className="w-1.5 h-1.5 rounded-full bg-[#ab4400] mt-1.5 flex-shrink-0" />
-                     {replacePlaceholders(s)}
-                   </li>
-                 ))}
-               </ul>
-             </div>
+      {/* 🌟 PERSPECTIVE BREAKDOWN GRID */}
+      <div className="grid lg:grid-cols-2 gap-8 items-stretch">
+        {/* SIDE A CARD */}
+        <div className="group relative">
+           <div className="absolute inset-0 bg-[#9d4867]/5 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+           <div className="relative h-full bg-white rounded-[2.5rem] p-8 border border-stone-100 flex flex-col gap-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <span className="px-3 py-1 bg-[#9d4867]/10 text-[#9d4867] text-[9px] font-black rounded-full uppercase tracking-widest">Plaintiff Strengths</span>
+                  <h4 className="text-lg font-bold text-stone-800">{resolveName(caseData.sideAAuthor)}</h4>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center text-[#9d4867] border border-stone-100">
+                  <User size={18} />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                {j.strengths?.sideA?.map((s, idx) => (
+                  <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-[#9d4867]/[0.02] border border-[#9d4867]/5">
+                    <div className="w-5 h-5 rounded-full bg-[#9d4867] text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-lg shadow-[#9d4867]/20">
+                      {idx + 1}
+                    </div>
+                    <p className="text-sm text-stone-600 leading-relaxed font-medium italic">"{replacePlaceholders(s)}"</p>
+                  </div>
+                ))}
+              </div>
+           </div>
+        </div>
+
+        {/* SIDE B CARD */}
+        <div className="group relative">
+           <div className="absolute inset-0 bg-[#ab4400]/5 rounded-[2.5rem] blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+           <div className="relative h-full bg-white rounded-[2.5rem] p-8 border border-stone-100 flex flex-col gap-6 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
+              <div className="flex justify-between items-start">
+                <div className="space-y-1">
+                  <span className="px-3 py-1 bg-[#ab4400]/10 text-[#ab4400] text-[9px] font-black rounded-full uppercase tracking-widest">Defendant Strengths</span>
+                  <h4 className="text-lg font-bold text-stone-800">{resolveName(caseData.sideBAuthor)}</h4>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center text-[#ab4400] border border-stone-100">
+                  <User size={18} />
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                {j.strengths?.sideB?.map((s, idx) => (
+                  <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl bg-[#ab4400]/[0.02] border border-[#ab4400]/5">
+                    <div className="w-5 h-5 rounded-full bg-[#ab4400] text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 shadow-lg shadow-[#ab4400]/20">
+                      {idx + 1}
+                    </div>
+                    <p className="text-sm text-stone-600 leading-relaxed font-medium italic">"{replacePlaceholders(s)}"</p>
+                  </div>
+                ))}
+              </div>
            </div>
         </div>
       </div>
 
-      {/* FOOTER ACTIONS */}
-      <div className="flex items-center justify-center gap-4 pt-4">
-        <button className="px-6 py-2 border border-stone-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-stone-400 hover:bg-stone-50 transition-all">
-          Download PDF Report
-        </button>
-        <button className="px-6 py-2 bg-stone-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all">
-          Generate Heart Contract
-        </button>
+      {/* 📜 CERTIFIED FOOTER */}
+      <div className="w-full flex flex-col items-center justify-center gap-8 pt-12 border-t border-stone-100">
+        <div className="flex items-center gap-3">
+           <div className="w-7 h-7 rounded-full bg-stone-900 flex items-center justify-center shadow-lg">
+              <div className="text-[11px] font-black text-white">N</div>
+           </div>
+           <span className="text-[10px] font-black text-stone-400 uppercase tracking-[0.4em]">Certified Neutral Outcome</span>
+        </div>
+
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <button className="px-10 py-3 bg-stone-900 text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-stone-900/20">
+            Generate Heart Contract
+          </button>
+        </div>
       </div>
     </div>
   );

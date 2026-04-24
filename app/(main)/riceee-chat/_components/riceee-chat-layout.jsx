@@ -204,7 +204,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center z-10 relative">
+      <main className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-stretch z-10 relative min-h-0">
 
         {/* Premium Tab Switcher - Sticky at top with Sidebar Toggle */}
         <div className="w-fit min-w-[355px] mx-auto sticky top-0 md:top-2 mt-0 mb-6 flex items-center bg-[#ffae88]/10 backdrop-blur-md rounded-full p-1 z-30 shadow-inner border border-[#ffae88]/20">
@@ -239,8 +239,9 @@ export default function RiceeeChatLayout({ partnerNames }) {
           </div>
         </div>
 
-        {/* Dashboard Layout */}
-        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 pb-32 lg:pb-6">
+        {/* Dashboard Layout - Scrollable Content Area */}
+        <div className="w-full flex-1 overflow-y-auto custom-scrollbar pb-32">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:pb-6">
           {activeTab === "solo-vent" ? (
             <>
               {/* SOLO CHAT (Active Chat Area) */}
@@ -264,7 +265,8 @@ export default function RiceeeChatLayout({ partnerNames }) {
             </>
           )}
         </div>
-      </main>
+      </div>
+    </main>
 
 
 

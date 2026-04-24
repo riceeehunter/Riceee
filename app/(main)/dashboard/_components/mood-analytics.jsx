@@ -101,7 +101,7 @@ const MoodAnalytics = () => {
 
   return (
     <>
-      <div className="flex justify-between items-center flex-wrap gap-4">
+      <div className="flex flex-col items-center justify-center gap-6 w-full text-center mb-8">
         <h2 className={`${plusJakarta.className} text-4xl md:text-6xl font-bold text-[#ab4400] tracking-tight`}>
           Welcome Back
         </h2>
