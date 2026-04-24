@@ -14,7 +14,7 @@ import { getConversations, createConversation, deleteConversation, updateConvers
 export default function RiceeeChatLayout({ partnerNames }) {
   const [activeTab, setActiveTab] = useState("solo-vent");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  
+
   // Conversation History State
   const [history, setHistory] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
@@ -88,32 +88,40 @@ export default function RiceeeChatLayout({ partnerNames }) {
 
   return (
     <div
-      className={`relative -mt-28 md:-mt-32 pt-[84px] md:pt-[88px] min-h-[100dvh] bg-background text-foreground ${poppins.className} flex flex-col items-center overflow-x-hidden antialiased transition-all duration-300 ${isSidebarOpen ? "md:pl-[240px] lg:pl-[280px]" : "pl-0"}`}
-      style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)' }}
+      className={`fixed inset-0 pt-[84px] md:pt-[88px] bg-background text-foreground ${poppins.className} flex flex-col items-center overflow-hidden antialiased transition-all duration-300 ${isSidebarOpen ? "md:pl-[240px] lg:pl-[280px]" : "pl-0"}`}
+      style={{ zIndex: 10 }}
     >
 
       {/* Floating Sidebar Toggle (Becomes a glassmorphic button) */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
         className={`fixed top-8 left-6 z-[60] p-2.5 rounded-xl transition-all duration-300 hidden md:flex items-center justify-center hover:scale-105 active:scale-95 border shadow-sm ${isSidebarOpen
-            ? "bg-white border-stone-200 text-stone-900 shadow-md"
-            : "bg-white/80 border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white backdrop-blur-md"
+          ? "bg-white border-stone-200 text-stone-900 shadow-md"
+          : "bg-white/80 border-stone-200 text-stone-500 hover:text-stone-900 hover:bg-white backdrop-blur-md"
           }`}
       >
         <PanelLeft size={22} className={`transition-transform duration-500 ${isSidebarOpen ? "rotate-180" : "rotate-0"}`} />
       </button>
 
-      {/* Floating Sidebar Box - Crazy Design Overlay */}
+      {/* Floating Sidebar Box - Mobile Friendly */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            {/* Sidebar Container */}
+            {/* Backdrop for mobile/tablet */}
             <motion.div
-              initial={{ x: -320, opacity: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSidebarOpen(false)}
+              className="fixed inset-0 bg-stone-900/10 backdrop-blur-sm z-[45]"
+            />
+
+            <motion.div
+              initial={{ x: -350, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -320, opacity: 0 }}
+              exit={{ x: -350, opacity: 0 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed top-24 left-6 w-[280px] h-[calc(100vh-8rem)] z-50 hidden md:flex flex-col bg-white/80 backdrop-blur-2xl border border-stone-200 shadow-2xl rounded-[32px] overflow-hidden"
+              className="fixed top-24 left-4 md:left-6 w-[320px] h-[calc(100vh-8rem)] z-50 flex flex-col bg-white/80 backdrop-blur-2xl border border-stone-200 shadow-2xl rounded-[32px] overflow-hidden"
             >
               {/* Header */}
               <div className="p-6 pb-4">
@@ -124,7 +132,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
 
               {/* Action: New Chat */}
               <div className="px-4 mb-4">
-                <button 
+                <button
                   onClick={handlePrepareNewChat}
                   className="flex items-center gap-3 w-full p-4 rounded-2xl bg-[#ffae88] text-[#9d4867] font-bold text-sm shadow-lg shadow-[#ffae88]/20 hover:scale-[1.02] active:scale-95 transition-all group"
                 >
@@ -143,7 +151,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
                 <div className="px-6 py-2">
                   <span className={`text-[10px] font-bold text-stone-400 uppercase tracking-widest`}>Recent Chats</span>
                 </div>
-                
+
                 <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 custom-scrollbar">
                   {isLoadingHistory ? (
                     <div className="px-6 py-4 animate-pulse">
@@ -155,19 +163,19 @@ export default function RiceeeChatLayout({ partnerNames }) {
                       <p className="text-xs text-stone-400 font-medium italic">No recent conversations</p>
                     </div>
                   ) : history.map((chat) => (
-                    <div 
-                      key={chat.id} 
+                    <div
+                      key={chat.id}
                       onClick={() => setActiveChatId(chat.id)}
-                      className={`flex items-center gap-3 w-full p-3 rounded-xl text-left transition-all group relative cursor-pointer ${
+                      className={`flex items-center gap-3 w-full p-4 rounded-xl text-left transition-all group relative cursor-pointer ${
                         activeChatId === chat.id ? "bg-[#ffae88]/10 border border-[#ffae88]/20" : "hover:bg-stone-50 border border-transparent"
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 ${
                         activeChatId === chat.id ? "bg-[#ffae88]/20 text-[#9d4867]" : "bg-stone-100 text-stone-400 group-hover:bg-[#ffae88]/20 group-hover:text-[#9d4867]"
                       }`}>
                         <MessageSquare size={16} />
                       </div>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 pr-8">
                         <p className={`text-[13px] font-medium truncate ${activeChatId === chat.id ? "text-[#9d4867]" : "text-stone-700"}`}>
                           {chat.title || "Untitled Chat"}
                         </p>
@@ -177,7 +185,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
                       {/* Trash Button */}
                       <button 
                         onClick={(e) => handleDeleteChat(e, chat.id)}
-                        className="absolute right-2 p-2 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0"
+                        className="absolute right-3 p-2 text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
                       >
                         <Trash2 size={16} />
                       </button>
@@ -198,39 +206,48 @@ export default function RiceeeChatLayout({ partnerNames }) {
       {/* Main Content Area */}
       <main className="flex-1 w-full max-w-5xl mx-auto flex flex-col items-center z-10 relative">
 
-        {/* Premium Tab Switcher */}
-        <div className="w-full max-w-[400px] mx-auto mt-6 mb-10 flex bg-[#ffae88]/10 rounded-full p-1 relative shadow-inner border border-[#ffae88]/20">
-          <motion.div
-            className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-full shadow-sm border border-[#ffae88]/20 z-0"
-            initial={false}
-            animate={{ left: activeTab === "solo-vent" ? "4px" : "calc(50%)" }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          />
+        {/* Premium Tab Switcher - Sticky at top with Sidebar Toggle */}
+        <div className="w-fit min-w-[355px] mx-auto sticky top-0 md:top-2 mt-0 mb-6 flex items-center bg-[#ffae88]/10 backdrop-blur-md rounded-full p-1 z-30 shadow-inner border border-[#ffae88]/20">
           <button
-            onClick={() => setActiveTab("solo-vent")}
-            className={`flex-1 py-3 text-center relative z-10 text-[12px] uppercase tracking-[0.1em] font-medium transition-colors ${activeTab === "solo-vent" ? "text-[#9d4867]" : "text-[#9d4867]/50 hover:text-[#9d4867]"
-              } ${poppins.className}`}
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className={`p-2.5 rounded-full transition-all duration-300 ${isSidebarOpen ? "bg-white text-[#9d4867] shadow-sm" : "text-[#9d4867]/60 hover:text-[#9d4867] hover:bg-white/40"}`}
           >
-            SOLO CHAT
+            <PanelLeft size={20} className={`transition-transform duration-500 ${isSidebarOpen ? "rotate-180" : "rotate-0"}`} />
           </button>
-          <button
-            onClick={() => setActiveTab("digital-courtroom")}
-            className={`flex-1 py-3 text-center relative z-10 text-[12px] uppercase tracking-[0.1em] font-medium transition-colors ${activeTab === "digital-courtroom" ? "text-[#9d4867]" : "text-[#9d4867]/50 hover:text-[#9d4867]"
-              } ${poppins.className}`}
-          >
-            Digital Courtroom
-          </button>
+
+          <div className="flex-1 flex relative h-full">
+            <motion.div
+              className="absolute top-0 bottom-0 w-1/2 bg-white rounded-full shadow-sm border border-[#ffae88]/20 z-0"
+              initial={false}
+              animate={{ left: activeTab === "solo-vent" ? "0%" : "50%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            />
+            <button
+              onClick={() => setActiveTab("solo-vent")}
+              className={`flex-1 py-3 text-center relative z-10 text-[12px] uppercase tracking-[0.1em] font-medium transition-colors ${activeTab === "solo-vent" ? "text-[#9d4867]" : "text-[#9d4867]/50 hover:text-[#9d4867]"
+                } ${poppins.className}`}
+            >
+              CHAT
+            </button>
+            <button
+              onClick={() => setActiveTab("digital-courtroom")}
+              className={`flex-1 py-3 text-center relative z-10 text-[12px] uppercase tracking-[0.1em] font-medium transition-colors ${activeTab === "digital-courtroom" ? "text-[#9d4867]" : "text-[#9d4867]/50 hover:text-[#9d4867]"
+                } ${poppins.className}`}
+            >
+              Courtroom
+            </button>
+          </div>
         </div>
 
         {/* Dashboard Layout */}
-        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 pb-12 lg:pb-6">
+        <div className="w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 pb-32 lg:pb-6">
           {activeTab === "solo-vent" ? (
             <>
               {/* SOLO CHAT (Active Chat Area) */}
               <section className="lg:col-span-12 flex flex-col flex-1 w-full relative">
-                <RiceeeChatClient 
-                  activeChatId={activeChatId} 
-                  poppins={poppins} 
+                <RiceeeChatClient
+                  activeChatId={activeChatId}
+                  poppins={poppins}
                   onTitleUpdate={handleTitleUpdate}
                   onCreateChat={handlePerformCreateChat}
                 />
@@ -249,23 +266,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
         </div>
       </main>
 
-      {/* BottomNavBar (Mobile Only) */}
-      <nav className="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 h-20 pb-safe bg-white/80 backdrop-blur-2xl border-t border-stone-200 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
-        <button
-          onClick={() => setActiveTab("solo-vent")}
-          className={`flex flex-col items-center justify-center transition-all ${activeTab === "solo-vent" ? "text-[#9d4867] scale-110" : "text-stone-400 opacity-60 hover:text-[#ffae88]"}`}
-        >
-          <BrainCircuit className="w-6 h-6 mb-1" />
-          <span className={`text-[10px] uppercase tracking-widest font-bold ${poppins.className}`}>Hub</span>
-        </button>
-        <button
-          onClick={() => setActiveTab("digital-courtroom")}
-          className={`flex flex-col items-center justify-center transition-all ${activeTab === "digital-courtroom" ? "text-[#9d4867] scale-110" : "text-stone-400 opacity-60 hover:text-[#ffae88]"}`}
-        >
-          <Gavel className="w-6 h-6 mb-1" />
-          <span className={`text-[10px] uppercase tracking-widest font-bold ${poppins.className}`}>Verdicts</span>
-        </button>
-      </nav>
+
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

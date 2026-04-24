@@ -16,7 +16,7 @@ const BottomNav = () => {
   const pathname = usePathname();
 
   // Hide bottom nav on pages where it might interfere with UI elements like chat inputs or editors
-  const hideOnPaths = ["/riceee-chat", "/journal/write", "/onboarding"];
+  const hideOnPaths = ["/journal/write", "/onboarding"];
   const shouldHide = hideOnPaths.some(path => pathname.startsWith(path));
 
   if (shouldHide) return null;

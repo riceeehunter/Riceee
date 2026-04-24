@@ -141,7 +141,7 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
   }
 
   return (
-    <div className="w-[calc(100%-3rem)] max-w-5xl mx-auto space-y-6 pb-20">
+    <div className="w-full max-w-[95%] mx-auto space-y-6 pb-20">
       {cells.map((cell, index) => (
         <div key={cell.id} className="relative group" data-purpose="code-cell">
           <div className={`bg-white rounded-xl border flex flex-col overflow-hidden shadow-cell-shadow relative z-0 transition-all ${
@@ -159,8 +159,8 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
                   <>
                     <textarea
                       ref={(el) => (inputRefs.current[cell.id] = el)}
-                      className="flex-grow py-2 text-gray-700 bg-transparent border-none focus:ring-0 focus:outline-none outline-none placeholder-gray-400 font-mono text-sm resize-none overflow-hidden"
-                      placeholder="What's on your mind today?"
+                      className="flex-grow py-2 text-gray-800 bg-transparent border-none focus:ring-0 focus:outline-none outline-none placeholder-gray-500 font-mono text-sm resize-none overflow-hidden"
+                      placeholder={index === 0 ? "What's on your mind today?" : ""}
                       value={cell.content}
                       onChange={(e) => {
                         handleChange(cell.id, e.target.value);

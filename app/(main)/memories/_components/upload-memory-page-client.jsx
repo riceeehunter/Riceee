@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
-const TAGS = ["Warmth", "Playful", "Adventure"];
+const TAGS = ["Warmth", "Playful", "Adventure", "Cafe Date", "Cozy", "Sunset", "Foodie", "Home", "Travel"];
 
 export default function UploadMemoryPageClient({ partnerNames }) {
   const router = useRouter();
@@ -160,15 +160,21 @@ export default function UploadMemoryPageClient({ partnerNames }) {
       `}</style>
 
       <div className="upload-bg min-h-screen">
-        <main className="max-w-4xl mx-auto px-6 py-12 pt-36 pb-32">
-          <div className="mb-10 flex items-center justify-between">
-            <div>
-              <h1 className={`${plusJakarta.className} text-5xl font-bold text-[#ab4400] tracking-tight`}>Preserve a Moment</h1>
-              <p className="text-[#9d4867] font-medium italic opacity-80 mt-3">Every snapshot is a page in our story.</p>
+        <main className="max-w-4xl mx-auto px-6 pt-16 pb-12">
+          <div className="mb-10 flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className={`${plusJakarta.className} text-4xl md:text-5xl font-bold text-[#ab4400] tracking-tight leading-tight`}>
+                Preserve a Moment
+              </h1>
+              <p className="text-[#9d4867] font-medium italic opacity-80 mt-2 text-sm md:text-base whitespace-nowrap overflow-hidden text-ellipsis">
+                Every snapshot is a page in our story.
+              </p>
             </div>
-            <Link className={`${plusJakarta.className} hover:opacity-80 transition-opacity text-[#9d4867] flex items-center gap-1 text-sm font-medium`} href="/memories">
-              <span className="material-symbols-outlined">close</span>
-              <span>Cancel</span>
+            <Link 
+              className="w-10 h-10 rounded-full bg-[#ffae88]/10 hover:bg-[#ffae88]/20 transition-all flex items-center justify-center text-[#9d4867] shadow-sm border border-[#ffae88]/20 mt-1" 
+              href="/memories"
+            >
+              <span className="material-symbols-outlined text-xl">close</span>
             </Link>
           </div>
 
@@ -176,7 +182,7 @@ export default function UploadMemoryPageClient({ partnerNames }) {
             <section className="group">
               <label className={`${plusJakarta.className} block text-lg font-semibold text-[#393832] mb-4 px-2`}>The Visual Memory</label>
               <div
-                className={`relative aspect-[16/9] md:aspect-[21/9] w-full bg-white rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all duration-300 shadow-2xl shadow-[#393832]/5 overflow-hidden ${
+                className={`relative aspect-[4/5] md:aspect-[4/3] w-full bg-white rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all duration-300 shadow-2xl shadow-[#393832]/5 overflow-hidden ${
                   isDragOver ? "border-[#ab4400]/60" : "border-[#bcb9b1]/30"
                 }`}
                 onClick={openFilePicker}
@@ -220,7 +226,7 @@ export default function UploadMemoryPageClient({ partnerNames }) {
                   Tell the story behind this moment...
                 </label>
                 <textarea
-                  className="w-full bg-white border-none rounded-lg p-6 text-[#393832] placeholder:text-[#828079]/60 focus:ring-2 focus:ring-[#ab4400]/20 shadow-sm leading-relaxed text-lg"
+                  className="w-full bg-white border border-[#bcb9b1]/20 rounded-lg p-6 text-[#393832] placeholder:text-[#828079]/60 focus:outline-none focus:ring-4 focus:ring-[#ab4400]/5 shadow-sm leading-relaxed text-lg transition-all"
                   placeholder="It was a rainy Tuesday, and we found that tiny cafe..."
                   rows={4}
                   value={caption}
@@ -422,16 +428,16 @@ export default function UploadMemoryPageClient({ partnerNames }) {
 
             <section>
               <label className={`${plusJakarta.className} block text-lg font-semibold text-[#393832] mb-4 px-2`}>Vibe Tags</label>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {TAGS.map((tag) => {
                   const active = selectedTags.includes(tag);
                   return (
                     <button
                       key={tag}
-                      className={`px-6 py-2 rounded-full text-sm transition-all ${
+                      className={`w-full px-2 py-3 rounded-full text-sm transition-all text-center flex items-center justify-center ${
                         active
-                          ? "bg-[#ffd9e2] text-[#863655] font-semibold"
-                          : "bg-[#ebe8df] text-[#393832] hover:bg-[#fed07f]"
+                          ? "bg-[#ffd9e2] text-[#863655] font-bold shadow-sm"
+                          : "bg-[#ebe8df] text-[#393832] hover:bg-[#fed07f]/50"
                       }`}
                       type="button"
                       onClick={() => toggleTag(tag)}
@@ -456,7 +462,7 @@ export default function UploadMemoryPageClient({ partnerNames }) {
           </form>
         </main>
 
-        <footer className="bg-transparent text-sm italic leading-relaxed pb-12 flex flex-col items-center justify-center space-y-4 w-full text-center mt-20">
+        <footer className="bg-transparent text-sm italic leading-relaxed pb-24 flex flex-col items-center justify-center space-y-4 w-full text-center mt-8">
           <p className="text-[#9d4867] opacity-70">Handcrafted with love by Riceee © 2024</p>
           <div className="flex gap-6">
             <Link className="text-[#9d4867] opacity-70 hover:text-[#ab4400] transition-colors" href="/dashboard">Our Story</Link>

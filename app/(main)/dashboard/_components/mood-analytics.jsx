@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -36,6 +36,7 @@ const timeOptions = [
 const MoodAnalytics = () => {
   const [period, setPeriod] = useState("7d");
   const [periodMenuOpen, setPeriodMenuOpen] = useState(false);
+  const scrollContainerRef = useRef(null);
 
   const {
     loading,
@@ -48,6 +49,13 @@ const MoodAnalytics = () => {
   useEffect(() => {
     fetchAnalytics(period);
   }, [period]);
+
+  // Scroll to end on mount or when data changes
+  useEffect(() => {
+    if (scrollContainerRef.current && analytics?.data) {
+      scrollContainerRef.current.scrollLeft = scrollContainerRef.current.scrollWidth;
+    }
+  }, [analytics, period]);
 
   if (loading || !analytics?.data || !isLoaded) {
     return <MoodAnalyticsSkeleton />;
@@ -255,7 +263,10 @@ const MoodAnalytics = () => {
             {hasEntriesInPeriod || isInactiveForSelectedPeriod ? (
               <div className="relative group">
                 {/* Scrollable Container */}
-                <div className="overflow-x-auto custom-scrollbar pb-6 px-6">
+                <div 
+                  ref={scrollContainerRef}
+                  className="overflow-x-auto hide-scrollbar pb-6 px-6 scroll-smooth"
+                >
                   <div 
                     style={{ 
                       width: `${Math.max(timeline.length * 60, 400)}px`,
@@ -383,6 +394,13 @@ const MoodAnalytics = () => {
             @keyframes bounce {
               0%, 100% { transform: translateY(0); }
               50% { transform: translateY(-5px); }
+            }
+            .hide-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+            .hide-scrollbar {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
             }
           `}</style>
         </Card>
