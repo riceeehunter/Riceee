@@ -64,14 +64,18 @@ export default function FloatingChat({ partnerNames }) {
   };
 
   useEffect(() => {
+    // Notify other components (like BottomNav) when chat state changes
+    window.dispatchEvent(new CustomEvent("riceee-chat-status", { detail: { isOpen } }));
+    
     if (isOpen) {
       fetchMessages();
       markMessagesAsRead(sender);
       setUnreadCount(0);
+      document.body.style.overflow = "hidden"; // Prevent background scroll
     } else {
       fetchUnreadCount();
+      document.body.style.overflow = "";
     }
-    // Update the ref whenever isOpen changes
     isOpenRef.current = isOpen;
   }, [isOpen]);
 
@@ -85,7 +89,6 @@ export default function FloatingChat({ partnerNames }) {
       setMessages((prev) => [...prev, data]);
       setTimeout(scrollToBottom, 100);
       
-      // Only update unread count if chat is closed
       if (!isOpenRef.current) {
         fetchUnreadCount();
       }
@@ -96,7 +99,7 @@ export default function FloatingChat({ partnerNames }) {
       channel.unsubscribe();
       pusher.disconnect();
     };
-  }, []); // Only create connection once on mount
+  }, []);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -114,7 +117,6 @@ export default function FloatingChat({ partnerNames }) {
       if (result.success) {
         setNewMessage("");
         setReplyingTo(null);
-        // Pusher will handle adding the message in real-time
       } else {
         toast.error("Failed to send message: " + (result.error || "Unknown error"));
       }
@@ -142,7 +144,7 @@ export default function FloatingChat({ partnerNames }) {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed hidden md:flex bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-[#ab4400] to-[#9d4867] shadow-lg hover:shadow-xl transition-all hover:scale-105 items-center justify-center z-50 group"
+          className="fixed hidden sm:flex bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-[#ab4400] to-[#9d4867] shadow-lg hover:shadow-xl transition-all hover:scale-105 items-center justify-center z-50 group"
         >
           <Heart className="h-7 w-7 sm:h-8 sm:w-8 text-white fill-white group-hover:scale-110 transition-transform" />
           {unreadCount > 0 && (
@@ -154,8 +156,8 @@ export default function FloatingChat({ partnerNames }) {
       )}
 
       {isOpen && (
-        <div className="fixed top-20 bottom-4 right-4 sm:top-24 sm:bottom-6 sm:right-6 w-[calc(100vw-2rem)] sm:w-[26rem] bg-[#fffbff] rounded-[2rem] shadow-2xl flex flex-col z-50 overflow-hidden border border-[#ffdfcf]">
-          <div className="bg-gradient-to-r from-[#ab4400] to-[#9d4867] text-white px-4 py-3.5 flex items-center justify-between">
+        <div className="fixed inset-0 sm:inset-auto sm:top-24 sm:bottom-6 sm:right-6 w-full h-full sm:w-[26rem] sm:h-auto bg-[#fffbff] sm:rounded-[2rem] shadow-2xl flex flex-col z-[100] overflow-hidden border-0 sm:border border-[#ffdfcf]">
+          <div className="bg-gradient-to-r from-[#ab4400] to-[#9d4867] text-white px-4 py-4 sm:py-3.5 flex items-center justify-between">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-11 w-11 rounded-full border border-white/40 bg-white/15 flex items-center justify-center font-semibold text-lg">
                 {activePartnerName.charAt(0).toUpperCase()}

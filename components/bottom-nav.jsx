@@ -15,9 +15,17 @@ import { cn } from "@/lib/utils";
 const BottomNav = () => {
   const pathname = usePathname();
 
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleStatus = (e) => setIsChatOpen(e.detail.isOpen);
+    window.addEventListener("riceee-chat-status", handleStatus);
+    return () => window.removeEventListener("riceee-chat-status", handleStatus);
+  }, []);
+
   // Hide bottom nav on pages where it might interfere with UI elements like chat inputs or editors
   const hideOnPaths = ["/journal/write", "/onboarding"];
-  const shouldHide = hideOnPaths.some(path => pathname.startsWith(path));
+  const shouldHide = hideOnPaths.some(path => pathname.startsWith(path)) || isChatOpen;
 
   if (shouldHide) return null;
 

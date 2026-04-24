@@ -19,7 +19,7 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
         prevChatIdRef.current = activeChatId;
         return;
       }
-      
+
       prevChatIdRef.current = activeChatId;
 
       if (!activeChatId) {
@@ -75,7 +75,7 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
     if (!cell || !cell.content.trim() || cell.status !== "editing") return;
 
     // mark input submitted and set response to loading
-    updateCell(id, { 
+    updateCell(id, {
       status: "submitted",
       response: { content: "", status: "loading" }
     });
@@ -141,14 +141,13 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
   }
 
   return (
-    <div className="w-full max-w-[95%] mx-auto space-y-6 pb-20">
+    <div className="w-full max-w-[100%] mx-auto space-y-6 pb-20">
       {cells.map((cell, index) => (
         <div key={cell.id} className="relative group" data-purpose="code-cell">
-          <div className={`bg-white rounded-xl border flex flex-col overflow-hidden shadow-cell-shadow relative z-0 transition-all ${
-            cell.status === 'editing' 
-              ? 'border-action-yellow-border/50 focus-within:border-action-yellow-border focus-within:ring-2 focus-within:ring-action-yellow-border/20' 
-              : 'border-cell-border'
-          }`}>
+          <div className={`bg-white rounded-xl border flex flex-col overflow-hidden shadow-cell-shadow relative z-0 transition-all ${cell.status === 'editing'
+            ? 'border-action-yellow-border/50 focus-within:border-action-yellow-border focus-within:ring-2 focus-within:ring-action-yellow-border/20'
+            : 'border-cell-border'
+            }`}>
             {/* Top Part: Input Area */}
             <div className="flex">
               <div className="w-12 flex-shrink-0 flex items-start justify-center border-r border-cell-border pt-4">
