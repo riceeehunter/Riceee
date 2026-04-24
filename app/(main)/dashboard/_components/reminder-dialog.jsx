@@ -114,7 +114,7 @@ const ReminderDialog = () => {
           <CalendarDays className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className={`${manrope.className} max-w-4xl rounded-[2rem] border border-[#ffdfcf] bg-[#fffbff] p-0 shadow-[0_28px_80px_rgba(57,56,50,0.22)] overflow-hidden`}>
+      <DialogContent className={`${manrope.className} w-full h-full sm:h-auto max-w-none sm:max-w-4xl max-h-screen sm:max-h-[90vh] rounded-none sm:rounded-[2rem] border-none sm:border border-[#ffdfcf] bg-[#fffbff] p-0 shadow-[0_28px_80px_rgba(57,56,50,0.22)] overflow-y-auto sm:overflow-hidden [&>button:last-child]:hidden`}>
         <style>{`
           .reminder-grain {
             background-image: radial-gradient(circle at 25% 20%, rgba(255, 174, 136, 0.2), transparent 45%), radial-gradient(circle at 85% 0%, rgba(255, 217, 226, 0.28), transparent 55%);
@@ -129,18 +129,30 @@ const ReminderDialog = () => {
             display: none;
           }
         `}</style>
-        <div className="reminder-grain border-b border-[#ffdfcf]/80 px-6 py-6 md:px-8">
-        <DialogHeader>
-          <DialogTitle className={`${plusJakarta.className} text-2xl md:text-3xl tracking-tight text-[#ab4400]`}>
-            Reminders & Important Dates
-          </DialogTitle>
-          <DialogDescription className="text-[#66645e] text-base">
-            Add reminders for birthdays, anniversaries, and special moments
-          </DialogDescription>
+        <div className="reminder-grain border-b border-[#ffdfcf]/80 px-6 py-6 md:px-8 relative">
+        <DialogHeader className="flex flex-row items-center justify-between">
+          <div className="space-y-1">
+            <DialogTitle className={`${plusJakarta.className} text-2xl md:text-3xl tracking-tight text-[#ab4400]`}>
+              Reminders & Dates
+            </DialogTitle>
+            <DialogDescription className="text-[#66645e] text-sm md:text-base">
+              Add special moments
+            </DialogDescription>
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setOpen(false)}
+            className="rounded-full bg-[#fff0e8] hover:bg-[#ffdfcf] text-[#ab4400] font-bold px-5 h-10 border border-[#ffae88]/30 shadow-sm transition-all flex items-center gap-2"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Done
+          </Button>
         </DialogHeader>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 md:p-8">
+        <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-2 md:p-8 pb-32">
           {/* Add Reminder Form */}
           <div className="space-y-5 rounded-3xl border border-[#ffdfcf] bg-gradient-to-br from-[#fff8f2] to-[#fff1f6] p-6 shadow-[0_12px_26px_rgba(57,56,50,0.08)]">
             {/* Date Picker */}

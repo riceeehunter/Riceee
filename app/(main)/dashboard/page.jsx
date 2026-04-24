@@ -21,7 +21,7 @@ const Dashboard = async () => {
   );
 
   return (
-    <div className="py-8 space-y-8">
+    <div className="pt-2 pb-40 space-y-8">
       {/* Analytics Section */}
       <section className="space-y-4">
         <MoodAnalytics />

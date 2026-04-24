@@ -38,11 +38,11 @@ export default async function LandingPage() {
             <div className="relative bg-white/40 border border-white/60 rounded-[3rem] p-10 md:p-20 overflow-hidden shadow-sm">
               <div className="absolute inset-0 hero-gradient -z-10" />
               <div className="flex flex-col md:flex-row items-center justify-between gap-16">
-                <div className="flex-1 space-y-8">
-                  <div className="inline-block px-4 py-1.5 bg-[#ffd9e2]/60 text-[#863655] rounded-full text-xs font-bold tracking-widest uppercase">
+                <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-8">
+                  <div className="inline-block px-4 py-1.5 bg-[#ffd9e2]/80 text-[#863655] rounded-full text-[10px] font-extrabold tracking-[0.2em] uppercase">
                     Our Sanctuary
                   </div>
-                  <h1 className={`${plusJakarta.className} text-7xl md:text-[9.5rem] font-extrabold text-[#393832] tracking-tighter leading-[0.8]`}>
+                  <h1 className={`${plusJakarta.className} text-7xl sm:text-8xl md:text-[9.5rem] font-extrabold text-[#393832] tracking-tighter leading-[0.85] md:leading-[0.8]`}>
                     {!isLoggedIn ? (
                       <>
                         Riceee <br />
@@ -62,21 +62,21 @@ export default async function LandingPage() {
                   <p className="text-xl text-[#66645e] max-w-lg leading-relaxed font-medium">
                     A digital keepsake for your shared laughter, quiet moments, and the beautiful journey of &ldquo;us&rdquo;.
                   </p>
-                  <div className="flex gap-6 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-6 pt-4 w-full sm:w-auto">
                     <Link
                       href={isLoggedIn ? "/journal/write" : "/sign-in"}
-                      className="bg-[#ab4400] text-white px-10 py-4 rounded-2xl font-bold shadow-xl shadow-[#ab4400]/20 hover:shadow-[#ab4400]/30 transition-all flex items-center gap-3 text-base"
+                      className="bg-[#ab4400] text-white px-10 py-5 rounded-2xl font-bold shadow-2xl shadow-[#ab4400]/30 hover:shadow-[#ab4400]/40 transition-all flex items-center justify-center gap-3 text-lg"
                     >
-                      <span className="material-symbols-outlined">edit_note</span>
+                      <span className="material-symbols-outlined text-2xl">edit_note</span>
                       Start Today&apos;s Story
                     </Link>
                   </div>
                 </div>
-                <div className="flex-1 w-full max-w-xl">
-                  <div className="relative bg-white p-4 rounded-xl shadow-2xl rotate-2 aspect-[4/5] w-full border border-stone-100/50">
+                <div className="flex-1 w-full max-w-sm md:max-w-xl">
+                  <div className="relative bg-white/60 p-4 rounded-[2rem] shadow-2xl md:rotate-2 aspect-[4/5] w-full border border-white/80 backdrop-blur-sm">
                     <img
                       alt="Couple walking"
-                      className="w-full h-full object-cover rounded-md"
+                      className="w-full h-full object-cover rounded-[1.5rem]"
                       src="https://lh3.googleusercontent.com/aida-public/AB6AXuChlCZEZt8c-dlbV2ngR3ie3Xbz38C7mA7gN8NWzG2OcFAtgVgXyeFm1_p5rP5nq25UVelWNEwTTu634U_7p8en56dxkim7t4ImP-Di_F6yV9Geun_4Mom48OnNHyBDtd-GFdpyS3IWVE05EBpSk-WKV0oM2T6yS-nvY2SpMFvnafgRDcp4eJq_my13jNOWFPqNcuhGLLV0zXLfW64JK3KZ9UzCZbfegQ_7CKUaWtPlNni7zpmPzHsYVIuXlp9C0A0Y_KrFj_IgoaI"
                     />
                   </div>
@@ -99,7 +99,7 @@ export default async function LandingPage() {
               </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
-              <div className="md:col-span-6 bg-[#ffae88]/10 p-12 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffae88]/20 transition-all group border border-[#ab4400]/5">
+              <div className="md:col-span-6 bg-[#ffae88]/10 p-8 md:p-12 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffae88]/20 transition-all group border border-[#ab4400]/5">
                 <div className="w-16 h-16 bg-[#ab4400] rounded-full flex items-center justify-center text-white group-hover:scale-105 transition-transform mb-6 shadow-lg shadow-[#ab4400]/20">
                   <span className="material-symbols-outlined text-3xl">stylus_note</span>
                 </div>
@@ -111,7 +111,7 @@ export default async function LandingPage() {
                 </div>
               </div>
 
-              <div className="md:col-span-3 bg-[#ebe8df]/40 p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:shadow-lg hover:shadow-stone-200/50 transition-all border border-stone-200/40">
+              <div className="md:col-span-3 bg-[#ebe8df]/40 p-8 md:p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:shadow-lg hover:shadow-stone-200/50 transition-all border border-stone-200/40">
                 <div className="w-14 h-14 bg-[#393832] text-[#fffbff] rounded-full flex items-center justify-center mb-6">
                   <span className="material-symbols-outlined text-3xl">auto_awesome</span>
                 </div>
@@ -123,7 +123,7 @@ export default async function LandingPage() {
                 </div>
               </div>
 
-              <div className="md:col-span-3 bg-[#ffd9e2]/15 p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffd9e2]/25 transition-all border border-[#9d4867]/5">
+              <div className="md:col-span-3 bg-[#ffd9e2]/15 p-8 md:p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffd9e2]/25 transition-all border border-[#9d4867]/5">
                 <div className="w-14 h-14 bg-[#9d4867] text-white rounded-full flex items-center justify-center mb-6">
                   <span className="material-symbols-outlined text-3xl">verified_user</span>
                 </div>
@@ -135,7 +135,7 @@ export default async function LandingPage() {
                 </div>
               </div>
 
-              <div className="md:col-span-7 bg-[#fdf9f4] p-12 rounded-[2rem] flex flex-col md:flex-row gap-10 items-center border border-[#bcb9b1]/10 shadow-sm">
+              <div className="md:col-span-7 bg-[#fdf9f4] p-8 md:p-12 rounded-[2rem] flex flex-col md:flex-row gap-10 items-center border border-[#bcb9b1]/10 shadow-sm">
                 <div className="flex-1 space-y-4 text-center md:text-left">
                   <div className="w-14 h-14 bg-[#815f19] text-white rounded-full flex items-center justify-center mx-auto md:mx-0">
                     <span className="material-symbols-outlined text-3xl">sports_esports</span>

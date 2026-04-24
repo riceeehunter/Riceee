@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
   Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -72,12 +74,12 @@ const MoodAnalytics = () => {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) {
       const moodValue = payload[0]?.value;
-      const entriesValue = payload[1]?.value;
+      const entriesValue = payload[0]?.payload?.entryCount;
       
       return (
         <div className="bg-[#fffbff] p-4 border border-[#ffae88]/35 rounded-xl shadow-[0_12px_24px_rgba(57,56,50,0.12)]">
           <p className="font-semibold text-[#6a2700]">
-            {format(parseISO(label), "MMM d, yyyy")}
+            {label && typeof label === "string" ? format(parseISO(label), "MMM d, yyyy") : "Date"}
           </p>
           {moodValue !== null && moodValue !== undefined && (
             <p className="text-[#ab4400]">Average Mood: {moodValue}</p>
@@ -188,36 +190,36 @@ const MoodAnalytics = () => {
       )}
 
       <div className="space-y-6">
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
           <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-[#6a2700]">
-                Total Entries
+              <CardTitle className="text-[11px] sm:text-sm font-bold text-[#6a2700] uppercase tracking-wider">
+                Entries
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`${plusJakarta.className} text-3xl font-semibold text-[#ab4400]`}>{stats.totalEntries}</div>
-              <p className="text-xs text-[#66645e]">
-                ~{stats.dailyAverage} entries per day
+              <div className={`${plusJakarta.className} text-[1.75rem] sm:text-3xl font-extrabold text-[#ab4400]`}>{stats.totalEntries}</div>
+              <p className="text-[10px] sm:text-xs text-[#66645e] font-medium">
+                Total so far
               </p>
             </CardContent>
           </Card>
 
           <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-[#6a2700]">
-                Average Mood
+              <CardTitle className="text-[11px] sm:text-sm font-bold text-[#6a2700] uppercase tracking-wider">
+                Mood
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`${plusJakarta.className} text-3xl font-semibold text-[#ab4400]`}>{averageMoodText}</div>
-              <p className="text-xs text-[#66645e]">
-                {hasEntriesInPeriod ? "Overall mood score" : "No mood score in selected period"}
+              <div className={`${plusJakarta.className} text-[1.75rem] sm:text-3xl font-extrabold text-[#ab4400]`}>{averageMoodText}</div>
+              <p className="text-[10px] sm:text-xs text-[#66645e] font-medium">
+                Avg. Score
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
+          <Card className="col-span-2 lg:col-span-1 bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-[#6a2700]">
                 Mood Summary
@@ -226,7 +228,7 @@ const MoodAnalytics = () => {
             <CardContent>
               <div className="flex items-start gap-2">
                 <span className="text-xl leading-none mt-0.5">{moodSummaryEmoji}</span>
-                <p className={`${plusJakarta.className} text-lg md:text-xl font-semibold leading-snug tracking-tight text-balance text-[#393832]`}>
+                <p className={`${plusJakarta.className} text-base sm:text-lg md:text-xl font-semibold leading-snug tracking-tight text-balance text-[#393832]`}>
                   {moodSummaryText}
                 </p>
               </div>
@@ -234,73 +236,155 @@ const MoodAnalytics = () => {
           </Card>
         </div>
 
-        <Card className="bg-white/75 border-[#ffae88]/28 rounded-3xl shadow-[0_12px_30px_rgba(57,56,50,0.08)]">
-          <CardHeader>
-            <CardTitle className={`${plusJakarta.className} text-[#ab4400]`}>Mood Timeline</CardTitle>
+        <Card className="bg-white/75 border-[#ffae88]/28 rounded-3xl shadow-[0_12px_30px_rgba(57,56,50,0.08)] overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className={`${plusJakarta.className} text-[#ab4400] text-xl font-extrabold tracking-tight flex items-center justify-between`}>
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-[#ffae88]" />
+                Journey Tape
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold text-[#9d4867] uppercase tracking-widest bg-[#9d4867]/5 p-1.5 px-3 rounded-full">
+                  {period === "7d" ? "Weekly" : period === "15d" ? "Bi-Weekly" : "Monthly"} Flow
+                </span>
+              </div>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          
+          <CardContent className="pt-4 px-0">
             {hasEntriesInPeriod || isInactiveForSelectedPeriod ? (
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={timeline}
-                    margin={{
-                      top: 5,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
+              <div className="relative group">
+                {/* Scrollable Container */}
+                <div className="overflow-x-auto custom-scrollbar pb-6 px-6">
+                  <div 
+                    style={{ 
+                      width: `${Math.max(timeline.length * 60, 400)}px`,
+                      height: '240px' 
                     }}
+                    className="relative"
                   >
-                    <CartesianGrid strokeDasharray="4 4" stroke="#f1e8de" />
-                    <XAxis
-                      dataKey="date"
-                      tickFormatter={(date) => format(parseISO(date), "MMM d")}
-                      stroke="#9d4867"
-                    />
-                    <YAxis yAxisId="left" domain={[0, 10]} stroke="#ab4400" />
-                    <YAxis
-                      yAxisId="right"
-                      orientation="right"
-                      domain={[0, "auto"]}
-                      stroke="#9d4867"
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Line
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey="averageScore"
-                      stroke="#ab4400"
-                      name="Average Mood"
-                      strokeWidth={3}
-                      connectNulls={true}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="entryCount"
-                      stroke="#9d4867"
-                      name="Number of Entries"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                    {/* Background Subtle Grid */}
+                    <div className="absolute inset-0 flex flex-col justify-between py-6 pointer-events-none opacity-[0.03]">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="h-px w-full bg-[#ab4400]" />
+                      ))}
+                    </div>
+
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={timeline}
+                        margin={{ top: 40, right: 20, left: 20, bottom: 20 }}
+                      >
+                        <defs>
+                          <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ab4400" stopOpacity={0.15}/>
+                            <stop offset="95%" stopColor="#ab4400" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <Tooltip 
+                          content={<CustomTooltip />} 
+                          cursor={{ stroke: '#ffae88', strokeWidth: 1, strokeDasharray: '4 4' }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="averageScore"
+                          stroke="#ab4400"
+                          strokeWidth={5}
+                          fillOpacity={1}
+                          fill="url(#colorMood)"
+                          activeDot={{ 
+                            r: 8, 
+                            fill: "#ab4400", 
+                            stroke: "#fff", 
+                            strokeWidth: 3 
+                          }}
+                          dot={(props) => {
+                            const { cx, cy, payload } = props;
+                            if (payload.averageScore > 0) {
+                              const emoji = getMoodById(payload.mostFrequentMood)?.emoji;
+                              return (
+                                <g key={payload.date}>
+                                  <foreignObject x={cx - 12} y={cy - 35} width="24" height="24">
+                                    <div className="text-lg flex items-center justify-center animate-bounce-slow">
+                                      {emoji}
+                                    </div>
+                                  </foreignObject>
+                                  <circle cx={cx} cy={cy} r={4} fill="#ab4400" stroke="#fff" strokeWidth={2} />
+                                </g>
+                              );
+                            }
+                            return null;
+                          }}
+                          connectNulls={true}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                    
+                    {/* Date Tape */}
+                    <div className="absolute bottom-0 left-0 w-full flex justify-between px-5 pointer-events-none">
+                      {timeline.map((d, i) => (
+                        <div key={i} className="flex flex-col items-center gap-1 w-[60px]">
+                          <div className="h-2 w-0.5 bg-stone-200 rounded-full" />
+                          <span className="text-[9px] font-black text-stone-400 uppercase tracking-tighter">
+                            {format(parseISO(d.date), "MMM d")}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Scroll Indicator Overlay */}
+                <div className="absolute top-1/2 right-2 -translate-y-1/2 w-8 h-12 bg-gradient-to-l from-white/80 to-transparent flex items-center justify-end pr-1 pointer-events-none group-hover:opacity-0 transition-opacity">
+                   <div className="animate-pulse text-[#ab4400]/40">→</div>
+                </div>
               </div>
             ) : (
-              <div className="h-[300px] w-full rounded-2xl border border-dashed border-[#ffae88]/40 bg-[#fdf9f4] flex items-center justify-center px-4 text-center">
+              <div className="h-[240px] mx-6 rounded-2xl border border-dashed border-[#ffae88]/40 bg-[#fdf9f4] flex items-center justify-center px-4 text-center">
                 <div className="space-y-1">
-                  <p className={`${plusJakarta.className} font-semibold text-[#393832]`}>Your mood timeline will appear here.</p>
+                  <p className={`${plusJakarta.className} font-semibold text-[#393832]`}>Your journey starts here.</p>
                   <p className="text-sm text-[#66645e]">
-                    Add your first entry to start tracking your emotional journey.
+                    Write your first note to see your flow.
                   </p>
                 </div>
               </div>
             )}
+            
+            <div className="mt-1 px-6 flex justify-between items-center bg-stone-50/50 py-2.5 border-t border-stone-100">
+               <div className="flex items-center gap-4">
+                  <div className="flex -space-x-2">
+                    {[...Array(3)].map((_, i) => (
+                      <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-stone-100 flex items-center justify-center text-[10px] grayscale">
+                        {i === 0 ? "✨" : i === 1 ? "📝" : "❤️"}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[9px] font-bold text-stone-500 max-w-[120px] leading-tight uppercase tracking-tight">
+                    Journey recorded with love
+                  </p>
+               </div>
+              
+              <div className="text-right">
+                <p className="text-[8px] font-bold text-[#9d4867] uppercase tracking-widest opacity-60">Current Vibe</p>
+                <div className="flex items-center gap-2 justify-end">
+                  <span className="text-xl animate-pulse">{moodSummaryEmoji}</span>
+                  <span className={`${plusJakarta.className} text-lg font-black text-[#ab4400]`}>
+                    {averageMoodText}
+                  </span>
+                </div>
+              </div>
+            </div>
           </CardContent>
+
+          <style jsx global>{`
+            .animate-bounce-slow {
+              animation: bounce 3s infinite;
+            }
+            @keyframes bounce {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-5px); }
+            }
+          `}</style>
         </Card>
       </div>
     </>

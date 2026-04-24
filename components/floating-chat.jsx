@@ -131,12 +131,18 @@ export default function FloatingChat({ partnerNames }) {
     }
   };
 
+  useEffect(() => {
+    const handleToggle = () => setIsOpen(prev => !prev);
+    window.addEventListener("toggle-riceee-chat", handleToggle);
+    return () => window.removeEventListener("toggle-riceee-chat", handleToggle);
+  }, []);
+
   return (
     <>
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-[#ab4400] to-[#9d4867] shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center z-50 group"
+          className="fixed hidden md:flex bottom-4 right-4 sm:bottom-6 sm:right-6 h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-[#ab4400] to-[#9d4867] shadow-lg hover:shadow-xl transition-all hover:scale-105 items-center justify-center z-50 group"
         >
           <Heart className="h-7 w-7 sm:h-8 sm:w-8 text-white fill-white group-hover:scale-110 transition-transform" />
           {unreadCount > 0 && (
