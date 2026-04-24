@@ -45,7 +45,7 @@ export default function NotificationBell({ partnerNames }) {
   const handleMarkAsRead = async (notificationId, readerId, readerLabel) => {
     setLoading(true);
     const result = await markNotificationAsRead(notificationId, readerId);
-    
+
     if (result.success) {
       await fetchNotifications();
       toast.success(`Marked as read by ${readerLabel}!`);
@@ -74,6 +74,7 @@ export default function NotificationBell({ partnerNames }) {
       <PopoverContent
         className={`${manrope.className} w-[20rem] p-0 rounded-3xl border border-[#ffdfcf] bg-[#fffbff] shadow-[0_24px_56px_rgba(57,56,50,0.2)] overflow-hidden`}
         align="end"
+        alignOffset={-80}
         sideOffset={12}
       >
         <div className="relative overflow-hidden border-b border-[#ffdfcf] px-4 py-2.5">
@@ -94,8 +95,17 @@ export default function NotificationBell({ partnerNames }) {
             </span>
           )}
         </div>
-        
-        <div className="max-h-[15rem] overflow-y-auto">
+
+        <div className="max-h-[22rem] overflow-y-auto custom-scrollbar">
+          <style jsx global>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              display: none;
+            }
+            .custom-scrollbar {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+          `}</style>
           {notifications.length === 0 ? (
             <div className="p-5 text-center text-[#66645e]">
               <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-[#fff0e8] to-[#fff1f6] border border-[#ffd9e2]/70">
@@ -134,17 +144,16 @@ export default function NotificationBell({ partnerNames }) {
                     {format(new Date(notification.createdAt), "MMM d 'at' h:mm a")}
                   </p>
                 </Link>
-                
+
                 <div className="mt-3 flex items-center gap-2">
                   <span className="text-[11px] text-[#6d6a64] mr-1">Read by:</span>
                   <button
                     onClick={() => handleMarkAsRead(notification.id, PLAYER_IDS.ONE, nameOne)}
                     disabled={loading || notification.hunterRead}
-                    className={`h-8 min-w-8 px-2 rounded-full font-bold text-xs transition-all border ${
-                      notification.hunterRead
-                        ? "bg-[#ab4400] text-white border-[#ab4400]"
-                        : "bg-[#fff0e8] text-[#ab4400] border-[#ffb995] hover:bg-[#ffe3d4]"
-                    }`}
+                    className={`h-8 min-w-8 px-2 rounded-full font-bold text-xs transition-all border ${notification.hunterRead
+                      ? "bg-[#ab4400] text-white border-[#ab4400]"
+                      : "bg-[#fff0e8] text-[#ab4400] border-[#ffb995] hover:bg-[#ffe3d4]"
+                      }`}
                     title={notification.hunterRead ? `${nameOne} has read` : `Mark as read by ${nameOne}`}
                   >
                     {notification.hunterRead ? (
@@ -156,11 +165,10 @@ export default function NotificationBell({ partnerNames }) {
                   <button
                     onClick={() => handleMarkAsRead(notification.id, PLAYER_IDS.TWO, nameTwo)}
                     disabled={loading || notification.riceeeRead}
-                    className={`h-8 min-w-8 px-2 rounded-full font-bold text-xs transition-all border ${
-                      notification.riceeeRead
-                        ? "bg-[#9d4867] text-white border-[#9d4867]"
-                        : "bg-[#fff1f6] text-[#9d4867] border-[#f3bfd0] hover:bg-[#ffe3ec]"
-                    }`}
+                    className={`h-8 min-w-8 px-2 rounded-full font-bold text-xs transition-all border ${notification.riceeeRead
+                      ? "bg-[#9d4867] text-white border-[#9d4867]"
+                      : "bg-[#fff1f6] text-[#9d4867] border-[#f3bfd0] hover:bg-[#ffe3ec]"
+                      }`}
                     title={notification.riceeeRead ? `${nameTwo} has read` : `Mark as read by ${nameTwo}`}
                   >
                     {notification.riceeeRead ? (

@@ -10,18 +10,20 @@ import Pusher from "pusher-js";
 import { PLAYER_IDS } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
 
-export default function FloatingChat({ partnerNames }) {
+export default function FloatingChat({ partnerNames, user, currentUserId }) {
+  const [mounted, setMounted] = useState(false);
   const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
   const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
 
-  // Single-side UI assumes each interface has its own sender identity.
-  const [sender, setSender] = useState(PLAYER_IDS.ONE);
+  // Determine which partner identity matches the current logged-in user
+  const mySenderId = currentUserId === user?.clerkUserId ? PLAYER_IDS.ONE : PLAYER_IDS.TWO;
+  const [sender, setSender] = useState(mySenderId);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [replyingTo, setReplyingTo] = useState(null); // For reply feature
+  const [replyingTo, setReplyingTo] = useState(null); 
   const messagesEndRef = useRef(null);
   const isOpenRef = useRef(isOpen);
 
@@ -32,11 +34,13 @@ export default function FloatingChat({ partnerNames }) {
   };
 
   useEffect(() => {
-    const storedSender = localStorage.getItem("riceee-chat-sender");
-    if (storedSender === PLAYER_IDS.ONE || storedSender === PLAYER_IDS.TWO) {
-      setSender(storedSender);
-    }
+    setMounted(true);
   }, []);
+
+  useEffect(() => {
+    // Keep sender state in sync with current user login
+    setSender(mySenderId);
+  }, [mySenderId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -139,6 +143,8 @@ export default function FloatingChat({ partnerNames }) {
     return () => window.removeEventListener("toggle-riceee-chat", handleToggle);
   }, []);
 
+  if (!mounted) return null;
+
   return (
     <>
       {!isOpen && (
@@ -229,22 +235,30 @@ export default function FloatingChat({ partnerNames }) {
                     );
                   }
                   const { message } = item;
+                  const isMe = message.sender === sender;
+
                   return (
                     <div
                       key={message.id}
-                      className="flex justify-start relative z-10 group"
-                      onMouseEnter={() => {}}
+                      className={`flex ${isMe ? 'justify-end' : 'justify-start'} relative z-10 group`}
                     >
                       <div
-                        className={`max-w-[82%] rounded-[1.25rem] px-4 py-3 shadow-sm relative ${
-                          message.sender === PLAYER_IDS.ONE || message.sender === "Partner 1"
-                            ? "bg-[#ffd9e2] text-[#8c4f68]"
-                            : "bg-[#f9b187] text-[#6a3e2a]"
-                        }`}
+                        className={`max-w-[82%] rounded-[1.25rem] px-4 py-3 shadow-sm relative ${isMe
+                            ? "bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white"
+                            : (message.sender === PLAYER_IDS.ONE || message.sender === "Partner 1"
+                              ? "bg-[#ffd9e2] text-[#8c4f68]"
+                              : "bg-[#f9b187] text-[#6a3e2a]")
+                          }`}
                       >
+                        {/* Sender Label for Incoming Messages */}
+                        {!isMe && (
+                          <p className="text-[10px] font-bold uppercase tracking-wider opacity-60 mb-1">
+                            {message.sender === PLAYER_IDS.ONE ? partnerOneName : partnerTwoName}
+                          </p>
+                        )}
                         {/* Reply preview in bubble */}
                         {message.replyToContent && (
-                          <div className="border-l-4 border-[#ab4400]/40 pl-2 mb-1 text-xs text-[#ab4400]/80 bg-[#fff7f2] rounded">
+                          <div className={`border-l-4 pl-2 mb-1 text-xs rounded ${isMe ? 'border-white/40 bg-white/10 text-white/90' : 'border-[#ab4400]/40 bg-[#fff7f2] text-[#ab4400]/80'}`}>
                             <span className="font-semibold">
                               {message.replyToSender === PLAYER_IDS.ONE || message.replyToSender === "Partner 1" ? partnerOneName : partnerTwoName}
                             </span>
@@ -259,7 +273,7 @@ export default function FloatingChat({ partnerNames }) {
                             {format(new Date(message.createdAt), "h:mm a")}
                           </p>
                           <button
-                            className="text-xs text-[#ab4400]/70 hover:underline ml-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className={`text-xs hover:underline ml-2 opacity-0 group-hover:opacity-100 transition-opacity ${isMe ? 'text-white/70' : 'text-[#ab4400]/70'}`}
                             onClick={() => setReplyingTo(message)}
                             title="Reply"
                           >
@@ -295,14 +309,7 @@ export default function FloatingChat({ partnerNames }) {
               </div>
             )}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => toast.info("Media upload in chat is coming soon")}
-                className="h-9 w-9 rounded-full bg-white text-[#7a3320] border border-[#e7d4c3] flex items-center justify-center"
-                aria-label="Add attachment"
-              >
-                <CirclePlus className="h-5 w-5" />
-              </button>
+
 
               <input
                 value={newMessage}

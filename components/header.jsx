@@ -31,8 +31,9 @@ async function Header() {
         <div className="flex items-center gap-2">
           <Link href="/journal/write" className="relative group">
             <div className="absolute -inset-0.5 bg-[#ab4400] rounded-full blur opacity-20 group-hover:opacity-40 transition duration-1000" />
-            <div className="relative h-10 w-10 sm:h-11 sm:w-11 rounded-full bg-[#ab4400] text-white flex items-center justify-center shadow-md shadow-[#ab4400]/20 hover:scale-105 active:scale-95 transition-all">
-              <PenBox size={18} className="sm:w-5 sm:h-5" />
+            <div className="relative h-10 w-10 md:h-auto md:w-auto md:px-5 md:py-2.5 rounded-full bg-[#ab4400] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#ab4400]/20 hover:scale-[1.02] active:scale-95 transition-all">
+              <PenBox size={16} className="md:w-4 md:h-4" />
+              <span className="hidden md:inline text-[11px] font-bold uppercase tracking-[0.05em] whitespace-nowrap">WRITE YOUR HEARTS OUT</span>
             </div>
           </Link>
           <SignedOut>

@@ -210,7 +210,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
         <div className="w-fit min-w-[355px] mx-auto sticky top-0 md:top-2 mt-0 mb-6 flex items-center bg-[#ffae88]/10 backdrop-blur-md rounded-full p-1 z-30 shadow-inner border border-[#ffae88]/20">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className={`p-2.5 rounded-full transition-all duration-300 ${isSidebarOpen ? "bg-white text-[#9d4867] shadow-sm" : "text-[#9d4867]/60 hover:text-[#9d4867] hover:bg-white/40"}`}
+            className={`p-2.5 rounded-full transition-all duration-300 md:hidden ${isSidebarOpen ? "bg-white text-[#9d4867] shadow-sm" : "text-[#9d4867]/60 hover:text-[#9d4867] hover:bg-white/40"}`}
           >
             <PanelLeft size={20} className={`transition-transform duration-500 ${isSidebarOpen ? "rotate-180" : "rotate-0"}`} />
           </button>

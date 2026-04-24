@@ -23,16 +23,16 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
   return (
-    <ClerkProvider>
-      <html lang="en">
-        <body
-          className={`${poppins.className} ${poppins.variable} ${jetbrainsMono.variable} min-h-screen flex flex-col overflow-x-hidden`}
-        >
+    <html lang="en">
+      <body
+        className={`${poppins.className} ${poppins.variable} ${jetbrainsMono.variable} min-h-screen flex flex-col overflow-x-hidden`}
+      >
+        <ClerkProvider>
           <main className="flex-1 min-h-0 overflow-x-hidden pb-24 md:pb-0">{children}</main>
           <BottomNav />
           <Toaster richColors />
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

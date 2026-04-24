@@ -44,8 +44,6 @@ const MoodAnalytics = () => {
     fn: fetchAnalytics,
   } = useFetch(getAnalytics);
 
-  const { isLoaded } = useUser();
-
   useEffect(() => {
     fetchAnalytics(period);
   }, [period]);
@@ -57,7 +55,7 @@ const MoodAnalytics = () => {
     }
   }, [analytics, period]);
 
-  if (loading || !analytics?.data || !isLoaded) {
+  if (loading || !analytics?.data) {
     return <MoodAnalyticsSkeleton />;
   }
 
@@ -101,7 +99,7 @@ const MoodAnalytics = () => {
 
   return (
     <>
-      <div className="flex flex-col items-center justify-center gap-6 w-full text-center mb-8">
+      <div className="flex flex-col md:flex-row justify-center md:justify-between items-center md:items-end gap-6 w-full text-center md:text-left mb-8">
         <h2 className={`${plusJakarta.className} text-4xl md:text-6xl font-bold text-[#ab4400] tracking-tight`}>
           Welcome Back
         </h2>
