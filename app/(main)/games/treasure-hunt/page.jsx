@@ -231,7 +231,7 @@ function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
   };
 
   if (challenges.length === 0 && gameState === "playing") {
-    return <div className="flex items-center justify-center min-h-screen">Loading challenges...</div>;
+    return <div className="flex items-center justify-center min-h-dvh">Loading challenges...</div>;
   }
 
   const challenge = challenges[currentChallenge];

@@ -198,7 +198,7 @@ export function PusherMultiplayerWrapper({
   // Show player selection screen
   if (!localPlayer) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+      <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
         <Card className="max-w-2xl w-full">
           <CardContent className="p-8">
             <div className="text-center mb-8">
@@ -254,7 +254,7 @@ export function PusherMultiplayerWrapper({
   // Show waiting screen
   if (isConnecting || !remotePlayer) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
+      <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center">
             <Loader2 className="inline-block animate-spin text-primary mb-4" size={48} />

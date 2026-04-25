@@ -120,7 +120,7 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
   };
 
   return (
-    <div className={`${manrope.className} bg-[#fffbff] text-[#393832] min-h-screen relative overflow-x-hidden selection:bg-[#ffae88] selection:text-[#6a2700]`}>
+    <div className={`${manrope.className} bg-[#fffbff] text-[#393832] min-h-dvh relative overflow-x-hidden selection:bg-[#ffae88] selection:text-[#6a2700]`}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');`}</style>
       <style>{`
         .paper-grain {
@@ -247,7 +247,7 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
           </div>
         </main>
 
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center px-6 py-4 max-w-md mx-auto bg-[#fffbff]/70 backdrop-blur-xl rounded-full mb-6 shadow-[0_20px_50px_rgba(57,56,50,0.1)]">
+        <div className="md:hidden fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 flex justify-around items-center px-6 py-4 max-w-md mx-auto bg-[#fffbff]/70 backdrop-blur-xl rounded-full shadow-[0_20px_50px_rgba(57,56,50,0.1)]">
           <Link className="flex flex-col items-center justify-center bg-[#ab4400] text-white rounded-full w-12 h-12 hover:scale-110 transition-transform duration-150" href="/memories">
             <span className="material-symbols-outlined">auto_awesome</span>
           </Link>

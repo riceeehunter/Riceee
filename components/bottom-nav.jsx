@@ -65,8 +65,8 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-md z-[100]">
-      <nav className="bg-white/70 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] flex items-center justify-around p-2">
+    <div className="md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md z-[100]">
+      <nav className="bg-white/85 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.15)] flex items-center justify-around p-1 sm:p-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -92,7 +92,7 @@ const BottomNav = () => {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center px-3 py-1 gap-1"
+              className="flex flex-col items-center justify-center px-1.5 min-[400px]:px-3 py-1 gap-1"
             >
               <Icon 
                 size={22} 

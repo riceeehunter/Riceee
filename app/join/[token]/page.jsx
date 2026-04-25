@@ -19,7 +19,7 @@ export default async function JoinInvitePage({ params }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-10">
+    <div className="min-h-dvh flex items-center justify-center px-4 py-10">
       <AcceptInviteCard token={token} />
     </div>
   );

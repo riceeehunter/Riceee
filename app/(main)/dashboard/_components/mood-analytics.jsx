@@ -100,16 +100,17 @@ const MoodAnalytics = () => {
   return (
     <>
       <div className="flex flex-col md:flex-row justify-center md:justify-between items-center md:items-end gap-6 w-full text-center md:text-left mb-8">
-        <h2 className={`${plusJakarta.className} text-4xl md:text-6xl font-bold text-[#ab4400] tracking-tight`}>
+        <h2 className={`${plusJakarta.className} text-4xl md:text-5xl font-extrabold text-[#ab4400] tracking-tight leading-tight text-center md:text-left whitespace-nowrap`}>
           Welcome Back
         </h2>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center md:justify-end gap-2 sm:gap-3 w-full">
           <Link href="/riceee-chat">
-            <Button className="rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] text-white shadow-[0_8px_20px_rgba(171,68,0,0.22)]">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Riceee AI
-              <Sparkles className="ml-2 h-4 w-4" />
+            <Button className="rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] text-white shadow-[0_8px_20px_rgba(171,68,0,0.22)] px-3 sm:px-4">
+              <MessageCircle className="mr-1.5 sm:mr-2 h-4 w-4" />
+              <span className="max-[431px]:hidden">Riceee AI</span>
+              <span className="min-[432px]:hidden">AI Chat</span>
+              <Sparkles className="ml-1.5 sm:ml-2 h-4 w-4" />
             </Button>
           </Link>
           <ReminderDialog />
@@ -117,9 +118,9 @@ const MoodAnalytics = () => {
             <PopoverTrigger asChild>
               <button
                 type="button"
-                className="w-[160px] h-10 rounded-full border border-[#ffae88]/45 bg-white/90 text-[#6a2700] px-4 flex items-center justify-between hover:bg-[#fff4ec]"
+                className="min-w-[110px] sm:min-w-[140px] w-auto h-10 rounded-full border border-[#ffae88]/45 bg-white/90 text-[#6a2700] px-3 sm:px-4 flex items-center justify-between hover:bg-[#fff4ec]"
               >
-                <span className="font-medium">{selectedPeriodLabel}</span>
+                <span className="font-medium truncate mr-1 sm:mr-2 text-sm sm:text-base">{selectedPeriodLabel}</span>
                 <ChevronDown className="h-4 w-4 opacity-70" />
               </button>
             </PopoverTrigger>
@@ -267,7 +268,7 @@ const MoodAnalytics = () => {
                 >
                   <div 
                     style={{ 
-                      width: `${Math.max(timeline.length * 60, 400)}px`,
+                      width: `${Math.max(timeline.length * 60, 320)}px`,
                       height: '240px' 
                     }}
                     className="relative"

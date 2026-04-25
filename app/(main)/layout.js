@@ -25,13 +25,7 @@ const Layout = async ({ children }) => {
     <>
       <Header />
       <div className="page-shell pt-28 md:pt-32">{children}</div>
-      <SignedIn>
-        <FloatingChat 
-          partnerNames={partnerNames} 
-          user={{ clerkUserId: user.clerkUserId }} 
-          currentUserId={userId} 
-        />
-      </SignedIn>
+
     </>
   );
 };

@@ -177,7 +177,7 @@ function ThisOrThatGame({ localPlayer, sessionId, getPlayerName }) {
   const remoteColor = playerColors[remotePlayerId] || playerColors[PLAYER_IDS.TWO];
 
   if (questions.length === 0 && gameState === "playing") {
-    return <div className="flex items-center justify-center min-h-screen">Loading questions...</div>;
+    return <div className="flex items-center justify-center min-h-dvh">Loading questions...</div>;
   }
 
   const progress = questions.length > 0 ? ((currentQuestion + 1) / questions.length) * 100 : 0;

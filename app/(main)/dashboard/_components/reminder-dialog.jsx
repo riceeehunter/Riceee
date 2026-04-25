@@ -114,7 +114,7 @@ const ReminderDialog = () => {
           <CalendarDays className="h-5 w-5" />
         </Button>
       </DialogTrigger>
-      <DialogContent className={`${manrope.className} w-full h-full sm:h-auto max-w-none sm:max-w-4xl max-h-screen sm:max-h-[90vh] rounded-none sm:rounded-[2rem] border-none sm:border border-[#ffdfcf] bg-[#fffbff] p-0 shadow-[0_28px_80px_rgba(57,56,50,0.22)] overflow-y-auto sm:overflow-hidden [&>button:last-child]:hidden`}>
+      <DialogContent className={`${manrope.className} w-full h-full sm:h-auto max-w-none sm:max-w-4xl max-h-dvh sm:max-h-[90vh] rounded-none sm:rounded-[2rem] border-none sm:border border-[#ffdfcf] bg-[#fffbff] p-0 shadow-[0_28px_80px_rgba(57,56,50,0.22)] overflow-y-auto sm:overflow-hidden [&>button:last-child]:hidden`}>
         <style>{`
           .reminder-grain {
             background-image: radial-gradient(circle at 25% 20%, rgba(255, 174, 136, 0.2), transparent 45%), radial-gradient(circle at 85% 0%, rgba(255, 217, 226, 0.28), transparent 55%);

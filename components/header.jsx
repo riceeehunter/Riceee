@@ -14,9 +14,9 @@ async function Header() {
   const partnerNames = resolvePartnerNames(user);
 
   return (
-    <header className={`${plusJakarta.className} fixed top-6 left-1/2 -translate-x-1/2 w-fit max-w-[90vw] z-50`}>
+    <header className={`${plusJakarta.className} fixed top-[calc(1.5rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 w-fit max-w-[95vw] z-50`}>
       <nav className="flex items-center justify-between gap-2 p-2 rounded-full bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]">
-        <Link href="/" className="flex items-center px-6 py-2 rounded-full bg-white/60 shadow-sm border border-white/40">
+        <Link href="/" className="flex items-center px-4 sm:px-6 py-2 rounded-full bg-white/60 shadow-sm border border-white/40">
           <div className="text-xl font-semibold text-[#ab4400] tracking-tighter leading-none">Riceee</div>
         </Link>
 
@@ -31,9 +31,9 @@ async function Header() {
         <div className="flex items-center gap-2">
           <Link href="/journal/write" className="relative group">
             <div className="absolute -inset-0.5 bg-[#ab4400] rounded-full blur opacity-20 group-hover:opacity-40 transition duration-1000" />
-            <div className="relative h-10 w-10 md:h-auto md:w-auto md:px-5 md:py-2.5 rounded-full bg-[#ab4400] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#ab4400]/20 hover:scale-[1.02] active:scale-95 transition-all">
-              <PenBox size={16} className="md:w-4 md:h-4" />
-              <span className="hidden md:inline text-[11px] font-bold uppercase tracking-[0.05em] whitespace-nowrap">WRITE YOUR HEARTS OUT</span>
+            <div className="relative h-10 w-10 lg:h-auto lg:w-auto lg:px-5 lg:py-2.5 rounded-full bg-[#ab4400] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#ab4400]/20 hover:scale-[1.02] active:scale-95 transition-all">
+              <PenBox size={16} className="lg:w-4 lg:h-4" />
+              <span className="hidden lg:inline text-[11px] font-bold uppercase tracking-[0.05em] whitespace-nowrap">WRITE YOUR HEARTS OUT</span>
             </div>
           </Link>
           <SignedOut>

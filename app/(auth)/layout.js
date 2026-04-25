@@ -2,7 +2,7 @@ import React from "react";
 
 const AuthLayout = ({ children }) => {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center relative bg-[#fffbff] selection:bg-[#ffae88] selection:text-[#6a2700] overflow-hidden">
+    <div className="min-h-dvh w-full flex items-center justify-center relative bg-[#fffbff] selection:bg-[#ffae88] selection:text-[#6a2700] overflow-hidden">
       {/* Background elements */}
       <div 
         className="fixed inset-0 z-0 pointer-events-none opacity-[0.15]" 

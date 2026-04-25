@@ -159,7 +159,7 @@ export default function UploadMemoryPageClient({ partnerNames }) {
         }
       `}</style>
 
-      <div className="upload-bg min-h-screen">
+      <div className="upload-bg min-h-dvh">
         <main className="max-w-4xl mx-auto px-6 pt-16 pb-12">
           <div className="mb-10 flex items-start justify-between">
             <div className="flex-1">
