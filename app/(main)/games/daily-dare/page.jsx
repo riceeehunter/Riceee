@@ -232,7 +232,6 @@ function DailyDareGame({ localPlayer, sessionId, getPlayerName }) {
                >
                  {localReady ? "WAITING FOR PARTNER..." : "GO TO CHALLENGE! 🎯"}
                </Button>
-               )}
             </CardContent>
           </Card>
         </div>
