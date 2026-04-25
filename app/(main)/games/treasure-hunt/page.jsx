@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Package, Star, Clock, Trophy } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ArrowLeft, Package, Star, Clock, Trophy, Users, Map, Compass, Gem } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
-import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { plusJakarta } from "@/lib/fonts";
 
 const ALL_CHALLENGES = [
   { type: "math", question: "What is 15 + 27?", answer: "42", emoji: "🧮" },
@@ -30,19 +32,25 @@ const ALL_CHALLENGES = [
 const CHANNEL_NAME = 'game-treasure-hunt';
 
 function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
-  const [pusherClient, setPusherClient] = useState(null);
-  const [channel, setChannel] = useState(null);
-  const [remotePlayer, setRemotePlayer] = useState(null);
-
   const [gameState, setGameState] = useState("menu");
+  const [localReady, setLocalReady] = useState(false);
+  const [remoteReady, setRemoteReady] = useState(false);
+  const [remoteConnected, setRemoteConnected] = useState(false);
+  
   const [challenges, setChallenges] = useState([]);
   const [currentChallenge, setCurrentChallenge] = useState(0);
   const [userAnswer, setUserAnswer] = useState("");
   const [score, setScore] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(60);
+  const [timeLeft, setTimeLeft] = useState(90);
   const [treasuresFound, setTreasuresFound] = useState(0);
   const [feedback, setFeedback] = useState("");
-  const [localFinished, setLocalFinished] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [channel, setChannel] = useState(null);
+  const localReadyRef = useRef(localReady);
+
+  useEffect(() => {
+    localReadyRef.current = localReady;
+  }, [localReady]);
 
   // Remote player state
   const [remoteScore, setRemoteScore] = useState(0);
@@ -50,65 +58,85 @@ function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
   const [remoteCurrentChallenge, setRemoteCurrentChallenge] = useState(0);
   const [remoteFinished, setRemoteFinished] = useState(false);
 
-  const remotePlayerId = getOtherPlayer(localPlayer);
+  const remotePlayer = getOtherPlayer(localPlayer);
   const localPlayerName = getPlayerName(localPlayer);
-  const remotePlayerName = getPlayerName(remotePlayer || remotePlayerId);
+  const remotePlayerName = getPlayerName(remotePlayer);
+  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎮";
+  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎮";
 
   // Initialize Pusher
   useEffect(() => {
-    if (!localPlayer) return;
-
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
     });
 
     const gameChannel = pusher.subscribe(CHANNEL_NAME);
-    setPusherClient(pusher);
     setChannel(gameChannel);
 
-    console.log(`[${localPlayer}] 🗺️ Treasure Hunt initialized`);
-
-    return () => {
-      gameChannel.unsubscribe();
-      pusher.disconnect();
-    };
-  }, [localPlayer]);
-
-  // Listen for remote player updates
-  useEffect(() => {
-    if (!channel) return;
-
-    channel.bind('pusher:subscription_succeeded', async () => {
-      console.log(`[${localPlayer}] ✅ Subscribed to ${CHANNEL_NAME}`);
-      
-      await fetch('/api/pusher/trigger', {
+    gameChannel.bind('pusher:subscription_succeeded', () => {
+      // Announce presence
+      fetch('/api/pusher/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           channel: CHANNEL_NAME,
           event: 'player-joined',
-          data: { player: localPlayer },
-        }),
+          data: { player: localPlayer, ready: localReadyRef.current }
+        })
       });
     });
 
-    channel.bind('player-joined', (data) => {
+    gameChannel.bind('player-joined', (data) => {
       if (data.player !== localPlayer) {
-        console.log(`[${localPlayer}] 👋 ${data.player} joined`);
-        setRemotePlayer(data.player);
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+        // Reply to let them know we are here
+        fetch('/api/pusher/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: CHANNEL_NAME,
+            event: 'presence-check',
+            data: { player: localPlayer, ready: localReadyRef.current }
+          })
+        });
       }
     });
 
-    channel.bind('challenges-sync', (data) => {
+    gameChannel.bind('presence-check', (data) => {
       if (data.player !== localPlayer) {
-        console.log(`[${localPlayer}] 🎲 Challenges synced`);
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+      }
+    });
+
+    gameChannel.bind('player-ready', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteReady(data.ready);
+      }
+    });
+
+    gameChannel.bind('challenges-sync', (data) => {
+      if (data.player !== localPlayer) {
         setChallenges(data.challenges);
       }
     });
 
-    channel.bind('game-update', (data) => {
+    gameChannel.bind('game-start', (data) => {
+      setGameState("playing");
+      setTimeLeft(90);
+      setScore(0);
+      setTreasuresFound(0);
+      setCurrentChallenge(0);
+      setRemoteScore(0);
+      setRemoteTreasuresFound(0);
+      setRemoteCurrentChallenge(0);
+      setRemoteFinished(false);
+      setWinner(null);
+    });
+
+    gameChannel.bind('game-update', (data) => {
       if (data.player !== localPlayer) {
-        console.log(`[${localPlayer}] 📡 Update from ${data.player}`);
         setRemoteScore(data.score);
         setRemoteTreasuresFound(data.treasuresFound);
         setRemoteCurrentChallenge(data.currentChallenge);
@@ -117,310 +145,363 @@ function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
     });
 
     return () => {
-      channel.unbind_all();
+      gameChannel.unbind_all();
+      pusher.unsubscribe(CHANNEL_NAME);
+      pusher.disconnect();
     };
-  }, [channel, localPlayer]);
+  }, [localPlayer]);
 
-  // Broadcast state changes
-  const broadcastState = useCallback(async (finished = false) => {
-    if (channel && gameState !== "menu") {
-      await fetch('/api/pusher/trigger', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel: CHANNEL_NAME,
-          event: 'game-update',
-          data: {
-            player: localPlayer,
-            score,
-            treasuresFound,
-            currentChallenge,
-            finished,
-          },
-        }),
-      });
+  // Sync state
+  useEffect(() => {
+    if (gameState === "playing") {
+      const interval = setInterval(() => {
+        fetch('/api/pusher/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: CHANNEL_NAME,
+            event: 'game-update',
+            data: {
+              player: localPlayer,
+              score,
+              treasuresFound,
+              currentChallenge,
+              finished: false
+            }
+          })
+        });
+      }, 3000);
+      return () => clearInterval(interval);
     }
-  }, [channel, localPlayer, score, treasuresFound, currentChallenge, gameState]);
+  }, [gameState, score, treasuresFound, currentChallenge, localPlayer]);
 
   // Timer
   useEffect(() => {
     if (gameState === "playing" && timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
+      const timer = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+      return () => clearInterval(timer);
     } else if (timeLeft === 0 && gameState === "playing") {
-      endGame();
+      handleFinish();
     }
   }, [timeLeft, gameState]);
 
-  const startGame = async () => {
-    // Shuffle challenges to make them non-repetitive
-    const shuffled = [...ALL_CHALLENGES]
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 10); // Take 10 random challenges
-    
-    setChallenges(shuffled);
-    setCurrentChallenge(0);
-    setUserAnswer("");
-    setScore(0);
-    setTimeLeft(60);
-    setTreasuresFound(0);
-    setFeedback("");
-    setLocalFinished(false);
-    setGameState("playing");
+  const handleReady = () => {
+    const nextReady = !localReady;
+    setLocalReady(nextReady);
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: CHANNEL_NAME,
+        event: 'player-ready',
+        data: { player: localPlayer, ready: nextReady }
+      })
+    });
+  };
 
-    // Broadcast challenges to sync both players
-    if (channel) {
-      await fetch('/api/pusher/trigger', {
+  useEffect(() => {
+    if (localReady && remoteReady && localPlayer === PLAYER_IDS.ONE && gameState === "menu") {
+      const shuffled = [...ALL_CHALLENGES]
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 10);
+      
+      setChallenges(shuffled);
+
+      fetch('/api/pusher/trigger', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           channel: CHANNEL_NAME,
           event: 'challenges-sync',
-          data: {
-            player: localPlayer,
-            challenges: shuffled,
-          },
-        }),
+          data: { player: localPlayer, challenges: shuffled }
+        })
+      });
+
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'game-start',
+          data: { startAt: Date.now() }
+        })
       });
     }
-
-    setTimeout(() => broadcastState(), 100);
-  };
+  }, [localReady, remoteReady, localPlayer, gameState]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!userAnswer.trim()) return;
+
     const challenge = challenges[currentChallenge];
-    
     if (userAnswer.trim().toLowerCase() === challenge.answer.toLowerCase()) {
-      setFeedback("✅ Treasure Found!");
-      setScore(score + 100);
-      setTreasuresFound(treasuresFound + 1);
+      setFeedback("✅ Found!");
+      setScore(prev => prev + 100);
+      setTreasuresFound(prev => prev + 1);
       
       setTimeout(() => {
         if (currentChallenge < challenges.length - 1) {
-          setCurrentChallenge(currentChallenge + 1);
+          setCurrentChallenge(prev => prev + 1);
           setUserAnswer("");
           setFeedback("");
-          broadcastState();
         } else {
-          // All treasures found!
-          endGame();
+          handleFinish();
         }
-      }, 1000);
+      }, 800);
     } else {
-      setFeedback("❌ Try again!");
-      setTimeLeft(Math.max(0, timeLeft - 5)); // Penalty
-      setTimeout(() => setFeedback(""), 1500);
+      setFeedback("❌ Not here...");
+      setTimeLeft(prev => Math.max(0, prev - 5));
+      setTimeout(() => setFeedback(""), 1000);
     }
   };
 
-  const skipChallenge = () => {
-    if (currentChallenge < challenges.length - 1) {
-      setCurrentChallenge(currentChallenge + 1);
-      setUserAnswer("");
-      setFeedback("");
-      setTimeLeft(Math.max(0, timeLeft - 3)); // Small penalty for skipping
-      broadcastState();
-    }
-  };
-
-  const endGame = async () => {
-    setLocalFinished(true);
+  const handleFinish = () => {
     setGameState("finished");
-    await broadcastState(true);
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: CHANNEL_NAME,
+        event: 'game-update',
+        data: {
+          player: localPlayer,
+          score,
+          treasuresFound,
+          currentChallenge,
+          finished: true
+        }
+      })
+    });
   };
 
-  if (challenges.length === 0 && gameState === "playing") {
-    return <div className="flex items-center justify-center min-h-dvh">Loading challenges...</div>;
+  useEffect(() => {
+    if (gameState === "finished") {
+      if (score > remoteScore) setWinner(localPlayer);
+      else if (remoteScore > score) setWinner(remotePlayer);
+      else setWinner(null);
+    }
+  }, [gameState, score, remoteScore, localPlayer, remotePlayer]);
+
+  if (gameState === "menu") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
+        <div className="max-w-xl w-full">
+          <div className="flex items-center gap-3 mb-6">
+            <Link href="/games">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
+                <ArrowLeft size={20} />
+              </Button>
+            </Link>
+            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
+              Treasure Hunt
+            </h1>
+          </div>
+
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
+              <CardTitle className="text-center">
+                <Compass size={28} className="mx-auto mb-2 opacity-80" />
+                <span className="text-xl sm:text-2xl font-black tracking-tight">The Riddler's Race</span>
+                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">Solve the clues, find the treasure first!</p>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 sm:p-6 space-y-6">
+               <div className="grid grid-cols-2 gap-3">
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {localReady ? "READY" : "WAITING"}
+                    </div>
+                  </div>
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {remoteReady ? "READY" : "WAITING"}
+                    </div>
+                  </div>
+               </div>
+
+               <Button 
+                onClick={handleReady}
+                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
+                  localReady 
+                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
+                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
+                }`}
+               >
+                 {localReady ? "WAITING FOR PARTNER..." : "READY TO HUNT! 🗺️"}
+               </Button>
+
+               {!remoteConnected && (
+                 <p className="text-center text-xs text-[#9d4867] font-medium animate-pulse">
+                   Waiting for {remotePlayerName} to join...
+                 </p>
+               )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
-  const challenge = challenges[currentChallenge];
-
-  const playerColors = {
-    [PLAYER_IDS.ONE]: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
-    [PLAYER_IDS.TWO]: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
-  };
-
-  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
-  const remoteColor = playerColors[remotePlayer || remotePlayerId] || playerColors[PLAYER_IDS.TWO];
-
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Link href="/games">
-        <Button variant="ghost" className="mb-6">
-          <ArrowLeft className="mr-2" size={16} />
-          Back to Games
-        </Button>
-      </Link>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl text-center bg-gradient-to-r from-yellow-500 to-amber-600 bg-clip-text text-transparent">
-            <Package className="inline mr-2 mb-1" size={32} />
-            Treasure Hunt Race
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {gameState === "menu" && (
-            <div className="text-center space-y-6">
-              <div className="text-6xl mb-4">🗺️</div>
-              <h2 className="text-2xl font-bold">Ready to Hunt Treasures?</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Race against {remotePlayerName || "your opponent"} to find hidden treasures! Solve varied challenges - math, riddles, trivia, and word games.
-                First to collect the most treasures wins!
-              </p>
-              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto my-6">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <span className="text-3xl">🧮</span>
-                  <p className="text-xs font-bold mt-2">Math</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <span className="text-3xl">🤔</span>
-                  <p className="text-xs font-bold mt-2">Riddles</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <span className="text-3xl">📝</span>
-                  <p className="text-xs font-bold mt-2">Words</p>
-                </div>
-              </div>
-              <Button onClick={startGame} size="lg" className="text-lg px-8">
-                Start Hunt! 🗺️
-              </Button>
+  if (gameState === "playing") {
+    const challenge = challenges[currentChallenge] || ALL_CHALLENGES[0];
+    return (
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center gap-3">
+              <Link href="/games">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft size={20} />
+                </Button>
+              </Link>
+              <h1 className={`${plusJakarta.className} text-xl font-bold text-[#ab4400]`}>
+                Treasure Arena
+              </h1>
             </div>
-          )}
+            <div className={`flex items-center gap-2 px-4 py-2 rounded-full border border-blue-200 ${timeLeft < 15 ? "bg-red-50 border-red-200 animate-pulse" : "bg-blue-50"}`}>
+              <Clock size={16} className={timeLeft < 15 ? "text-red-500" : "text-blue-500"} />
+              <span className={`text-sm font-black ${timeLeft < 15 ? "text-red-600" : "text-blue-600"}`}>{timeLeft}s</span>
+            </div>
+          </div>
 
-          {gameState === "playing" && (
-            <div className="space-y-6">
-              {/* Player Progress Cards */}
-              <div className="grid md:grid-cols-2 gap-4">
-                {/* Local Player */}
-                <div className={`p-4 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold">{localPlayerName} (You)</span>
-                    <span className={`text-lg font-bold ${localColor.text}`}>
-                      {score} pts
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 flex-1 min-h-0 pb-4">
+            {/* Local Player */}
+            <Card className="border-none shadow-xl flex flex-col bg-white overflow-hidden rounded-3xl border-2 border-orange-100">
+               <CardHeader className="bg-orange-50/50 py-3 border-b border-orange-100">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 font-bold text-[#6a2700]">
+                      {localEmoji} {localPlayerName}
                     </span>
+                    <span className="text-xl font-black text-[#ab4400]">{score}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>💎 {treasuresFound}/{challenges.length}</span>
-                    <span>•</span>
-                    <span>Challenge #{currentChallenge + 1}</span>
-                  </div>
-                  {localFinished && (
-                    <div className="mt-2 text-green-600 font-bold">✅ Finished!</div>
-                  )}
-                </div>
+               </CardHeader>
+               <CardContent className="p-4 flex-1 flex flex-col">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-stone-50 rounded-2xl border-2 border-dashed border-stone-200">
+                    <div className="text-6xl mb-4">{challenge.emoji}</div>
+                    <p className="text-[10px] font-bold text-[#9d4867] uppercase tracking-widest mb-1">
+                      Treasure {currentChallenge + 1} of {challenges.length}
+                    </p>
+                    <h2 className="text-xl font-bold text-[#6a2700] mb-6">
+                      {challenge.question}
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-3">
+                      <Input 
+                        value={userAnswer}
+                        onChange={(e) => setUserAnswer(e.target.value)}
+                        placeholder="Type your answer..."
+                        className="text-center py-6 text-lg border-2 border-[#ffae88]/30 focus:border-[#ab4400] rounded-xl"
+                        autoFocus
+                      />
+                      <Button type="submit" className="w-full py-6 bg-[#ab4400] hover:bg-[#973b00] rounded-xl font-bold">
+                        FOUND IT! 💎
+                      </Button>
+                    </form>
 
-                {/* Remote Player */}
-                <div className={`p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold capitalize">{remotePlayerName || "Opponent"}</span>
-                    <span className={`text-lg font-bold ${remoteColor.text}`}>
-                      {remoteScore} pts
-                    </span>
+                    {feedback && (
+                      <p className={`mt-4 font-bold ${feedback.includes("✅") ? "text-green-600" : "text-red-600 animate-bounce"}`}>
+                        {feedback}
+                      </p>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>💎 {remoteTreasuresFound}/{challenges.length}</span>
-                    <span>•</span>
-                    <span>Challenge #{remoteCurrentChallenge + 1}</span>
+                  <div className="mt-4 flex gap-1 h-2 bg-stone-100 rounded-full overflow-hidden">
+                    {challenges.map((_, i) => (
+                      <div key={i} className={`flex-1 ${i < treasuresFound ? "bg-green-500" : i === currentChallenge ? "bg-orange-400 animate-pulse" : "bg-stone-200"}`} />
+                    ))}
+                  </div>
+               </CardContent>
+            </Card>
+
+            {/* Remote Player */}
+            <Card className="border-none shadow-xl flex flex-col bg-white overflow-hidden rounded-3xl border-2 border-pink-100">
+               <CardHeader className="bg-pink-50/50 py-3 border-b border-pink-100">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-2 font-bold text-[#6a2700] opacity-70">
+                      {remoteEmoji} {remotePlayerName}
+                    </span>
+                    <span className="text-xl font-black text-[#9d4867] opacity-70">{remoteScore}</span>
+                  </div>
+               </CardHeader>
+               <CardContent className="p-4 flex-1 flex flex-col">
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-stone-50/50 rounded-2xl border-2 border-dashed border-stone-200 opacity-60">
+                    <Gem size={48} className="text-[#9d4867] mb-4 animate-bounce" />
+                    <p className="text-xs font-bold text-[#9d4867]">{remotePlayerName} is hunting...</p>
+                    <p className="text-sm font-medium text-stone-500 mt-2">Currently at Treasure #{remoteCurrentChallenge + 1}</p>
+                  </div>
+                  <div className="mt-4 flex gap-1 h-2 bg-stone-100 rounded-full overflow-hidden">
+                    {challenges.map((_, i) => (
+                      <div key={i} className={`flex-1 ${i < remoteTreasuresFound ? "bg-pink-500" : i === remoteCurrentChallenge ? "bg-pink-300 animate-pulse" : "bg-stone-200"}`} />
+                    ))}
                   </div>
                   {remoteFinished && (
-                    <div className="mt-2 text-green-600 font-bold">✅ Finished!</div>
+                    <p className="text-center text-[10px] font-black text-green-600 uppercase tracking-widest mt-2">
+                      FINISHED THE HUNT!
+                    </p>
                   )}
-                </div>
-              </div>
+               </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-              {/* Timer */}
-              <div className="text-center">
-                <Clock className="w-6 h-6 mx-auto mb-1 text-blue-600" />
-                <p className={`text-2xl font-bold ${timeLeft < 15 ? "text-red-500" : "text-blue-600"}`}>
-                  {timeLeft}s
-                </p>
-              </div>
-
-              {/* Challenge Card */}
-              <div className="bg-muted p-8 rounded-lg border-2 min-h-[250px] flex flex-col justify-center">
-                <div className="text-center mb-6">
-                  <div className="text-5xl mb-4">{challenge.emoji}</div>
-                  <p className="text-sm font-semibold uppercase tracking-wide mb-2 text-muted-foreground">
-                    Challenge #{currentChallenge + 1}
-                  </p>
-                  <h3 className="text-2xl font-bold">
-                    {challenge.question}
-                  </h3>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <input
-                    type="text"
-                    value={userAnswer}
-                    onChange={(e) => setUserAnswer(e.target.value)}
-                    placeholder="Your answer..."
-                    className="w-full px-4 py-3 rounded-lg border-2 focus:outline-none text-center text-lg"
-                    autoFocus
-                  />
-                  <div className="flex gap-2">
-                    <Button type="submit" className="flex-1" disabled={!userAnswer.trim()}>
-                      Submit Answer 🔍
-                    </Button>
-                    <Button type="button" variant="outline" onClick={skipChallenge}>
-                      Skip (-3s)
-                    </Button>
-                  </div>
-                </form>
-
-                {feedback && (
-                  <div className={`text-center mt-4 text-lg font-bold ${
-                    feedback.includes("✅") ? "text-green-600" : "text-red-600"
-                  }`}>
-                    {feedback}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {gameState === "finished" && (
-            <div className="text-center space-y-6">
+  if (gameState === "finished") {
+    return (
+      <div className="flex flex-col items-center pt-4 sm:pt-8 p-4">
+        <div className="max-w-2xl w-full">
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-8 text-center">
               <div className="text-6xl mb-4">
-                {score > remoteScore ? "🏆" : score < remoteScore ? "💎" : "🤝"}
+                {winner === localPlayer ? "🏆" : winner ? "💎" : "🤝"}
               </div>
-              <h2 className="text-2xl font-bold">
-                {score > remoteScore ? "You Won!" : score < remoteScore ? `${remotePlayerName} Won!` : "It's a Tie!"}
-              </h2>
-              
-              <div className="grid md:grid-cols-2 gap-4 max-w-2xl mx-auto">
-                {/* Local Player Final Stats */}
-                <div className={`p-6 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                  <div className="font-bold mb-2 text-lg">{localPlayerName}</div>
-                  <div className="text-3xl font-bold mb-2">{score} pts</div>
-                  <div className="text-sm">💎 {treasuresFound}/{challenges.length} treasures</div>
+              <CardTitle className="text-3xl font-black tracking-tight">
+                {winner === localPlayer && "MASTER HUNTER!"}
+                {winner && winner !== localPlayer && "GREAT HUNT!"}
+                {!winner && "EQUAL SPOILS!"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-4xl">{localEmoji}</span>
+                  <span className="font-bold text-[#6a2700]">{localPlayerName}</span>
+                  <span className="text-2xl font-black text-[#ab4400]">{score}</span>
+                  <span className="text-[10px] font-bold uppercase text-[#9d4867]">{treasuresFound} Treasures</span>
                 </div>
-
-                {/* Remote Player Final Stats */}
-                <div className={`p-6 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
-                  <div className="font-bold mb-2 capitalize text-lg">{remotePlayerName || "Opponent"}</div>
-                  <div className="text-3xl font-bold mb-2">{remoteScore} pts</div>
-                  <div className="text-sm">💎 {remoteTreasuresFound}/{challenges.length} treasures</div>
+                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-4xl">{remoteEmoji}</span>
+                  <span className="font-bold text-[#6a2700]">{remotePlayerName}</span>
+                  <span className="text-2xl font-black text-[#ab4400]">{remoteScore}</span>
+                  <span className="text-[10px] font-bold uppercase text-[#9d4867]">{remoteTreasuresFound} Treasures</span>
                 </div>
               </div>
 
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Button onClick={startGame} size="lg">
-                  Hunt Again 🔄
+              <div className="flex flex-col gap-3">
+                <Button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-8 text-xl font-black bg-[#ab4400] text-white rounded-2xl shadow-lg hover:bg-[#973b00] transition-all active:scale-95 shadow-[#ab4400]/20"
+                >
+                  HUNT AGAIN 🔄
                 </Button>
                 <Link href="/games">
-                  <Button variant="outline" size="lg">
-                    Choose Another Game
+                  <Button variant="ghost" className="w-full py-6 text-[#9d4867] font-bold">
+                    BACK TO MENU
                   </Button>
                 </Link>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default function TreasureHunt() {

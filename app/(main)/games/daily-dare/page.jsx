@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Target, Calendar, Trophy, Flame } from "lucide-react";
+import { ArrowLeft, Target, Calendar, Trophy, Flame, Users, Clock, CheckCircle2, Zap } from "lucide-react";
 import Link from "next/link";
+import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
+import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { plusJakarta } from "@/lib/fonts";
 
 const DAILY_DARES = [
   { id: 1, dare: "Write 3 things you're grateful for", emoji: "🙏", points: 10 },
@@ -17,252 +21,322 @@ const DAILY_DARES = [
   { id: 8, dare: "Learn 5 new words", emoji: "📖", points: 15 },
   { id: 9, dare: "Take a 30-minute walk", emoji: "🚶", points: 15 },
   { id: 10, dare: "Try a new healthy recipe", emoji: "🥗", points: 20 },
-  { id: 11, dare: "Journal about your day", emoji: "📝", points: 10 },
-  { id: 12, dare: "No snacking after 8 PM", emoji: "🚫", points: 20 },
-  { id: 13, dare: "Stretch for 15 minutes", emoji: "🤸", points: 10 },
-  { id: 14, dare: "Call a friend or family", emoji: "📞", points: 15 },
-  { id: 15, dare: "Clean one room completely", emoji: "🧹", points: 15 },
 ];
 
-export default function DailyDare() {
+const CHANNEL_NAME = "game-daily-dare";
+
+function DailyDareGame({ localPlayer, sessionId, getPlayerName }) {
   const [gameState, setGameState] = useState("menu");
+  const [localReady, setLocalReady] = useState(false);
+  const [remoteReady, setRemoteReady] = useState(false);
+  const [remoteConnected, setRemoteConnected] = useState(false);
+  
   const [todaysDare, setTodaysDare] = useState(null);
-  const [completedDares, setCompletedDares] = useState([]);
+  const [localCompleted, setLocalCompleted] = useState(false);
+  const [remoteCompleted, setRemoteCompleted] = useState(false);
   const [streak, setStreak] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
+  const [channel, setChannel] = useState(null);
+  const localReadyRef = useRef(localReady);
 
   useEffect(() => {
-    // Load saved data from localStorage
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("dailyDareData");
-      if (saved) {
-        const data = JSON.parse(saved);
-        setCompletedDares(data.completed || []);
-        setStreak(data.streak || 0);
-        setTotalPoints(data.points || 0);
-      }
-    }
-  }, []);
+    localReadyRef.current = localReady;
+  }, [localReady]);
+
+  const remotePlayer = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayer);
+  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎯";
+  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎯";
 
   useEffect(() => {
     // Generate today's dare based on date
-    const today = new Date().toDateString();
     const dayIndex = new Date().getDate() % DAILY_DARES.length;
-    setTodaysDare({ ...DAILY_DARES[dayIndex], date: today });
-  }, []);
+    setTodaysDare(DAILY_DARES[dayIndex]);
 
-  const saveData = (completed, streakVal, points) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        "dailyDareData",
-        JSON.stringify({
-          completed,
-          streak: streakVal,
-          points,
-        })
-      );
+    // Load streak/points from local storage for individual progress tracking
+    const saved = localStorage.getItem(`dailyDare-${localPlayer}`);
+    if (saved) {
+      const data = JSON.parse(saved);
+      setStreak(data.streak || 0);
+      setTotalPoints(data.points || 0);
     }
+  }, [localPlayer]);
+
+  // Initialize Pusher
+  useEffect(() => {
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+    });
+
+    const gameChannel = pusher.subscribe(CHANNEL_NAME);
+    setChannel(gameChannel);
+
+    gameChannel.bind('pusher:subscription_succeeded', () => {
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'player-joined',
+          data: { player: localPlayer, ready: localReadyRef.current }
+        })
+      });
+    });
+
+    gameChannel.bind('player-joined', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+        fetch('/api/pusher/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: CHANNEL_NAME,
+            event: 'presence-check',
+            data: { player: localPlayer, ready: localReadyRef.current }
+          })
+        });
+      }
+    });
+
+    gameChannel.bind('presence-check', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+      }
+    });
+
+    gameChannel.bind('player-ready', (data) => {
+      if (data.player !== localPlayer) setRemoteReady(data.ready);
+    });
+
+    gameChannel.bind('game-start', (data) => {
+      setGameState("playing");
+      setLocalCompleted(false);
+      setRemoteCompleted(false);
+    });
+
+    gameChannel.bind('dare-completed', (data) => {
+      if (data.player !== localPlayer) setRemoteCompleted(true);
+    });
+
+    return () => {
+      gameChannel.unbind_all();
+      pusher.unsubscribe(CHANNEL_NAME);
+      pusher.disconnect();
+    };
+  }, [localPlayer]);
+
+  const handleReady = () => {
+    const nextReady = !localReady;
+    setLocalReady(nextReady);
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: CHANNEL_NAME,
+        event: 'player-ready',
+        data: { player: localPlayer, ready: nextReady }
+      })
+    });
   };
 
-  const startChallenge = () => {
-    setGameState("challenge");
-  };
+  useEffect(() => {
+    if (localReady && remoteReady && localPlayer === PLAYER_IDS.ONE && gameState === "menu") {
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'game-start',
+          data: {}
+        })
+      });
+    }
+  }, [localReady, remoteReady, localPlayer, gameState]);
 
   const completeDare = () => {
-    const today = new Date().toDateString();
-    
-    // Check if already completed today
-    if (completedDares.some(d => d.date === today)) {
-      alert("You've already completed today's dare! Come back tomorrow! 🌟");
-      return;
-    }
-
-    const newCompleted = [...completedDares, { date: today, dare: todaysDare }];
+    setLocalCompleted(true);
     const newStreak = streak + 1;
-    const newPoints = totalPoints + todaysDare.points;
-
-    setCompletedDares(newCompleted);
+    const newPoints = totalPoints + (todaysDare?.points || 0);
+    
     setStreak(newStreak);
     setTotalPoints(newPoints);
-    saveData(newCompleted, newStreak, newPoints);
-    setGameState("completed");
+    
+    localStorage.setItem(`dailyDare-${localPlayer}`, JSON.stringify({
+      streak: newStreak,
+      points: newPoints,
+      lastCompleted: new Date().toDateString()
+    }));
+
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: CHANNEL_NAME,
+        event: 'dare-completed',
+        data: { player: localPlayer }
+      })
+    });
   };
 
-  const isCompletedToday = () => {
-    const today = new Date().toDateString();
-    return completedDares.some(d => d.date === today);
-  };
+  if (gameState === "menu") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
+        <div className="max-w-xl w-full">
+          <div className="flex items-center gap-3 mb-6">
+            <Link href="/games">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
+                <ArrowLeft size={20} />
+              </Button>
+            </Link>
+            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
+              Daily Dare
+            </h1>
+          </div>
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <Link href="/games">
-        <Button variant="ghost" className="mb-6">
-          <ArrowLeft className="mr-2" size={16} />
-          Back to Games
-        </Button>
-      </Link>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl text-center bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent">
-            <Target className="inline mr-2 mb-1" size={32} />
-            Daily Dare
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {gameState === "menu" && (
-            <div className="text-center space-y-6">
-              <div className="text-6xl mb-4">🎯</div>
-              <h2 className="text-2xl font-bold">Build Better Habits!</h2>
-              <p className="text-muted-foreground max-w-md mx-auto">
-                Complete daily challenges to build healthy habits and earn points.
-                Keep your streak alive and become the best version of yourself!
-              </p>
-
-              {/* Stats Dashboard */}
-              <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto my-6">
-                <div className="bg-gradient-to-br from-orange-50 to-red-50 p-4 rounded-lg">
-                  <Flame className="w-8 h-8 mx-auto mb-2 text-orange-500" />
-                  <p className="text-2xl font-bold text-orange-600">{streak}</p>
-                  <p className="text-xs font-semibold text-muted-foreground">Day Streak</p>
-                </div>
-                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-4 rounded-lg">
-                  <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-600" />
-                  <p className="text-2xl font-bold text-yellow-600">{totalPoints}</p>
-                  <p className="text-xs font-semibold text-muted-foreground">Total Points</p>
-                </div>
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-4 rounded-lg">
-                  <Calendar className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                  <p className="text-2xl font-bold text-green-600">{completedDares.length}</p>
-                  <p className="text-xs font-semibold text-muted-foreground">Completed</p>
-                </div>
-              </div>
-
-              {/* Today's Dare Preview */}
-              {todaysDare && (
-                <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-6 rounded-xl border-2 border-rose-200 max-w-md mx-auto">
-                  <p className="text-sm text-rose-600 font-semibold mb-2">TODAY'S CHALLENGE</p>
-                  <div className="text-4xl mb-3">{todaysDare.emoji}</div>
-                  <p className="text-lg font-bold mb-2">{todaysDare.dare}</p>
-                  <div className="flex items-center justify-center gap-2 text-sm text-pink-600">
-                    <Star className="w-4 h-4" />
-                    <span className="font-semibold">{todaysDare.points} points</span>
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
+              <CardTitle className="text-center">
+                <Users size={28} className="mx-auto mb-2 opacity-80" />
+                <span className="text-xl sm:text-2xl font-black tracking-tight">Duo Habits</span>
+                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">Complete your daily challenge together.</p>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 sm:p-6 space-y-6">
+               <div className="grid grid-cols-2 gap-3">
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {localReady ? "READY" : "WAITING"}
+                    </div>
                   </div>
-                </div>
-              )}
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {remoteReady ? "READY" : "WAITING"}
+                    </div>
+                  </div>
+               </div>
 
-              {isCompletedToday() ? (
-                <div className="space-y-4">
-                  <div className="text-green-600 font-bold">✅ Today's dare completed!</div>
-                  <p className="text-sm text-muted-foreground">Come back tomorrow for a new challenge!</p>
-                </div>
-              ) : (
-                <Button onClick={startChallenge} size="lg" className="text-lg px-8">
-                  Accept Today&apos;s Dare! 🎯
+               <Button 
+                onClick={handleReady}
+                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
+                  localReady 
+                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
+                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
+                }`}
+               >
+                 {localReady ? "WAITING FOR PARTNER..." : "GO TO CHALLENGE! 🎯"}
+               </Button>
+               )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === "playing" || gameState === "completed") {
+    return (
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
+        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex items-center gap-3">
+              <Link href="/games">
+                <Button variant="ghost" size="icon">
+                  <ArrowLeft size={20} />
                 </Button>
-              )}
+              </Link>
+              <h1 className={`${plusJakarta.className} text-xl font-bold text-[#ab4400]`}>
+                Duo Goals
+              </h1>
+            </div>
+            <div className="flex items-center gap-2 bg-[#fff0e8] px-4 py-2 rounded-full border border-[#ffae88]/30">
+              <Flame size={16} className="text-[#ab4400]" />
+              <p className="text-xs font-black text-[#ab4400]">
+                {streak} DAY STREAK
+              </p>
+            </div>
+          </div>
 
-              {/* Recent Completions */}
-              {completedDares.length > 0 && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-bold mb-3">Recent Completions 🌟</h3>
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {completedDares.slice(-5).reverse().map((item, idx) => (
-                      <div key={idx} className="bg-gray-50 p-3 rounded-lg text-sm flex justify-between items-center">
-                        <span className="flex items-center gap-2">
-                          <span>{item.dare.emoji}</span>
-                          <span className="font-medium">{item.dare.dare}</span>
-                        </span>
-                        <span className="text-xs text-muted-foreground">{item.date}</span>
+          <div className="flex-1 flex flex-col items-center justify-center space-y-8 pb-12">
+             <div className="text-center space-y-1">
+                <p className="text-xs font-black text-[#9d4867] uppercase tracking-[0.2em] opacity-60">TODAY'S MISSION</p>
+                <h2 className="text-3xl font-black text-[#ab4400]">Level Up Together</h2>
+             </div>
+
+             <Card className="w-full max-w-sm border-none shadow-[0_30px_70px_rgba(171,68,0,0.15)] rounded-[2.5rem] overflow-hidden">
+                <div className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] p-10 text-center text-white">
+                   <div className="text-6xl mb-4">{todaysDare?.emoji}</div>
+                   <p className="text-xl font-bold leading-tight">{todaysDare?.dare}</p>
+                   <div className="mt-4 flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm py-1 px-4 rounded-full inline-flex">
+                      <Zap size={14} className="text-yellow-300" />
+                      <span className="text-xs font-black uppercase tracking-widest">{todaysDare?.points} PTS</span>
+                   </div>
+                </div>
+                <CardContent className="p-8 bg-white space-y-6">
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${localCompleted ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                        <div className="text-2xl">{localEmoji}</div>
+                        <span className="text-[10px] font-black text-stone-400 uppercase">YOU</span>
+                        {localCompleted ? <CheckCircle2 size={20} className="text-green-500" /> : <div className="w-5 h-5 rounded-full border-2 border-stone-200" />}
                       </div>
-                    ))}
-                  </div>
+                      <div className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${remoteCompleted ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                        <div className="text-2xl opacity-40">{remoteEmoji}</div>
+                        <span className="text-[10px] font-black text-stone-400 uppercase">{remotePlayerName}</span>
+                        {remoteCompleted ? <CheckCircle2 size={20} className="text-green-500" /> : <div className="w-5 h-5 rounded-full border-2 border-stone-200 animate-pulse" />}
+                      </div>
+                   </div>
+
+                   {!localCompleted ? (
+                     <Button 
+                      onClick={completeDare}
+                      className="w-full py-8 text-xl font-black bg-[#ab4400] hover:bg-[#973b00] rounded-2xl shadow-lg active:scale-95"
+                     >
+                       I'VE DONE IT! 🚀
+                     </Button>
+                   ) : (
+                     <div className="text-center p-4 bg-green-50 rounded-2xl border-2 border-green-100">
+                        <p className="text-sm font-black text-green-600 uppercase tracking-widest mb-1">MISSION CLEAR! ✨</p>
+                        <p className="text-xs font-medium text-green-700/60 italic">Waiting for your partner to finish...</p>
+                     </div>
+                   )}
+                </CardContent>
+             </Card>
+
+             {localCompleted && remoteCompleted && (
+                <div className="text-center animate-in zoom-in-50 duration-500">
+                   <div className="flex items-center gap-4 justify-center mb-4">
+                      <Trophy size={48} className="text-yellow-400" />
+                      <div className="text-left">
+                         <p className="text-2xl font-black text-[#ab4400]">STREAK SAVED!</p>
+                         <p className="text-xs font-bold text-[#9d4867] uppercase tracking-widest">See you both tomorrow</p>
+                      </div>
+                   </div>
+                   <Link href="/games">
+                      <Button variant="ghost" className="text-[#9d4867] font-black">
+                        BACK TO GAMES
+                      </Button>
+                   </Link>
                 </div>
-              )}
-            </div>
-          )}
+             )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-          {gameState === "challenge" && todaysDare && (
-            <div className="text-center space-y-6">
-              <div className="text-7xl mb-4">{todaysDare.emoji}</div>
-              <h2 className="text-3xl font-bold">Today&apos;s Dare</h2>
-              <div className="bg-gradient-to-br from-rose-50 to-pink-50 p-8 rounded-xl border-2 border-rose-200 max-w-md mx-auto">
-                <p className="text-2xl font-bold mb-4">{todaysDare.dare}</p>
-                <div className="flex items-center justify-center gap-2 text-lg text-pink-600">
-                  <Trophy className="w-5 h-5" />
-                  <span className="font-semibold">Reward: {todaysDare.points} points</span>
-                </div>
-              </div>
-
-              <div className="space-y-4 max-w-md mx-auto">
-                <p className="text-muted-foreground">
-                  Complete this challenge today and click the button below to mark it as done!
-                </p>
-                
-                <div className="flex gap-4 justify-center flex-wrap">
-                  <Button onClick={completeDare} size="lg" className="bg-green-600 hover:bg-green-700">
-                    ✓ I Did It!
-                  </Button>
-                  <Button variant="outline" onClick={() => setGameState("menu")} size="lg">
-                    Maybe Later
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {gameState === "completed" && (
-            <div className="text-center space-y-6">
-              <div className="text-7xl mb-4">🎉</div>
-              <h2 className="text-3xl font-bold">Awesome Job!</h2>
-              <p className="text-lg text-muted-foreground max-w-md mx-auto">
-                You&apos;ve completed today&apos;s dare and earned {todaysDare?.points} points!
-              </p>
-
-              <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
-                <div className="bg-orange-50 p-6 rounded-lg">
-                  <Flame className="w-10 h-10 mx-auto mb-2 text-orange-500" />
-                  <p className="text-3xl font-bold text-orange-600">{streak}</p>
-                  <p className="text-sm font-semibold">Day Streak 🔥</p>
-                </div>
-                <div className="bg-yellow-50 p-6 rounded-lg">
-                  <Trophy className="w-10 h-10 mx-auto mb-2 text-yellow-600" />
-                  <p className="text-3xl font-bold text-yellow-600">{totalPoints}</p>
-                  <p className="text-sm font-semibold">Total Points</p>
-                </div>
-              </div>
-
-              <p className="text-sm text-muted-foreground">
-                Come back tomorrow for a new challenge! 💪
-              </p>
-
-              <div className="flex gap-4 justify-center flex-wrap">
-                <Button onClick={() => setGameState("menu")} size="lg">
-                  View Dashboard 📊
-                </Button>
-                <Link href="/games">
-                  <Button variant="outline" size="lg">
-                    Try Other Games
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return null;
 }
 
-function Star({ className }) {
+export default function DailyDare() {
   return (
-    <svg
-      className={className}
-      fill="currentColor"
-      viewBox="0 0 20 20"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
+    <LocalMultiplayerWrapper gameId="daily-dare" gameName="Daily Dare">
+      {(props) => <DailyDareGame {...props} />}
+    </LocalMultiplayerWrapper>
   );
 }

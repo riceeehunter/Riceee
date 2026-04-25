@@ -191,62 +191,17 @@ export function PusherMultiplayerWrapper({
     }
   }, [pusher, localPlayer, sessionId, channel, remotePlayer]);
 
-  const handlePlayerSelect = (player) => {
-    setLocalPlayer(player);
-  };
-
-  // Show player selection screen
+  // Show loading screen while identifying the player
   if (!localPlayer) {
     return (
       <div className="min-h-dvh flex items-center justify-center p-4 bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50">
-        <Card className="max-w-2xl w-full">
-          <CardContent className="p-8">
-            <div className="text-center mb-8">
-              <Heart className="inline-block text-pink-500 mb-4" size={48} />
-              <h1 className="text-4xl font-bold mb-2">{gameName}</h1>
-              <p className="text-muted-foreground">Choose your player to start</p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Partner 1 */}
-              <button
-                onClick={() => handlePlayerSelect(playerOne.id)}
-                className={`group relative overflow-hidden rounded-xl p-8 border-4 ${playerOne.cardClass} transition-all hover:scale-105 bg-gradient-to-br ${hunterColor}`}
-              >
-                <div className="text-center text-white">
-                  <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">
-                    {playerOne.emoji}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">{playerOneName}</h3>
-                  <p className={playerOne.textClass}>{playerOne.tagline}</p>
-                </div>
-              </button>
-
-              {/* Partner 2 */}
-              <button
-                onClick={() => handlePlayerSelect(playerTwo.id)}
-                className={`group relative overflow-hidden rounded-xl p-8 border-4 ${playerTwo.cardClass} transition-all hover:scale-105 bg-gradient-to-br ${riceeeColor}`}
-              >
-                <div className="text-center text-white">
-                  <div className="text-6xl mb-4 transform group-hover:scale-110 transition-transform">
-                    {playerTwo.emoji}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-2">{playerTwoName}</h3>
-                  <p className={playerTwo.textClass}>{playerTwo.tagline}</p>
-                </div>
-              </button>
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                💡 Both of you just need to open this game and select different players!
-              </p>
-              <p className="text-xs text-muted-foreground mt-2">
-                No link sharing needed - just visit the game on any device! 🌍
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Loader2 className="inline-block animate-spin text-[#ab4400] mb-4" size={48} />
+          <h2 className={`${plusJakarta.className} text-2xl font-bold text-[#ab4400]`}>
+            Initializing {gameName}...
+          </h2>
+          <p className="text-[#9d4867] opacity-70 mt-2">Identifying your cosmic signature...</p>
+        </div>
       </div>
     );
   }
@@ -258,21 +213,26 @@ export function PusherMultiplayerWrapper({
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center">
             <Loader2 className="inline-block animate-spin text-primary mb-4" size={48} />
-            <h2 className="text-2xl font-bold mb-4">
+            <h2 className={`${plusJakarta.className} text-2xl font-bold mb-4 text-[#ab4400]`}>
               {getPlayerLabelFromSettings(localPlayer, partnerNames)} is ready!
             </h2>
-            <p className="text-muted-foreground mb-6">
-              Waiting for {getPlayerLabelFromSettings(getOtherPlayer(localPlayer), partnerNames)} to join...
+            <p className="text-[#9d4867] mb-6">
+              Waiting for {getPlayerLabelFromSettings(getOtherPlayer(localPlayer), partnerNames)} to enter the arena...
             </p>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-semibold text-blue-900 mb-2">
-                Tell your partner to:
+            <div className="p-6 bg-[#fff0e8] rounded-2xl border border-[#ffae88]/30 shadow-sm">
+              <p className="text-sm font-bold text-[#ab4400] mb-3 uppercase tracking-wider">
+                How to join:
               </p>
-              <ol className="text-sm text-left space-y-1 text-blue-800">
-                <li>1. Open this game on their device</li>
-                <li>2. Select {getPlayerLabelFromSettings(getOtherPlayer(localPlayer), partnerNames)}</li>
-                <li>3. You'll connect automatically! ✨</li>
-              </ol>
+              <ul className="text-sm text-left space-y-3 text-[#6a2700]">
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-[#ab4400] text-white flex items-center justify-center text-[10px] font-bold">1</div>
+                  <span>Ask your partner to open this game.</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-full bg-[#ab4400] text-white flex items-center justify-center text-[10px] font-bold">2</div>
+                  <span>The connection will happen magically! ✨</span>
+                </li>
+              </ul>
             </div>
           </CardContent>
         </Card>

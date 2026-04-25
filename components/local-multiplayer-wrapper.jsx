@@ -93,41 +93,16 @@ export function LocalMultiplayerWrapper({
 
   if (mode === "select") {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card>
-          <CardContent className="p-8">
-            <div className="text-center space-y-6">
-              <div className="text-6xl mb-4">🎮</div>
-              <h2 className="text-3xl font-bold mb-2">{gameName}</h2>
-              <p className="text-lg text-muted-foreground mb-8">
-                Choose your player to start!
-              </p>
-
-              {/* Player Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto mb-8">
-                {/* Player One */}
-                <button
-                  onClick={() => selectPlayer(playerOne.id)}
-                  className={`group relative p-8 bg-gradient-to-br ${hunterColor} rounded-2xl border-4 border-orange-300 hover:border-orange-400 transition-all transform hover:scale-105 shadow-lg`}
-                >
-                  <div className="text-7xl mb-4">{playerOne.emoji}</div>
-                  <p className="text-3xl font-bold text-white mb-2">{playerOneName}</p>
-                  <p className="text-white/90 text-sm">Click to play as {playerOneName}</p>
-                </button>
-
-                {/* Player Two */}
-                <button
-                  onClick={() => selectPlayer(playerTwo.id)}
-                  className={`group relative p-8 bg-gradient-to-br ${riceeeColor} rounded-2xl border-4 border-pink-300 hover:border-pink-400 transition-all transform hover:scale-105 shadow-lg`}
-                >
-                  <div className="text-7xl mb-4">{playerTwo.emoji}</div>
-                  <p className="text-3xl font-bold text-white mb-2">{playerTwoName}</p>
-                  <p className="text-white/90 text-sm">Click to play as {playerTwoName}</p>
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-[#ffae88]/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-3xl">🎮</span>
+          </div>
+          <h2 className="text-2xl font-bold text-[#ab4400]">
+            Loading {gameName}...
+          </h2>
+          <p className="text-[#9d4867] opacity-70 mt-2">Checking your player identity...</p>
+        </div>
       </div>
     );
   }

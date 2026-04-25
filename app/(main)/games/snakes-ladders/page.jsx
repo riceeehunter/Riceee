@@ -1,673 +1,405 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowLeft, Dices } from "lucide-react";
+import { ArrowLeft, Dices, Trophy, Users, Clock, Swords, ChevronUp, ChevronDown, Zap } from "lucide-react";
 import Link from "next/link";
-import Pusher from "pusher-js";
-import { toast } from "sonner";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
-import { PLAYER_IDS } from "@/lib/constants/players";
+import Pusher from "pusher-js";
+import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { plusJakarta } from "@/lib/fonts";
 
 const BOARD_SIZE = 100;
+const SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 36, 93: 73, 95: 75, 98: 79 };
+const LADDERS = { 3: 22, 5: 8, 11: 26, 20: 29, 27: 53, 40: 59, 51: 67, 61: 79, 71: 92, 88: 91 };
 
-// More realistic snake positions with varied lengths
-const SNAKES = {
-  17: 7,    // Short snake
-  54: 34,   // Medium snake
-  62: 19,   // Long snake
-  64: 60,   // Short snake
-  87: 36,   // Very long snake
-  93: 73,   // Medium snake
-  95: 75,   // Medium snake
-  98: 79,   // Short snake
-};
-
-// Ladders with realistic climbing heights
-const LADDERS = {
-  3: 22,    // Medium ladder
-  5: 8,     // Short ladder
-  11: 26,   // Medium ladder
-  20: 29,   // Short ladder
-  27: 53,   // Long ladder
-  40: 59,   // Medium ladder
-  51: 67,   // Medium ladder
-  61: 79,   // Medium ladder
-  71: 92,   // Long ladder
-  88: 91,   // Short ladder
-};
-
-function getChannelName(sessionId) {
-  return `snakes-ladders-${sessionId}`;
-}
+const CHANNEL_NAME = "game-snakes-ladders";
 
 function SnakesAndLaddersGame({ localPlayer, sessionId, getPlayerName }) {
-  const PARTNER_ONE_KEY = "Partner 1";
-  const PARTNER_TWO_KEY = "Partner 2";
-  const partnerOneDisplayName = getPlayerName(PLAYER_IDS.ONE);
-  const partnerTwoDisplayName = getPlayerName(PLAYER_IDS.TWO);
-  const partnerOneInitial = (partnerOneDisplayName?.[0] || "1").toUpperCase();
-  const partnerTwoInitial = (partnerTwoDisplayName?.[0] || "2").toUpperCase();
-
-  const [uiState, setUiState] = useState("lobby"); // lobby | playing | finished
-  const [matchId, setMatchId] = useState(null);
-
+  const [gameState, setGameState] = useState("menu");
   const [player1Pos, setPlayer1Pos] = useState(0);
   const [player2Pos, setPlayer2Pos] = useState(0);
-  const [currentTurn, setCurrentTurn] = useState(PARTNER_ONE_KEY);
+  const [currentTurn, setCurrentTurn] = useState(PLAYER_IDS.ONE);
   const [diceValue, setDiceValue] = useState(null);
   const [isRolling, setIsRolling] = useState(false);
-  const [winner, setWinner] = useState(null);
-
-  const [remoteConnected, setRemoteConnected] = useState(false);
   const [localReady, setLocalReady] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);
-
-  const pusherRef = useRef(null);
-  const channelRef = useRef(null);
-  const matchIdRef = useRef(matchId);
-  const remoteLastSeenRef = useRef(Date.now());
+  const [remoteConnected, setRemoteConnected] = useState(false);
+  const [winner, setWinner] = useState(null);
+  const [channel, setChannel] = useState(null);
+  const localReadyRef = useRef(localReady);
 
   useEffect(() => {
-    matchIdRef.current = matchId;
-  }, [matchId]);
+    localReadyRef.current = localReady;
+  }, [localReady]);
 
-  const channelName = useMemo(() => getChannelName(sessionId), [sessionId]);
+  const remotePlayer = getOtherPlayer(localPlayer);
+  const localPlayerName = getPlayerName(localPlayer);
+  const remotePlayerName = getPlayerName(remotePlayer);
+  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎮";
+  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎮";
 
-  const playerName = useMemo(
-    () => (localPlayer === PLAYER_IDS.ONE ? PARTNER_ONE_KEY : PARTNER_TWO_KEY),
-    [localPlayer]
-  );
-  const remotePlayerName = useMemo(
-    () => (playerName === PARTNER_ONE_KEY ? PARTNER_TWO_KEY : PARTNER_ONE_KEY),
-    [playerName]
-  );
-  const localDisplayName = playerName === PARTNER_ONE_KEY ? partnerOneDisplayName : partnerTwoDisplayName;
-  const remoteDisplayName = playerName === PARTNER_ONE_KEY ? partnerTwoDisplayName : partnerOneDisplayName;
-  const isHost = localPlayer === PLAYER_IDS.ONE;
-
-  const safeTrigger = useCallback(
-    async (event, data, keepalive = false) => {
-      try {
-        await fetch("/api/pusher/trigger", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ channel: channelName, event, data }),
-          keepalive,
-        });
-      } catch (err) {
-        console.error(`[${playerName}] Failed to trigger ${event}`, err);
-      }
-    },
-    [channelName, playerName]
-  );
-
-  const resetToLobby = useCallback(
-    (showToast = false) => {
-      setUiState("lobby");
-      setMatchId(null);
-      setPlayer1Pos(0);
-      setPlayer2Pos(0);
-      setCurrentTurn(PARTNER_ONE_KEY);
-      setDiceValue(null);
-      setWinner(null);
-      setIsRolling(false);
-      setLocalReady(false);
-      setRemoteReady(false);
-      if (showToast) toast.info("Waiting for partner...");
-    },
-    []
-  );
-
-  // Initialize Pusher + events.
+  // Initialize Pusher
   useEffect(() => {
-    setRemoteConnected(false);
-    remoteLastSeenRef.current = Date.now();
-
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
     });
-    const channel = pusher.subscribe(channelName);
-    pusherRef.current = pusher;
-    channelRef.current = channel;
 
-    channel.bind("pusher:subscription_succeeded", () => {
-      safeTrigger("player-joined", { player: playerName, ts: Date.now() });
+    const gameChannel = pusher.subscribe(CHANNEL_NAME);
+    setChannel(gameChannel);
+
+    gameChannel.bind('pusher:subscription_succeeded', () => {
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'player-joined',
+          data: { player: localPlayer, ready: localReadyRef.current }
+        })
+      });
     });
 
-    channel.bind("player-joined", (data) => {
-      if (!data?.player || data.player === playerName) return;
-      setRemoteConnected(true);
-      remoteLastSeenRef.current = Date.now();
+    gameChannel.bind('player-joined', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+        fetch('/api/pusher/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: CHANNEL_NAME,
+            event: 'presence-check',
+            data: { player: localPlayer, ready: localReadyRef.current }
+          })
+        });
+      }
     });
 
-    channel.bind("player-left", (data) => {
-      if (!data?.player || data.player === playerName) return;
-      setRemoteConnected(false);
-      setRemoteReady(false);
-      toast.info(`${data.player} left the game`);
-      resetToLobby(false);
+    gameChannel.bind('presence-check', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+      }
     });
 
-    channel.bind("player-ready", (data) => {
-      if (!data?.player || data.player === playerName) return;
-      setRemoteConnected(true);
-      remoteLastSeenRef.current = Date.now();
-      setRemoteReady(Boolean(data?.ready));
+    gameChannel.bind('player-ready', (data) => {
+      if (data.player !== localPlayer) setRemoteReady(data.ready);
     });
 
-    channel.bind("player-ping", (data) => {
-      if (!data?.player || data.player === playerName) return;
-      setRemoteConnected(true);
-      remoteLastSeenRef.current = Date.now();
-    });
-
-    channel.bind("game-start", (data) => {
-      if (!data?.matchId) return;
-      setMatchId(data.matchId);
+    gameChannel.bind('game-start', (data) => {
+      setGameState("playing");
       setPlayer1Pos(0);
       setPlayer2Pos(0);
-      setCurrentTurn(PARTNER_ONE_KEY);
+      setCurrentTurn(PLAYER_IDS.ONE);
       setDiceValue(null);
       setWinner(null);
-      setIsRolling(false);
-      setUiState("playing");
-      setLocalReady(false);
-      setRemoteReady(false);
-      toast.success("Game started! 🎲");
     });
 
-    channel.bind("game-move", (data) => {
-      if (!data) return;
-      if (!data.matchId || data.matchId !== matchIdRef.current) return;
-
-      if (data.player === PARTNER_ONE_KEY) {
-        setPlayer1Pos(data.position);
-      } else {
-        setPlayer2Pos(data.position);
+    gameChannel.bind('game-move', (data) => {
+      if (data.player !== localPlayer) {
+        if (data.player === PLAYER_IDS.ONE) setPlayer1Pos(data.position);
+        else setPlayer2Pos(data.position);
+        setCurrentTurn(data.nextTurn);
+        setDiceValue(data.dice);
+        if (data.winner) {
+          setWinner(data.winner);
+          setGameState("finished");
+        }
       }
-      setCurrentTurn(data.nextTurn);
-      setDiceValue(data.dice);
-
-      if (data.winner) {
-        setWinner(data.winner);
-        setUiState("finished");
-        toast.success(`🎉 ${data.winner} wins!`);
-      }
-    });
-
-    channel.bind("back-to-lobby", (data) => {
-      if (!data?.player || data.player === playerName) return;
-      resetToLobby(false);
     });
 
     return () => {
-      try {
-        safeTrigger("player-left", { player: playerName, ts: Date.now() }, true);
-      } catch {
-        // ignore
-      }
-      channel.unbind_all();
-      channel.unsubscribe();
+      gameChannel.unbind_all();
+      pusher.unsubscribe(CHANNEL_NAME);
       pusher.disconnect();
-      pusherRef.current = null;
-      channelRef.current = null;
     };
-  }, [channelName, playerName, resetToLobby, safeTrigger]);
+  }, [localPlayer]);
 
-  // Best-effort leave signal on navigation/close.
+  const handleReady = () => {
+    const nextReady = !localReady;
+    setLocalReady(nextReady);
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: CHANNEL_NAME,
+        event: 'player-ready',
+        data: { player: localPlayer, ready: nextReady }
+      })
+    });
+  };
+
   useEffect(() => {
-    const handler = () => {
-      safeTrigger("player-left", { player: playerName, ts: Date.now() }, true);
-    };
-    window.addEventListener("pagehide", handler);
-    window.addEventListener("beforeunload", handler);
-    return () => {
-      window.removeEventListener("pagehide", handler);
-      window.removeEventListener("beforeunload", handler);
-    };
-  }, [playerName, safeTrigger]);
-
-  // Heartbeat + disconnect detection.
-  useEffect(() => {
-    const pingInterval = setInterval(() => {
-      safeTrigger("player-ping", { player: playerName, ts: Date.now() });
-    }, 3000);
-
-    const checkInterval = setInterval(() => {
-      if (!remoteConnected) return;
-      const msSinceSeen = Date.now() - remoteLastSeenRef.current;
-      if (msSinceSeen > 10000) {
-        setRemoteConnected(false);
-        setRemoteReady(false);
-        toast.info("Partner disconnected");
-        resetToLobby(false);
-      }
-    }, 2000);
-
-    return () => {
-      clearInterval(pingInterval);
-      clearInterval(checkInterval);
-    };
-  }, [playerName, remoteConnected, resetToLobby, safeTrigger]);
+    if (localReady && remoteReady && localPlayer === PLAYER_IDS.ONE && gameState === "menu") {
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'game-start',
+          data: {}
+        })
+      });
+    }
+  }, [localReady, remoteReady, localPlayer, gameState]);
 
   const rollDice = async () => {
-    if (uiState !== "playing") return;
-    if (!remoteConnected) return;
-    if (currentTurn !== playerName || isRolling || winner) return;
+    if (gameState !== "playing" || currentTurn !== localPlayer || isRolling || winner) return;
 
     setIsRolling(true);
     const dice = Math.floor(Math.random() * 6) + 1;
     setDiceValue(dice);
 
-    const currentPos = playerName === PARTNER_ONE_KEY ? player1Pos : player2Pos;
+    // Simulate roll animation delay
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const currentPos = localPlayer === PLAYER_IDS.ONE ? player1Pos : player2Pos;
     let newPos = currentPos + dice;
 
-    // Can't go beyond 100
-    if (newPos > BOARD_SIZE) {
-      newPos = currentPos;
-    }
+    if (newPos > BOARD_SIZE) newPos = currentPos;
+    if (SNAKES[newPos]) newPos = SNAKES[newPos];
+    if (LADDERS[newPos]) newPos = LADDERS[newPos];
 
-    // Check for snakes
-    if (SNAKES[newPos]) {
-      toast.error(`🐍 Snake! Slide down to ${SNAKES[newPos]}`);
-      newPos = SNAKES[newPos];
-    }
+    const gameWinner = newPos === BOARD_SIZE ? localPlayer : null;
 
-    // Check for ladders
-    if (LADDERS[newPos]) {
-      toast.success(`🪜 Ladder! Climb up to ${LADDERS[newPos]}`);
-      newPos = LADDERS[newPos];
-    }
+    if (localPlayer === PLAYER_IDS.ONE) setPlayer1Pos(newPos);
+    else setPlayer2Pos(newPos);
 
-    // Check for winner
-    const gameWinner = newPos === BOARD_SIZE ? playerName : null;
-
-    // Update position
-    if (playerName === PARTNER_ONE_KEY) {
-      setPlayer1Pos(newPos);
+    const nextTurn = localPlayer === PLAYER_IDS.ONE ? PLAYER_IDS.TWO : PLAYER_IDS.ONE;
+    
+    if (gameWinner) {
+      setWinner(gameWinner);
+      setGameState("finished");
     } else {
-      setPlayer2Pos(newPos);
+      setCurrentTurn(nextTurn);
     }
 
-    // Broadcast move
-    await fetch("/api/games/snakes-ladders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sessionId,
-        matchId,
-        player: playerName,
-        position: newPos,
-        dice,
-        nextTurn: playerName === PARTNER_ONE_KEY ? PARTNER_TWO_KEY : PARTNER_ONE_KEY,
-        winner: gameWinner,
-      }),
+        channel: CHANNEL_NAME,
+        event: 'game-move',
+        data: { player: localPlayer, position: newPos, dice, nextTurn, winner: gameWinner }
+      })
     });
 
     setIsRolling(false);
   };
 
-  const toggleReady = async () => {
-    const next = !localReady;
-    setLocalReady(next);
-    await safeTrigger("player-ready", { player: playerName, ready: next, ts: Date.now() });
-  };
-
-  const startGame = async () => {
-    if (!isHost) return;
-    if (!remoteConnected || !localReady || !remoteReady) return;
-    if (uiState !== "lobby") return;
-
-    const nextMatchId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    setMatchId(nextMatchId);
-    setPlayer1Pos(0);
-    setPlayer2Pos(0);
-    setCurrentTurn(PARTNER_ONE_KEY);
-    setDiceValue(null);
-    setWinner(null);
-    setIsRolling(false);
-    setUiState("playing");
-    setLocalReady(false);
-    setRemoteReady(false);
-
-    await safeTrigger("game-start", { matchId: nextMatchId, startedBy: PARTNER_ONE_KEY, ts: Date.now() });
-  };
-
-  const backToLobby = async () => {
-    resetToLobby(false);
-    await safeTrigger("back-to-lobby", { player: playerName, ts: Date.now() });
-  };
-
   const renderBoard = () => {
     const cells = [];
     for (let row = 9; row >= 0; row--) {
-      const rowCells = [];
       for (let col = 0; col < 10; col++) {
-        const num = row % 2 === 1 
-          ? row * 10 + (10 - col)
-          : row * 10 + col + 1;
-
+        const num = row % 2 === 1 ? row * 10 + (10 - col) : row * 10 + col + 1;
+        const hasP1 = player1Pos === num;
+        const hasP2 = player2Pos === num;
         const isSnake = SNAKES[num];
         const isLadder = LADDERS[num];
-        const hasPlayer1 = player1Pos === num;
-        const hasPlayer2 = player2Pos === num;
 
-        // Determine snake size for emoji
-        const snakeLength = isSnake ? num - isSnake : 0;
-        const snakeEmoji = snakeLength > 30 ? "🐉" : snakeLength > 20 ? "🐍" : "🪱";
-        
-        // Determine ladder height for visual
-        const ladderHeight = isLadder ? isLadder - num : 0;
-        const ladderSize = ladderHeight > 25 ? "text-3xl" : ladderHeight > 15 ? "text-2xl" : "text-xl";
-
-        rowCells.push(
-          <div
-            key={num}
-            className={`relative aspect-square border-2 flex items-center justify-center text-xs sm:text-sm font-semibold transition-all hover:scale-105 ${
-              isSnake
-                ? "bg-gradient-to-br from-red-100 to-red-200 border-red-300 shadow-inner"
-                : isLadder
-                ? "bg-gradient-to-br from-green-100 to-emerald-200 border-green-300 shadow-inner"
-                : num === BOARD_SIZE
-                ? "bg-gradient-to-br from-yellow-200 to-orange-300 border-yellow-400 shadow-lg animate-pulse"
-                : (row + col) % 2 === 0
-                ? "bg-gradient-to-br from-purple-50 to-pink-100 border-purple-200"
-                : "bg-gradient-to-br from-blue-50 to-cyan-100 border-blue-200"
-            }`}
-          >
-            {/* Cell number */}
-            <span className={`absolute top-1 left-1.5 text-[10px] font-bold ${
-              num === BOARD_SIZE ? "text-orange-700" : "text-gray-600"
-            }`}>
-              {num}
-            </span>
+        cells.push(
+          <div key={num} className={`relative aspect-square border-[0.5px] border-stone-100 flex items-center justify-center text-[8px] font-bold ${(row + col) % 2 === 0 ? "bg-stone-50" : "bg-white"}`}>
+            <span className="absolute top-0.5 left-0.5 opacity-20">{num}</span>
+            {isSnake && <div className="text-[14px] opacity-40">🐍</div>}
+            {isLadder && <div className="text-[14px] opacity-40">🪜</div>}
             
-            {/* Win star */}
-            {num === BOARD_SIZE && (
-              <div className="absolute inset-0 flex items-center justify-center text-4xl animate-spin-slow">
-                ⭐
-              </div>
-            )}
-            
-            {/* Snake */}
-            {isSnake && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40">
-                <div className={`${snakeLength > 20 ? 'text-3xl' : 'text-2xl'} transform rotate-12`}>
-                  {snakeEmoji}
-                </div>
-                <div className="text-[8px] font-bold text-red-700 bg-white/70 px-1 rounded">
-                  ↓{isSnake}
-                </div>
-              </div>
-            )}
-            
-            {/* Ladder */}
-            {isLadder && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center opacity-50">
-                <div className={`${ladderSize} transform -rotate-12`}>
-                  🪜
-                </div>
-                <div className="text-[8px] font-bold text-green-700 bg-white/70 px-1 rounded">
-                  ↑{isLadder}
-                </div>
-              </div>
-            )}
-
-            {/* Players */}
-            <div className="absolute bottom-1 right-1 flex gap-0.5 z-10">
-              {hasPlayer1 && (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white shadow-lg flex items-center justify-center text-[9px] font-bold text-white animate-bounce">
-                  {partnerOneInitial}
-                </div>
-              )}
-              {hasPlayer2 && (
-                <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white shadow-lg flex items-center justify-center text-[9px] font-bold text-white animate-bounce">
-                  {partnerTwoInitial}
-                </div>
-              )}
+            <div className="flex gap-0.5 z-10">
+               {hasP1 && <div className="w-4 h-4 rounded-full bg-[#ab4400] border border-white shadow-sm flex items-center justify-center text-[6px] text-white font-black animate-bounce">1</div>}
+               {hasP2 && <div className="w-4 h-4 rounded-full bg-[#9d4867] border border-white shadow-sm flex items-center justify-center text-[6px] text-white font-black animate-bounce">2</div>}
             </div>
           </div>
         );
       }
-      cells.push(
-        <div key={row} className="grid grid-cols-10 gap-0">
-          {rowCells}
-        </div>
-      );
     }
     return cells;
   };
 
-  const didWin = winner && winner === playerName;
-
-  return (
-    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-4xl">
-        <Link href="/games">
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Games
-          </Button>
-        </Link>
-
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-rose-500 to-pink-600 bg-clip-text text-transparent mb-2">
-              🐍 Snakes & Ladders 🪜
+  if (gameState === "menu") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
+        <div className="max-w-xl w-full">
+          <div className="flex items-center gap-3 mb-6">
+            <Link href="/games">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
+                <ArrowLeft size={20} />
+              </Button>
+            </Link>
+            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
+              Snakes & Ladders
             </h1>
-            <p className="text-gray-600">Race to 100! Watch out for snakes!</p>
           </div>
 
-          {uiState === "lobby" ? (
-            <div className="text-center py-10 space-y-6">
-              <div className="grid grid-cols-2 gap-4 max-w-2xl mx-auto">
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                      {partnerOneInitial}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-gray-700">{partnerOneDisplayName} 💙</p>
-                      <p className={`text-xs ${playerName === PARTNER_ONE_KEY && localReady ? "text-green-700 font-bold" : playerName === PARTNER_ONE_KEY ? "text-muted-foreground" : remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
-                        {playerName === PARTNER_ONE_KEY ? (localReady ? "Ready" : "Not ready") : remoteReady ? "Ready" : remoteConnected ? "Not ready" : "Not connected"}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                <Card className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                      {partnerTwoInitial}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <p className="font-bold text-gray-700">{partnerTwoDisplayName} 💖</p>
-                      <p className={`text-xs ${playerName === PARTNER_TWO_KEY && localReady ? "text-green-700 font-bold" : playerName === PARTNER_TWO_KEY ? "text-muted-foreground" : remoteReady ? "text-green-700 font-bold" : "text-muted-foreground"}`}>
-                        {playerName === PARTNER_TWO_KEY ? (localReady ? "Ready" : "Not ready") : remoteReady ? "Ready" : remoteConnected ? "Not ready" : "Not connected"}
-                      </p>
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
+              <CardTitle className="text-center">
+                <Zap size={28} className="mx-auto mb-2 opacity-80" />
+                <span className="text-xl sm:text-2xl font-black tracking-tight">The Big Race</span>
+                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">Climb ladders, avoid snakes, reach 100!</p>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 sm:p-6 space-y-6">
+               <div className="grid grid-cols-2 gap-3">
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {localReady ? "READY" : "WAITING"}
                     </div>
                   </div>
-                </Card>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  You are playing as <span className="font-bold">{localDisplayName}</span>.
-                </p>
-                <div className="flex gap-3 justify-center flex-wrap">
-                  <Button onClick={toggleReady} variant={localReady ? "outline" : "default"}>
-                    {localReady ? "Unready" : "I'm Ready"}
-                  </Button>
-
-                  {isHost ? (
-                    <Button
-                      onClick={startGame}
-                      className="bg-gradient-to-r from-rose-500 to-pink-600"
-                      disabled={!remoteConnected || !localReady || !remoteReady}
-                    >
-                      Start Game
-                    </Button>
-                  ) : (
-                    <Button disabled className="bg-gradient-to-r from-rose-500 to-pink-600 opacity-60">
-                      Waiting for host to start...
-                    </Button>
-                  )}
-                </div>
-
-                {!remoteConnected && (
-                  <p className="text-xs text-muted-foreground">
-                    Waiting for {remoteDisplayName} to open the game.
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <>
-              {/* Game Info */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <Card className={`p-4 transition-all ${currentTurn === PARTNER_ONE_KEY ? "ring-4 ring-blue-400 shadow-lg shadow-blue-300/50 scale-105" : "opacity-75"}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                        {partnerOneInitial}
-                      </div>
-                      {currentTurn === PARTNER_ONE_KEY && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-700">{partnerOneDisplayName} 💙</p>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-bold text-blue-600">{player1Pos}</p>
-                        <p className="text-xs text-gray-500">/ 100</p>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                        <div 
-                          className="bg-gradient-to-r from-blue-400 to-blue-600 h-1.5 rounded-full transition-all duration-500"
-                          style={{ width: `${player1Pos}%` }}
-                        ></div>
-                      </div>
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {remoteReady ? "READY" : "WAITING"}
                     </div>
                   </div>
-                </Card>
+               </div>
 
-                <Card className={`p-4 transition-all ${currentTurn === PARTNER_TWO_KEY ? "ring-4 ring-pink-400 shadow-lg shadow-pink-300/50 scale-105" : "opacity-75"}`}>
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 flex items-center justify-center text-white font-bold text-xl shadow-lg">
-                        {partnerTwoInitial}
-                      </div>
-                      {currentTurn === PARTNER_TWO_KEY && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-bold text-gray-700">{partnerTwoDisplayName} 💖</p>
-                      <div className="flex items-baseline gap-2">
-                        <p className="text-3xl font-bold text-pink-600">{player2Pos}</p>
-                        <p className="text-xs text-gray-500">/ 100</p>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                        <div 
-                          className="bg-gradient-to-r from-pink-400 to-pink-600 h-1.5 rounded-full transition-all duration-500"
-                          style={{ width: `${player2Pos}%` }}
-                        ></div>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </div>
+               <Button 
+                onClick={handleReady}
+                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
+                  localReady 
+                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
+                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
+                }`}
+               >
+                 {localReady ? "WAITING FOR PARTNER..." : "READY TO ROLL! 🎲"}
+               </Button>
 
-              {/* Dice and Controls */}
-              <div className="text-center mb-6">
-                {diceValue && (
-                  <div className="mb-4 relative">
-                    <div className="text-7xl sm:text-8xl animate-bounce inline-block">
-                      {["⚀", "⚁", "⚂", "⚃", "⚄", "⚅"][diceValue - 1]}
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-24 h-24 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-                    </div>
-                  </div>
-                )}
-
-                {uiState === "finished" && winner ? (
-                  <div className="space-y-4 py-8">
-                    <div className="text-6xl">{didWin ? "🏆" : "💖"}</div>
-                    <p className="text-3xl font-bold bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 bg-clip-text text-transparent">
-                      {didWin ? "You won!" : "Good game!"}
-                    </p>
-                    <p className="text-gray-600">
-                      {didWin ? `Winner: ${winner}` : `Winner: ${winner} — You’ll win the next one 😌`}
-                    </p>
-                    <div className="flex gap-3 justify-center flex-wrap">
-                      <Button onClick={backToLobby} size="lg" className="bg-gradient-to-r from-rose-500 to-pink-600 hover:shadow-lg transition-all">
-                        Back to Start
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <div className={`w-3 h-3 rounded-full ${currentTurn === playerName ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`}></div>
-                      <p className="text-lg font-semibold">
-                        {!remoteConnected
-                          ? `⏳ Waiting for ${remoteDisplayName}...`
-                          : currentTurn === playerName
-                          ? "🎯 Your turn!"
-                          : `⏳ ${(currentTurn === PARTNER_ONE_KEY ? partnerOneDisplayName : partnerTwoDisplayName)}'s turn`}
-                      </p>
-                    </div>
-                    <Button
-                      onClick={rollDice}
-                      disabled={!remoteConnected || currentTurn !== playerName || isRolling}
-                      size="lg"
-                      className="bg-gradient-to-r from-rose-500 via-pink-600 to-purple-600 hover:shadow-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Dices className="mr-2 h-5 w-5" />
-                      {isRolling ? "🎲 Rolling..." : "🎲 Roll Dice"}
-                    </Button>
-                    <div className="mt-3">
-                      <Button variant="outline" onClick={backToLobby}>
-                        Back to Start
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Game Board */}
-              <div className="bg-white rounded-lg p-2 sm:p-4 shadow-inner">
-                {renderBoard()}
-              </div>
-
-              {/* Legend */}
-              <div className="mt-4 flex justify-center gap-6 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-red-100 border border-gray-300"></div>
-                  <span>🐍 Snake</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-green-100 border border-gray-300"></div>
-                  <span>🪜 Ladder</span>
-                </div>
-              </div>
-            </>
-          )}
+               {!remoteConnected && (
+                 <p className="text-center text-[10px] sm:text-xs text-[#9d4867] font-medium animate-pulse">
+                   Waiting for {remotePlayerName} to join...
+                 </p>
+               )}
+            </CardContent>
+          </Card>
         </div>
-    </div>
-  );
+      </div>
+    );
+  }
+
+  if (gameState === "playing") {
+    return (
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden bg-[#fffaf8]">
+        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col overflow-y-auto sm:overflow-visible pr-1">
+          <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
+            <div className="flex items-center gap-2">
+              <Link href="/games">
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <ArrowLeft size={18} />
+                </Button>
+              </Link>
+              <h1 className={`${plusJakarta.className} text-lg sm:text-xl font-bold text-[#ab4400]`}>
+                Board Race
+              </h1>
+            </div>
+            <div className="flex items-center gap-1 sm:gap-2 bg-[#fff0e8] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#ffae88]/30">
+              <Swords size={14} className="text-[#ab4400]" />
+              <p className="text-[10px] sm:text-xs font-bold text-[#ab4400] uppercase tracking-wider">
+                SNAKE DUEL
+              </p>
+            </div>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center justify-center space-y-4 sm:space-y-8 pb-12">
+             <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+                <div className={`p-4 rounded-2xl border-2 flex items-center justify-between transition-all ${currentTurn === PLAYER_IDS.ONE ? "bg-orange-50 border-orange-400 shadow-lg scale-105" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                   <div className="flex flex-col">
+                      <span className="font-black text-[#ab4400] text-[10px]">{localPlayer === PLAYER_IDS.ONE ? "YOU" : "PARTNER"}</span>
+                      <span className="text-xl font-black text-[#ab4400]">{player1Pos}</span>
+                   </div>
+                   <div className="w-8 h-8 rounded-full bg-[#ab4400] flex items-center justify-center text-white font-black">1</div>
+                </div>
+                <div className={`p-4 rounded-2xl border-2 flex items-center justify-between transition-all ${currentTurn === PLAYER_IDS.TWO ? "bg-pink-50 border-pink-400 shadow-lg scale-105" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                   <div className="flex flex-col">
+                      <span className="font-black text-[#9d4867] text-[10px]">{localPlayer === PLAYER_IDS.TWO ? "YOU" : "PARTNER"}</span>
+                      <span className="text-xl font-black text-[#9d4867]">{player2Pos}</span>
+                   </div>
+                   <div className="w-8 h-8 rounded-full bg-[#9d4867] flex items-center justify-center text-white font-black">2</div>
+                </div>
+             </div>
+
+             <div className="grid grid-cols-10 gap-[1px] w-full max-w-sm aspect-square bg-stone-100 rounded-2xl border-4 border-white shadow-2xl overflow-hidden">
+                {renderBoard()}
+             </div>
+
+             <div className="flex flex-col items-center gap-4">
+                <div className="flex items-center gap-4">
+                   <div className={`w-20 h-20 bg-white rounded-2xl border-4 border-orange-100 shadow-xl flex items-center justify-center text-4xl font-black text-[#ab4400] transition-all ${isRolling ? "animate-bounce" : ""}`}>
+                      {diceValue || "?"}
+                   </div>
+                   <Button 
+                    onClick={rollDice}
+                    disabled={currentTurn !== localPlayer || isRolling}
+                    className="py-8 px-10 bg-[#ab4400] hover:bg-[#973b00] rounded-2xl font-black text-lg shadow-lg active:scale-95 disabled:opacity-50"
+                   >
+                     {isRolling ? "ROLLING..." : "ROLL DICE 🎲"}
+                   </Button>
+                </div>
+                <p className="text-xs font-black text-[#ab4400] uppercase tracking-widest">
+                  {currentTurn === localPlayer ? "YOUR TURN! 🎯" : "WAITING FOR MOVE... ⏳"}
+                </p>
+             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (gameState === "finished") {
+    return (
+      <div className="flex flex-col items-center pt-2 p-4">
+        <div className="max-w-xl w-full">
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-8 text-center">
+              <Trophy size={48} className="mx-auto mb-4 text-yellow-300" />
+              <CardTitle className="text-3xl font-black tracking-tight">
+                {winner === localPlayer ? "VICTORY!" : "GOOD RACE!"}
+              </CardTitle>
+              <p className="text-white/70 font-medium mt-2">
+                {winner === localPlayer ? "You reached 100 first!" : "Your partner took the lead this time."}
+              </p>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-4xl">{localEmoji}</span>
+                  <span className="font-bold text-[#6a2700]">{localPlayerName}</span>
+                </div>
+                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-4xl">{remoteEmoji}</span>
+                  <span className="font-bold text-[#6a2700]">{remotePlayerName}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 max-w-sm mx-auto">
+                <Button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-8 text-xl font-black bg-[#ab4400] text-white rounded-2xl shadow-lg hover:bg-[#973b00] transition-all active:scale-95 shadow-[#ab4400]/20"
+                >
+                  RACE AGAIN 🔄
+                </Button>
+                <Link href="/games">
+                  <Button variant="ghost" className="w-full py-6 text-[#9d4867] font-bold">
+                    BACK TO MENU
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default function SnakesAndLadders() {
   return (
-    <LocalMultiplayerWrapper
-      gameId="snakes-ladders"
-      gameName="Snakes & Ladders"
-      hunterColor="from-blue-500 to-blue-700"
-      riceeeColor="from-pink-500 to-rose-600"
-    >
+    <LocalMultiplayerWrapper gameId="snakes-ladders" gameName="Snakes & Ladders">
       {(props) => <SnakesAndLaddersGame {...props} />}
     </LocalMultiplayerWrapper>
   );

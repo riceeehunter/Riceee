@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, GitCompare, Check } from "lucide-react";
+import { ArrowLeft, GitCompare, Check, Users, Clock, Zap, Heart } from "lucide-react";
 import Link from "next/link";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
-import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { plusJakarta } from "@/lib/fonts";
 
 const CHANNEL_NAME = "game-this-or-that";
 
@@ -35,356 +36,374 @@ const ALL_QUESTIONS = [
 ];
 
 function ThisOrThatGame({ localPlayer, sessionId, getPlayerName }) {
-
   const [gameState, setGameState] = useState("menu");
+  const [localReady, setLocalReady] = useState(false);
+  const [remoteReady, setRemoteReady] = useState(false);
+  const [remoteConnected, setRemoteConnected] = useState(false);
+  
   const [questions, setQuestions] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [localAnswers, setLocalAnswers] = useState([]);
   const [remoteAnswers, setRemoteAnswers] = useState([]);
   const [localFinished, setLocalFinished] = useState(false);
   const [remoteFinished, setRemoteFinished] = useState(false);
-  const [pusherClient, setPusherClient] = useState(null);
   const [channel, setChannel] = useState(null);
+  const localReadyRef = useRef(localReady);
 
-  const remotePlayerId = getOtherPlayer(localPlayer);
+  useEffect(() => {
+    localReadyRef.current = localReady;
+  }, [localReady]);
+
+  const remotePlayer = getOtherPlayer(localPlayer);
   const localPlayerName = getPlayerName(localPlayer);
-  const remotePlayerName = getPlayerName(remotePlayerId);
+  const remotePlayerName = getPlayerName(remotePlayer);
+  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🤔";
+  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🤔";
 
   // Initialize Pusher
   useEffect(() => {
-    if (!localPlayer) return;
-
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
     });
 
     const gameChannel = pusher.subscribe(CHANNEL_NAME);
-    setPusherClient(pusher);
     setChannel(gameChannel);
 
-    return () => {
-      gameChannel.unsubscribe();
-      pusher.disconnect();
-    };
-  }, [localPlayer]);
+    gameChannel.bind('pusher:subscription_succeeded', () => {
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'player-joined',
+          data: { player: localPlayer, ready: localReadyRef.current }
+        })
+      });
+    });
 
-  // Listen for game events
-  useEffect(() => {
-    if (!channel) return;
+    gameChannel.bind('player-joined', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+        fetch('/api/pusher/trigger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            channel: CHANNEL_NAME,
+            event: 'presence-check',
+            data: { player: localPlayer, ready: localReadyRef.current }
+          })
+        });
+      }
+    });
 
-    channel.bind("game-start", (data) => {
+    gameChannel.bind('presence-check', (data) => {
+      if (data.player !== localPlayer) {
+        setRemoteConnected(true);
+        setRemoteReady(data.ready);
+      }
+    });
+
+    gameChannel.bind('player-ready', (data) => {
+      if (data.player !== localPlayer) setRemoteReady(data.ready);
+    });
+
+    gameChannel.bind('game-start', (data) => {
       setQuestions(data.questions);
+      setGameState("playing");
       setCurrentQuestion(0);
       setLocalAnswers([]);
       setRemoteAnswers([]);
       setLocalFinished(false);
       setRemoteFinished(false);
-      setGameState("playing");
     });
 
-    channel.bind("answer-submitted", (data) => {
+    gameChannel.bind('answer-submitted', (data) => {
       if (data.player !== localPlayer) {
         setRemoteAnswers(data.answers);
-        if (data.finished) {
-          setRemoteFinished(true);
-        }
+        if (data.finished) setRemoteFinished(true);
       }
     });
 
     return () => {
-      channel.unbind("game-start");
-      channel.unbind("answer-submitted");
+      gameChannel.unbind_all();
+      pusher.unsubscribe(CHANNEL_NAME);
+      pusher.disconnect();
     };
-  }, [channel, localPlayer]);
+  }, [localPlayer]);
 
-  // Check if both finished
-  useEffect(() => {
-    if (localFinished && remoteFinished && gameState === "playing") {
-      setGameState("finished");
-    }
-  }, [localFinished, remoteFinished, gameState]);
-
-  const startGame = async () => {
-    if (!channel) return;
-
-    // Shuffle and pick 10 questions
-    const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 10);
-    setQuestions(shuffled);
-
-    await fetch("/api/pusher/trigger", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+  const handleReady = () => {
+    const nextReady = !localReady;
+    setLocalReady(nextReady);
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         channel: CHANNEL_NAME,
-        event: "game-start",
-        data: { questions: shuffled },
-      }),
+        event: 'player-ready',
+        data: { player: localPlayer, ready: nextReady }
+      })
     });
-
-    setCurrentQuestion(0);
-    setLocalAnswers([]);
-    setRemoteAnswers([]);
-    setLocalFinished(false);
-    setRemoteFinished(false);
-    setGameState("playing");
   };
+
+  useEffect(() => {
+    if (localReady && remoteReady && localPlayer === PLAYER_IDS.ONE && gameState === "menu") {
+      const shuffled = [...ALL_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 10);
+      fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: CHANNEL_NAME,
+          event: 'game-start',
+          data: { questions: shuffled }
+        })
+      });
+    }
+  }, [localReady, remoteReady, localPlayer, gameState]);
 
   const handleChoice = async (choice) => {
     const newAnswers = [...localAnswers, choice];
     setLocalAnswers(newAnswers);
 
     const isFinished = currentQuestion >= questions.length - 1;
+    if (isFinished) setLocalFinished(true);
 
-    if (isFinished) {
-      setLocalFinished(true);
-    }
-
-    await fetch("/api/pusher/trigger", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    fetch('/api/pusher/trigger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         channel: CHANNEL_NAME,
-        event: "answer-submitted",
+        event: 'answer-submitted',
         data: {
           player: localPlayer,
           answers: newAnswers,
-          finished: isFinished,
-        },
-      }),
+          finished: isFinished
+        }
+      })
     });
 
     if (!isFinished) {
-      setCurrentQuestion(currentQuestion + 1);
+      setCurrentQuestion(prev => prev + 1);
     }
   };
+
+  useEffect(() => {
+    if (localFinished && remoteFinished && gameState === "playing") {
+      setGameState("finished");
+    }
+  }, [localFinished, remoteFinished, gameState]);
 
   const getMatchCount = () => {
     let matches = 0;
     for (let i = 0; i < Math.min(localAnswers.length, remoteAnswers.length); i++) {
-      if (localAnswers[i] === remoteAnswers[i]) {
-        matches++;
-      }
+      if (localAnswers[i] === remoteAnswers[i]) matches++;
     }
     return matches;
   };
 
-  const playerColors = {
-    [PLAYER_IDS.ONE]: { border: "border-orange-500", bg: "bg-orange-500/20", text: "text-orange-500" },
-    [PLAYER_IDS.TWO]: { border: "border-pink-500", bg: "bg-pink-500/20", text: "text-pink-500" },
-  };
+  if (gameState === "menu") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
+        <div className="max-w-xl w-full">
+          <div className="flex items-center gap-3 mb-6">
+            <Link href="/games">
+              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
+                <ArrowLeft size={20} />
+              </Button>
+            </Link>
+            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
+              This or That
+            </h1>
+          </div>
 
-  const localColor = playerColors[localPlayer] || playerColors[PLAYER_IDS.ONE];
-  const remoteColor = playerColors[remotePlayerId] || playerColors[PLAYER_IDS.TWO];
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
+              <CardTitle className="text-center">
+                <GitCompare size={28} className="mx-auto mb-2 opacity-80" />
+                <span className="text-xl sm:text-2xl font-black tracking-tight">Choice Challenge</span>
+                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">See how much your tastes match!</p>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5 sm:p-6 space-y-6">
+               <div className="grid grid-cols-2 gap-3">
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {localReady ? "READY" : "WAITING"}
+                    </div>
+                  </div>
+                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
+                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
+                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
+                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
+                      {remoteReady ? "READY" : "WAITING"}
+                    </div>
+                  </div>
+               </div>
 
-  if (questions.length === 0 && gameState === "playing") {
-    return <div className="flex items-center justify-center min-h-dvh">Loading questions...</div>;
+               <Button 
+                onClick={handleReady}
+                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
+                  localReady 
+                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
+                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
+                }`}
+               >
+                 {localReady ? "WAITING FOR PARTNER..." : "START CHOOSING! ✨"}
+               </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
   }
 
-  const progress = questions.length > 0 ? ((currentQuestion + 1) / questions.length) * 100 : 0;
+  if (gameState === "playing") {
+    const question = questions[currentQuestion];
+    const progress = (currentQuestion / questions.length) * 100;
 
-  return (
-    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-4xl">
-      <Link href="/games">
-        <Button variant="ghost" className="mb-4 sm:mb-6">
-          <ArrowLeft className="mr-2" size={16} />
-          Back to Games
-        </Button>
-      </Link>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl sm:text-3xl text-center">
-            <GitCompare className="inline mr-2 mb-1" size={28} />
-            This or That
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {gameState === "menu" && (
-            <div className="text-center space-y-4 sm:space-y-6">
-              <div className="text-5xl sm:text-6xl mb-4">🤔</div>
-              <h2 className="text-xl sm:text-2xl font-bold">Quick Choices, Compare Preferences!</h2>
-              <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto px-4">
-                Both answer 10 fun questions and see how your choices compare with {remotePlayerName}!
-              </p>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 max-w-sm mx-auto px-4">
-                <div className="p-4 sm:p-6 bg-muted rounded-lg">
-                  <div className="text-3xl sm:text-4xl mb-2">⚡</div>
-                  <p className="text-xs sm:text-sm font-bold">Quick & Fun</p>
-                </div>
-                <div className="p-4 sm:p-6 bg-muted rounded-lg">
-                  <div className="text-3xl sm:text-4xl mb-2">🎯</div>
-                  <p className="text-xs sm:text-sm font-bold">Compare Choices</p>
-                </div>
-              </div>
-              <Button onClick={startGame} size="lg" className="text-base sm:text-lg px-6 sm:px-8">
-                Start Choosing! 🤔
-              </Button>
+    return (
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
+        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+          <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
+            <div className="flex items-center gap-2">
+              <Link href="/games">
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <ArrowLeft size={18} />
+                </Button>
+              </Link>
+              <h1 className={`${plusJakarta.className} text-lg sm:text-xl font-bold text-[#ab4400]`}>
+                Choice Arena
+              </h1>
             </div>
-          )}
+            <div className="flex items-center gap-1 sm:gap-2 bg-[#fff0e8] px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border border-[#ffae88]/30">
+              <Users size={14} className="text-[#ab4400]" />
+              <p className="text-[10px] sm:text-xs font-bold text-[#ab4400] uppercase tracking-wider">
+                {remoteFinished ? "Partner Done" : "Choosing Live..."}
+              </p>
+            </div>
+          </div>
 
-          {gameState === "playing" && !localFinished && (
-            <div className="space-y-4 sm:space-y-6">
-              {/* Progress */}
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
-                  <span>Question {currentQuestion + 1} of {questions.length}</span>
-                  <span>{Math.round(progress)}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-              </div>
+          {!localFinished ? (
+            <div className="flex-1 flex flex-col items-center justify-center space-y-4 sm:space-y-8 pb-12 min-h-0">
+               <div className="text-center space-y-1 sm:space-y-2">
+                 <p className="text-[10px] sm:text-xs font-black text-[#9d4867] uppercase tracking-widest opacity-60">QUESTION {currentQuestion + 1} OF {questions.length}</p>
+                 <h2 className="text-xl sm:text-2xl font-black text-[#ab4400]">Which do you prefer?</h2>
+               </div>
 
-              {/* Status indicators */}
-              <div className="grid grid-cols-2 gap-2 sm:gap-4 text-xs sm:text-sm">
-                <div className={`p-2 sm:p-3 rounded-lg border-2 ${localColor.border} ${localColor.bg}`}>
-                  <span className="font-bold">{localPlayerName}</span>
-                  <span className="ml-2">{localAnswers.length}/{questions.length}</span>
-                </div>
-                <div className={`p-2 sm:p-3 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
-                  <span className="font-bold">{remotePlayerName}</span>
-                  <span className="ml-2">{remoteAnswers.length}/{questions.length}</span>
-                  {remoteFinished && <Check className="inline ml-1 w-4 h-4 text-green-600" />}
-                </div>
-              </div>
-
-              {/* Question */}
-              <div className="text-center py-4 sm:py-8">
-                <h3 className="text-lg sm:text-2xl font-bold mb-4 sm:mb-8 px-2">Which do you prefer?</h3>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 max-w-2xl mx-auto px-2">
-                  {/* This */}
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full max-w-2xl px-4">
                   <button
                     onClick={() => handleChoice("this")}
-                    className="p-6 sm:p-8 bg-muted hover:bg-muted/80 rounded-xl border-2 hover:border-primary transition-all transform active:scale-95 sm:hover:scale-105"
+                    className="p-6 sm:p-8 bg-white hover:bg-orange-50 rounded-[2.5rem] sm:rounded-3xl border-4 border-orange-100 shadow-xl transition-all transform active:scale-95 group flex sm:flex-col items-center sm:justify-center gap-4 sm:gap-0"
                   >
-                    <div className="text-4xl sm:text-5xl mb-2 sm:mb-4">
-                      {questions[currentQuestion].this.split(" ").pop()}
-                    </div>
-                    <p className="text-base sm:text-xl font-bold">
-                      {questions[currentQuestion].this.split(" ").slice(0, -1).join(" ")}
-                    </p>
+                    <div className="text-4xl sm:text-5xl mb-0 sm:mb-4 group-hover:scale-110 transition-transform">{question.this.split(" ").pop()}</div>
+                    <p className="text-lg sm:text-xl font-black text-[#ab4400] flex-1 text-left sm:text-center leading-tight">{question.this.split(" ").slice(0, -1).join(" ")}</p>
                   </button>
-
-                  {/* That */}
                   <button
                     onClick={() => handleChoice("that")}
-                    className="p-6 sm:p-8 bg-muted hover:bg-muted/80 rounded-xl border-2 hover:border-primary transition-all transform active:scale-95 sm:hover:scale-105"
+                    className="p-6 sm:p-8 bg-white hover:bg-pink-50 rounded-[2.5rem] sm:rounded-3xl border-4 border-pink-100 shadow-xl transition-all transform active:scale-95 group flex sm:flex-col items-center sm:justify-center gap-4 sm:gap-0"
                   >
-                    <div className="text-4xl sm:text-5xl mb-2 sm:mb-4">
-                      {questions[currentQuestion].that.split(" ").pop()}
-                    </div>
-                    <p className="text-base sm:text-xl font-bold">
-                      {questions[currentQuestion].that.split(" ").slice(0, -1).join(" ")}
-                    </p>
+                    <div className="text-4xl sm:text-5xl mb-0 sm:mb-4 group-hover:scale-110 transition-transform">{question.that.split(" ").pop()}</div>
+                    <p className="text-lg sm:text-xl font-black text-[#9d4867] flex-1 text-left sm:text-center leading-tight">{question.that.split(" ").slice(0, -1).join(" ")}</p>
                   </button>
-                </div>
-              </div>
+               </div>
 
-              <p className="text-center text-xs sm:text-sm text-muted-foreground px-4">
-                Choose quickly - go with your gut feeling! 💭
-              </p>
+               <div className="w-full max-w-sm px-8 space-y-2">
+                  <div className="flex justify-between text-[8px] sm:text-[10px] font-black text-[#ab4400] uppercase tracking-widest">
+                    <span>PROGRESS</span>
+                    <span>{Math.round(progress)}%</span>
+                  </div>
+                  <div className="h-1.5 sm:h-2 bg-stone-100 rounded-full overflow-hidden border border-stone-200">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#ab4400] to-[#9d4867] transition-all duration-500" 
+                      style={{ width: `${progress}%` }} 
+                    />
+                  </div>
+               </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center space-y-6">
+               <div className="bg-[#fff0e8] p-6 sm:p-8 rounded-full shadow-inner animate-pulse">
+                  <Clock size={32} className="sm:h-12 sm:w-12 text-[#ab4400]" />
+               </div>
+               <h2 className="text-xl sm:text-2xl font-black text-[#ab4400]">Waiting for {remotePlayerName.split(' ')[0]}...</h2>
+               <p className="text-sm sm:text-base text-[#9d4867] font-medium">Almost there! They are at {remoteAnswers.length}/{questions.length}</p>
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
 
-          {gameState === "playing" && localFinished && !remoteFinished && (
-            <div className="text-center space-y-4 sm:space-y-6 py-8">
-              <div className="text-5xl sm:text-6xl mb-4">⏳</div>
-              <h2 className="text-xl sm:text-2xl font-bold">You're Done!</h2>
-              <p className="text-sm sm:text-base text-muted-foreground px-4">
-                Waiting for {remotePlayerName} to finish answering...
-              </p>
-              <div className="animate-pulse">
-                <div className={`inline-block p-3 sm:p-4 rounded-lg border-2 ${remoteColor.border} ${remoteColor.bg}`}>
-                  <span className="font-bold capitalize">{remotePlayerName}</span>
-                  <span className="ml-2">{remoteAnswers.length}/{questions.length}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {gameState === "finished" && (
-            <div className="space-y-4 sm:space-y-6">
-              <div className="text-center">
-                <div className="text-5xl sm:text-6xl mb-4">🎉</div>
-                <h2 className="text-xl sm:text-2xl font-bold mb-2">Results Are In!</h2>
-                <p className="text-sm sm:text-base text-muted-foreground px-4">
-                  You matched on {getMatchCount()} out of {questions.length} questions!
-                </p>
-              </div>
-
-              {/* Match percentage */}
-              <div className="max-w-md mx-auto p-4 sm:p-6 bg-muted rounded-xl text-center">
-                <div className="text-4xl sm:text-5xl font-bold mb-2">
-                  {Math.round((getMatchCount() / questions.length) * 100)}%
-                </div>
-                <p className="text-xs sm:text-sm text-muted-foreground">
-                  {getMatchCount() >= 7 ? "Amazing match! 🤝" : getMatchCount() >= 5 ? "Pretty similar! 👍" : "Opposites attract! 💫"}
-                </p>
+  if (gameState === "finished") {
+    const matches = getMatchCount();
+    return (
+      <div className="flex flex-col items-center pt-2 p-4">
+        <div className="max-w-2xl w-full">
+          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
+            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-8 text-center">
+              <div className="text-6xl mb-4">{matches >= 7 ? "❤️" : matches >= 4 ? "✨" : "🤝"}</div>
+              <CardTitle className="text-3xl font-black tracking-tight">The Perfect Match?</CardTitle>
+              <p className="text-white/70 font-medium mt-2">You matched on {matches} out of {questions.length} choices!</p>
+            </CardHeader>
+            <CardContent className="p-8 space-y-8">
+              <div className="flex items-center justify-center gap-8 py-4">
+                 <div className="text-center">
+                   <div className="text-4xl mb-2">{localEmoji}</div>
+                   <p className="font-bold text-[#ab4400]">{localPlayerName}</p>
+                 </div>
+                 <div className="text-5xl font-black text-[#ab4400] drop-shadow-lg">
+                    {Math.round((matches / questions.length) * 100)}%
+                 </div>
+                 <div className="text-center">
+                   <div className="text-4xl mb-2">{remoteEmoji}</div>
+                   <p className="font-bold text-[#9d4867]">{remotePlayerName}</p>
+                 </div>
               </div>
 
-              {/* Comparison Table */}
-              <div className="space-y-2 sm:space-y-3 max-h-96 overflow-y-auto px-1">
-                {questions.map((q, index) => {
-                  const localChoice = localAnswers[index];
-                  const remoteChoice = remoteAnswers[index];
-                  const matched = localChoice === remoteChoice;
-
+              <div className="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto px-2 custom-scrollbar">
+                {questions.map((q, idx) => {
+                  const localC = localAnswers[idx];
+                  const remoteC = remoteAnswers[idx];
+                  const isMatch = localC === remoteC;
                   return (
-                    <div
-                      key={index}
-                      className={`p-3 sm:p-4 rounded-lg border-2 ${
-                        matched ? "border-green-500 bg-green-500/10" : "border-border bg-muted"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-xs sm:text-sm font-semibold text-muted-foreground">
-                          Q{index + 1}
-                        </span>
-                        {matched && (
-                          <span className="text-xs sm:text-sm font-bold text-green-600">
-                            ✓ Match!
-                          </span>
-                        )}
+                    <div key={idx} className={`p-4 rounded-2xl border-2 flex items-center justify-between ${isMatch ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100 opacity-80"}`}>
+                      <div className="flex-1 text-xs font-bold text-[#6a2700]">
+                         {localC === "this" ? q.this : q.that}
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm">
-                        <div className={`p-2 sm:p-3 rounded-lg border ${localColor.border} ${localColor.bg}`}>
-                          <div className="font-bold mb-1">{localPlayerName}</div>
-                          <div className="truncate">
-                            {localChoice === "this" ? q.this : q.that}
-                          </div>
-                        </div>
-                        <div className={`p-2 sm:p-3 rounded-lg border ${remoteColor.border} ${remoteColor.bg}`}>
-                          <div className="font-bold mb-1">{remotePlayerName}</div>
-                          <div className="truncate">
-                            {remoteChoice === "this" ? q.this : q.that}
-                          </div>
-                        </div>
+                      <div className="px-4">
+                         {isMatch ? <Heart className="text-green-500 fill-green-500" size={16} /> : <Zap className="text-stone-300" size={16} />}
+                      </div>
+                      <div className="flex-1 text-right text-xs font-bold text-[#6a2700]">
+                         {remoteC === "this" ? q.this : q.that}
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="flex gap-3 sm:gap-4 justify-center flex-wrap px-2">
-                <Button onClick={startGame} size="lg" className="text-sm sm:text-base">
-                  Play Again 🔄
+              <div className="flex flex-col gap-3 pt-4">
+                <Button 
+                  onClick={() => window.location.reload()}
+                  className="w-full py-8 text-xl font-black bg-[#ab4400] text-white rounded-2xl shadow-lg hover:bg-[#973b00] transition-all active:scale-95 shadow-[#ab4400]/20"
+                >
+                  COMPARE AGAIN 🔄
                 </Button>
                 <Link href="/games">
-                  <Button variant="outline" size="lg" className="text-sm sm:text-base">
-                    Choose Another Game
+                  <Button variant="ghost" className="w-full py-6 text-[#9d4867] font-bold">
+                    BACK TO MENU
                   </Button>
                 </Link>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 export default function ThisOrThat() {
