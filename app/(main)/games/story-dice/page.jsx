@@ -267,7 +267,7 @@ function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "playing") {
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
         <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-3">
@@ -336,7 +336,7 @@ function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
                            onChange={(e) => setUserStory(e.target.value)}
                            disabled={localFinished}
                            placeholder="Once upon a time..."
-                           className="w-full h-full p-4 text-sm font-medium text-[#6a2700] resize-none focus:outline-none custom-scrollbar"
+                           className="w-full h-full p-4 text-sm font-medium text-[#6a2700] resize-none focus:outline-none custom-scrollbar break-words"
                          />
                          {localFinished && <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />}
                       </CardContent>
@@ -349,7 +349,7 @@ function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
                          {remoteFinished && <span className="text-[10px] font-black text-green-500">READY ✅</span>}
                       </CardHeader>
                       <CardContent className="p-4 flex-1 overflow-y-auto custom-scrollbar">
-                         <p className="text-sm font-medium text-stone-500 whitespace-pre-wrap italic">
+                         <p className="text-sm font-medium text-stone-500 whitespace-pre-wrap break-words italic">
                            {remoteStory || "Watching for ink on paper..."}
                          </p>
                       </CardContent>

@@ -263,9 +263,9 @@ function TicTacToeGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "playing") {
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
-        <div className="max-w-md mx-auto w-full flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
+      <div className="flex flex-col p-2 sm:p-4 min-h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
+        <div className="max-w-md mx-auto w-full flex-1 flex flex-col justify-center py-8">
+          <div className="flex items-center justify-between mb-4 sm:mb-6 px-2">
             <div className="flex items-center gap-2">
               <Link href="/games">
                 <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -284,7 +284,7 @@ function TicTacToeGame({ localPlayer, sessionId, getPlayerName }) {
             </div>
           </div>
 
-          <Card className="border-none shadow-xl flex flex-col bg-white overflow-hidden rounded-[2rem] sm:rounded-3xl border-2 border-orange-100 flex-1 min-h-0 mb-4 sm:mb-0">
+          <Card className="border-none shadow-xl flex flex-col bg-white overflow-hidden rounded-[2.5rem] sm:rounded-3xl border-2 border-orange-100 mb-20 sm:mb-0">
              <CardHeader className="bg-orange-50/50 py-2 sm:py-3 border-b border-orange-100 flex-shrink-0">
                 <div className="flex items-center justify-between px-2">
                    <div className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-xl transition-all ${currentTurn === localPlayer ? "bg-[#ab4400] text-white shadow-lg" : "text-[#6a2700] opacity-40"}`}>

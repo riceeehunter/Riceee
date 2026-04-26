@@ -559,18 +559,22 @@ function StackerGame({ localPlayer, sessionId, getPlayerName }) {
               </p>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-2 gap-4">
-                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
-                  <span className="text-4xl">{localEmoji}</span>
-                  <span className="font-bold text-[#6a2700]">{localPlayerName}</span>
-                  <span className="text-2xl font-black text-[#ab4400]">{localScore}</span>
-                  <span className="text-[10px] font-bold uppercase text-[#9d4867]">{localStack.length} Blocks</span>
+              <div className="grid grid-cols-2 gap-3 sm:gap-6">
+                <div className={`p-4 sm:p-6 rounded-3xl border-2 flex flex-col items-center gap-1 sm:gap-3 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-3xl sm:text-5xl mb-1">{localEmoji}</span>
+                  <span className="font-black text-[#6a2700] text-sm sm:text-lg text-center truncate w-full">{localPlayerName}</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xl sm:text-4xl font-black text-[#ab4400] leading-none">{localScore}</span>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase text-[#9d4867] mt-1 tracking-tighter sm:tracking-widest">{localStack.length} Blocks</span>
+                  </div>
                 </div>
-                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
-                  <span className="text-4xl">{remoteEmoji}</span>
-                  <span className="font-bold text-[#6a2700]">{remotePlayerName}</span>
-                  <span className="text-2xl font-black text-[#ab4400]">{remoteScore}</span>
-                  <span className="text-[10px] font-bold uppercase text-[#9d4867]">{remoteStack.length} Blocks</span>
+                <div className={`p-4 sm:p-6 rounded-3xl border-2 flex flex-col items-center gap-1 sm:gap-3 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-3xl sm:text-5xl mb-1">{remoteEmoji}</span>
+                  <span className="font-black text-[#6a2700] text-sm sm:text-lg text-center truncate w-full">{remotePlayerName}</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xl sm:text-4xl font-black text-[#ab4400] leading-none">{remoteScore}</span>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase text-[#9d4867] mt-1 tracking-tighter sm:tracking-widest">{remoteStack.length} Blocks</span>
+                  </div>
                 </div>
               </div>
 

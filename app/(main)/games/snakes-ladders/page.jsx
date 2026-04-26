@@ -282,8 +282,8 @@ function SnakesAndLaddersGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "playing") {
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden bg-[#fffaf8]">
-        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col overflow-y-auto sm:overflow-visible pr-1">
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
+        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
             <div className="flex items-center gap-2">
               <Link href="/games">
@@ -363,14 +363,14 @@ function SnakesAndLaddersGame({ localPlayer, sessionId, getPlayerName }) {
               </p>
             </CardHeader>
             <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-2 gap-4">
-                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
-                  <span className="text-4xl">{localEmoji}</span>
-                  <span className="font-bold text-[#6a2700]">{localPlayerName}</span>
+              <div className="grid grid-cols-2 gap-3 sm:gap-6">
+                <div className={`p-4 sm:p-6 rounded-3xl border-2 flex flex-col items-center gap-1 sm:gap-3 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-3xl sm:text-5xl mb-1">{localEmoji}</span>
+                  <span className="font-black text-[#6a2700] text-sm sm:text-lg text-center truncate w-full">{localPlayerName}</span>
                 </div>
-                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
-                  <span className="text-4xl">{remoteEmoji}</span>
-                  <span className="font-bold text-[#6a2700]">{remotePlayerName}</span>
+                <div className={`p-4 sm:p-6 rounded-3xl border-2 flex flex-col items-center gap-1 sm:gap-3 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-3xl sm:text-5xl mb-1">{remoteEmoji}</span>
+                  <span className="font-black text-[#6a2700] text-sm sm:text-lg text-center truncate w-full">{remotePlayerName}</span>
                 </div>
               </div>
 

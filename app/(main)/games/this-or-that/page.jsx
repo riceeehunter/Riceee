@@ -264,8 +264,8 @@ function ThisOrThatGame({ localPlayer, sessionId, getPlayerName }) {
     const progress = (currentQuestion / questions.length) * 100;
 
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
-        <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col">
+      <div className="flex flex-col p-2 sm:p-4 min-h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
+        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col justify-center py-8">
           <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
             <div className="flex items-center gap-2">
               <Link href="/games">

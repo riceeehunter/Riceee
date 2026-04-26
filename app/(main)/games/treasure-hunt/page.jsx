@@ -349,7 +349,7 @@ function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
   if (gameState === "playing") {
     const challenge = challenges[currentChallenge] || ALL_CHALLENGES[0];
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
         <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-3">
@@ -465,19 +465,23 @@ function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
                 {!winner && "EQUAL SPOILS!"}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-2 gap-4">
-                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
-                  <span className="text-4xl">{localEmoji}</span>
-                  <span className="font-bold text-[#6a2700]">{localPlayerName}</span>
-                  <span className="text-2xl font-black text-[#ab4400]">{score}</span>
-                  <span className="text-[10px] font-bold uppercase text-[#9d4867]">{treasuresFound} Treasures</span>
+            <CardContent className="p-5 sm:p-8 space-y-8">
+              <div className="grid grid-cols-2 gap-3 sm:gap-6">
+                <div className={`p-4 sm:p-6 rounded-3xl border-2 flex flex-col items-center gap-1 sm:gap-3 ${winner === localPlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-3xl sm:text-5xl mb-1">{localEmoji}</span>
+                  <span className="font-black text-[#6a2700] text-sm sm:text-lg text-center truncate w-full">{localPlayerName}</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xl sm:text-4xl font-black text-[#ab4400] leading-none">{score}</span>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase text-[#9d4867] mt-1 tracking-tighter sm:tracking-widest">{treasuresFound} Found</span>
+                  </div>
                 </div>
-                <div className={`p-6 rounded-2xl border-2 flex flex-col items-center gap-2 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
-                  <span className="text-4xl">{remoteEmoji}</span>
-                  <span className="font-bold text-[#6a2700]">{remotePlayerName}</span>
-                  <span className="text-2xl font-black text-[#ab4400]">{remoteScore}</span>
-                  <span className="text-[10px] font-bold uppercase text-[#9d4867]">{remoteTreasuresFound} Treasures</span>
+                <div className={`p-4 sm:p-6 rounded-3xl border-2 flex flex-col items-center gap-1 sm:gap-3 ${winner === remotePlayer ? "bg-orange-50 border-orange-200 ring-4 ring-orange-100" : "bg-stone-50 border-stone-100 opacity-60"}`}>
+                  <span className="text-3xl sm:text-5xl mb-1">{remoteEmoji}</span>
+                  <span className="font-black text-[#6a2700] text-sm sm:text-lg text-center truncate w-full">{remotePlayerName}</span>
+                  <div className="flex flex-col items-center">
+                    <span className="text-2xl sm:text-4xl font-black text-[#ab4400] leading-none">{remoteScore}</span>
+                    <span className="text-[10px] sm:text-xs font-bold uppercase text-[#9d4867] mt-1 tracking-tighter sm:tracking-widest">{remoteTreasuresFound} Found</span>
+                  </div>
                 </div>
               </div>
 

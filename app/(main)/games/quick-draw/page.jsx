@@ -400,7 +400,7 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "playing") {
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
+      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
         <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
             <div className="flex items-center gap-2">

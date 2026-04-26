@@ -284,8 +284,8 @@ function TruthOrDareGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "choosing") {
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
+      <div className="flex flex-col p-2 sm:p-4 min-h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
+        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col justify-center py-8">
           <div className="flex items-center justify-between mb-4 px-2">
             <div className="flex items-center gap-3">
               <Link href="/games">
