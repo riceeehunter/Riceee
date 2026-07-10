@@ -1,0 +1,20 @@
+# Normalize line endings: store LF in the repo, keep LF in working tree.
+# Prevents phantom "all lines changed" diffs when switching between Windows and Linux.
+* text=auto eol=lf
+
+# Windows scripts need CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary files — never touch
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.mp3 binary
+*.mp4 binary
