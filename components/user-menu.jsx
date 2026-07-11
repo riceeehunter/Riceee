@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { UserButton, useUser } from "@clerk/nextjs";
-import { ChartNoAxesGantt, Users } from "lucide-react";
+import { FolderOpen, Users } from "lucide-react";
 
 const UserMenu = () => {
   const { user } = useUser();
@@ -41,9 +41,9 @@ const UserMenu = () => {
       >
         <UserButton.MenuItems>
           <UserButton.Link
-            label="Dashboard"
-            labelIcon={<ChartNoAxesGantt size={15} />}
-            href="/dashboard"
+            label="Collections"
+            labelIcon={<FolderOpen size={15} />}
+            href="/dashboard#collections"
           />
           <UserButton.Link
             label="Partner names"
