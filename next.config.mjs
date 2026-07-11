@@ -35,6 +35,11 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.r2.cloudflarestorage.com",
       },
+      {
+        // Memory-card fallback art
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
     ],
   },
 };

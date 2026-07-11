@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -238,10 +239,12 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
                       />
 
                       <div className="relative aspect-[4/5] overflow-hidden">
-                        <img
-                          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                        <Image
                           src={imageUrl}
                           alt={clean || "Memory"}
+                          fill
+                          sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 30vw"
+                          className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                         />
                       </div>
 
@@ -318,10 +321,12 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
           <div className="w-full max-w-5xl bg-[#fffbff] rounded-[2rem] border border-white/60 shadow-2xl overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2">
               <div className="relative bg-[#f7f3ed] min-h-[320px] md:min-h-[520px]">
-                <img
-                  alt={selectedMemory.caption || "Memory"}
-                  className="absolute inset-0 h-full w-full object-cover"
+                <Image
                   src={selectedMemory.url || fallbackImages[0]}
+                  alt={selectedMemory.caption || "Memory"}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 640px"
+                  className="object-cover"
                 />
               </div>
 
