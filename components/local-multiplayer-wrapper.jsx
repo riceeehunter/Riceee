@@ -1,41 +1,45 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { getCurrentGameSetup } from "@/actions/onboarding";
+import { useGameSetup } from "@/components/game-setup-provider";
 import { getSpaceGameChannel } from "@/lib/constants/channels";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 import {
   PLAYER_IDS,
   getOtherPlayer,
   getPlayerDisplayNameFromSettings,
-  getPlayerMeta,
 } from "@/lib/constants/players";
+import { LobbySkeleton } from "@/app/(main)/games/_components/game-ui";
 
-export function LocalMultiplayerWrapper({ 
-  gameId, 
-  gameName, 
-  children, 
+export function LocalMultiplayerWrapper({
+  gameId,
+  gameName,
+  children,
   onPlayerSelect,
-  hunterColor = "from-orange-500 to-red-600",
-  riceeeColor = "from-pink-500 to-rose-600"
 }) {
-  const [mode, setMode] = useState("select"); // select, playing
-  const [localPlayer, setLocalPlayer] = useState(null);
-  const [spaceId, setSpaceId] = useState(null);
+  // Served with the HTML by app/(main)/games/layout.js — so the lobby paints
+  // on first render instead of waiting on a client round trip
+  const serverSetup = useGameSetup();
+
+  const [mode, setMode] = useState(serverSetup?.assignedPlayerId ? "playing" : "select");
+  const [localPlayer, setLocalPlayer] = useState(serverSetup?.assignedPlayerId ?? null);
+  const [spaceId, setSpaceId] = useState(serverSetup?.spaceId ?? null);
   // Scoped per couple space so different accounts never share a game channel
   const sessionId = spaceId ? getSpaceGameChannel(gameId, spaceId) : `local-game-${gameId}`;
-  const [partnerNames, setPartnerNames] = useState({
-    ...DEFAULT_PARTNER_NAMES,
-    bothLabel: `${DEFAULT_PARTNER_NAMES.partnerOneName} x ${DEFAULT_PARTNER_NAMES.partnerTwoName}`,
-  });
-  const playerOne = getPlayerMeta(PLAYER_IDS.ONE);
-  const playerTwo = getPlayerMeta(PLAYER_IDS.TWO);
+  const [partnerNames, setPartnerNames] = useState(
+    serverSetup?.partnerNames ?? {
+      ...DEFAULT_PARTNER_NAMES,
+      bothLabel: `${DEFAULT_PARTNER_NAMES.partnerOneName} x ${DEFAULT_PARTNER_NAMES.partnerTwoName}`,
+    }
+  );
   const playerOneName = getPlayerDisplayNameFromSettings(PLAYER_IDS.ONE, partnerNames);
   const playerTwoName = getPlayerDisplayNameFromSettings(PLAYER_IDS.TWO, partnerNames);
 
   useEffect(() => {
+    // Already have it from the server — nothing to fetch
+    if (serverSetup?.assignedPlayerId) return;
+
     let mounted = true;
     (async () => {
       try {
@@ -98,20 +102,10 @@ export function LocalMultiplayerWrapper({
     }
   };
 
+  // Only reached if the server layout couldn't resolve identity. Shows the
+  // lobby's real shape so there's no blank screen and no layout jump.
   if (mode === "select") {
-    return (
-      <div className="min-h-[60vh] flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="w-16 h-16 rounded-full bg-[#ffae88]/20 flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-3xl">🎮</span>
-          </div>
-          <h2 className="text-2xl font-bold text-[#ab4400]">
-            Loading {gameName}...
-          </h2>
-          <p className="text-[#9d4867] opacity-70 mt-2">Checking your player identity...</p>
-        </div>
-      </div>
-    );
+    return <LobbySkeleton gameTitle={gameName} />;
   }
 
   // Playing mode - render children with player context
