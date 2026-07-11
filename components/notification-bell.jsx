@@ -72,28 +72,29 @@ export default function NotificationBell({ partnerNames }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={`${manrope.className} w-[20rem] p-0 rounded-3xl border border-[#ffdfcf] bg-[#fffbff] shadow-[0_24px_56px_rgba(57,56,50,0.2)] overflow-hidden`}
+        className={`${manrope.className} w-[24rem] max-w-[calc(100vw-1.5rem)] p-0 rounded-3xl border border-[#ffdfcf] bg-[#fffbff] shadow-[0_24px_56px_rgba(57,56,50,0.2)] overflow-hidden`}
         align="end"
         alignOffset={-80}
         sideOffset={12}
       >
-        <div className="relative overflow-hidden border-b border-[#ffdfcf] px-4 py-2.5">
+        <div className="relative overflow-hidden border-b border-[#ffdfcf] px-5 py-4">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,174,136,0.35),transparent_55%),radial-gradient(circle_at_bottom_left,rgba(255,217,226,0.32),transparent_55%)]" />
-          <div className="relative flex items-center justify-between">
+          <div className="relative flex items-start justify-between gap-3">
             <div>
-              <h3 className={`${plusJakarta.className} font-bold text-[1.45rem] leading-none text-[#ab4400] tracking-tight flex items-center gap-2`}>
+              <h3 className={`${plusJakarta.className} font-bold text-xl leading-none text-[#ab4400] tracking-tight flex items-center gap-2`}>
                 Notifications
                 <Heart className="h-4 w-4 text-[#d3567f]" />
               </h3>
-              <p className="text-[11px] text-[#7a7871] mt-0.5">Your shared moments and updates</p>
+              <p className="text-[11px] text-[#7a7871] mt-1.5">Your shared moments and updates</p>
             </div>
-            <Sparkles className="h-4 w-4 text-[#d3567f]" />
+            {unreadCount > 0 ? (
+              <span className="mt-0.5 whitespace-nowrap rounded-full border border-[#ffb995] bg-white/80 px-2.5 py-1 text-[10px] font-bold text-[#863655]">
+                {unreadCount} unread
+              </span>
+            ) : (
+              <Sparkles className="mt-0.5 h-4 w-4 text-[#d3567f]" />
+            )}
           </div>
-          {unreadCount > 0 && (
-            <span className="relative inline-flex mt-1.5 rounded-full border border-[#ffb995] bg-white/70 px-2 py-0.5 text-[10px] font-semibold text-[#863655]">
-              {unreadCount} unread
-            </span>
-          )}
         </div>
 
         <div className="max-h-[22rem] overflow-y-auto custom-scrollbar">
@@ -118,14 +119,14 @@ export default function NotificationBell({ partnerNames }) {
             notifications.map((notification, index) => (
               <div
                 key={notification.id}
-                className={`px-4 py-2.5 ${index !== notifications.length - 1 ? "border-b border-[#ffede2]" : ""}`}
+                className={`px-4 py-3.5 ${index !== notifications.length - 1 ? "border-b border-[#ffede2]" : ""}`}
               >
                 <Link
                   href={notification.type?.startsWith("COURTROOM") ? "/riceee-chat" : `/journal/${notification.entryId}`}
                   onClick={() => setIsOpen(false)}
                   className="block rounded-2xl border border-[#ffdfcf] bg-white/80 px-4 py-3 shadow-[0_8px_16px_rgba(57,56,50,0.05)] hover:border-[#ffba99] hover:bg-[#fff7f2] transition-colors"
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-1.5 mb-1.5">
                     {notification.type === "COURTROOM_CASE" ? (
                       <Gavel className="h-3.5 w-3.5 text-[#9d4867]" />
                     ) : notification.type === "COURTROOM_JUDGEMENT" ? (
@@ -137,16 +138,16 @@ export default function NotificationBell({ partnerNames }) {
                       {notification.type === "COURTROOM_CASE" ? "New Dispute" : notification.type === "COURTROOM_JUDGEMENT" ? "AI Verdict" : "Journal Update"}
                     </span>
                   </div>
-                  <p className={`${plusJakarta.className} text-sm font-semibold text-[#393832] mb-1 leading-snug`}>
+                  <p className={`${plusJakarta.className} text-sm font-semibold text-[#393832] leading-snug`}>
                     {notification.message}
                   </p>
-                  <p className="text-xs text-[#7a7871]">
+                  <p className="mt-1.5 text-[11px] text-[#a09d95]">
                     {format(new Date(notification.createdAt), "MMM d 'at' h:mm a")}
                   </p>
                 </Link>
 
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-[11px] text-[#6d6a64] mr-1">Read by:</span>
+                <div className="mt-2.5 flex items-center gap-2 px-1">
+                  <span className="text-[11px] font-medium text-[#6d6a64] mr-auto">Read by</span>
                   <button
                     onClick={() => handleMarkAsRead(notification.id, PLAYER_IDS.ONE, nameOne)}
                     disabled={loading || notification.hunterRead}
