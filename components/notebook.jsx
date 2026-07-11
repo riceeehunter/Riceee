@@ -80,47 +80,72 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
       response: { content: "", status: "loading" }
     });
 
-    // simulate AI work
-    setTimeout(async () => {
-      const answer = `This is a response for: ${cell.content.trim()}`;
-      let currentChatId = activeChatId;
-
-      // If no active chat, create one now
-      if (!currentChatId && onCreateChat) {
-        currentChatId = await onCreateChat(cell.content.trim());
-      }
-
-      // Update UI immediately for responsiveness
-      updateCell(id, {
-        response: { content: answer, status: "done" }
-      });
-
-      // add a fresh input cell below immediately
-      setCells((prev) => [
-        ...prev,
-        { id: Date.now(), content: "", status: "editing", response: null },
+    // Prior exchanges become the AI's memory of this conversation
+    const history = cells
+      .filter((c) => c.id !== id && c.status === "submitted" && c.response?.status === "done")
+      .flatMap((c) => [
+        { role: "user", content: c.content },
+        { role: "model", content: c.response.content },
       ]);
 
-      if (currentChatId) {
-        // Save to DB in background
-        saveChatCell({
-          conversationId: currentChatId,
-          content: cell.content.trim(),
-          response: answer,
-          order: cells.length
-        }).then((res) => {
-          if (!res.success) console.error("Auto-save failed:", res.error);
-        });
-
-        // If it's the first cell, update the conversation title
-        if (cells.length === 1) {
-          const title = cell.content.trim().substring(0, 30) + (cell.content.length > 30 ? "..." : "");
-          updateConversationTitle(currentChatId, title).then(() => {
-            if (onTitleUpdate) onTitleUpdate(currentChatId, title);
-          });
-        }
+    let answer;
+    let aiSucceeded = false;
+    try {
+      const res = await fetch("/api/riceee-ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: cell.content.trim(), history }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        answer = data.reply;
+        aiSucceeded = true;
+      } else {
+        answer = data.error || "I'm having a little trouble thinking right now — try me again in a moment 💛";
       }
-    }, 500 + Math.min(600, cell.content.length * 5));
+    } catch (err) {
+      console.error("AI request failed:", err);
+      answer = "I couldn't reach my thoughts just now 🙈 — check your connection and try again.";
+    }
+
+    let currentChatId = activeChatId;
+
+    // If no active chat, create one now
+    if (!currentChatId && onCreateChat) {
+      currentChatId = await onCreateChat(cell.content.trim());
+    }
+
+    // Update UI immediately for responsiveness
+    updateCell(id, {
+      response: { content: answer, status: "done" }
+    });
+
+    // add a fresh input cell below immediately
+    setCells((prev) => [
+      ...prev,
+      { id: Date.now(), content: "", status: "editing", response: null },
+    ]);
+
+    // Only persist real exchanges — error placeholders aren't worth saving
+    if (currentChatId && aiSucceeded) {
+      // Save to DB in background
+      saveChatCell({
+        conversationId: currentChatId,
+        content: cell.content.trim(),
+        response: answer,
+        order: cells.length
+      }).then((res) => {
+        if (!res.success) console.error("Auto-save failed:", res.error);
+      });
+
+      // If it's the first cell, update the conversation title
+      if (cells.length === 1) {
+        const title = cell.content.trim().substring(0, 30) + (cell.content.length > 30 ? "..." : "");
+        updateConversationTitle(currentChatId, title).then(() => {
+          if (onTitleUpdate) onTitleUpdate(currentChatId, title);
+        });
+      }
+    }
   }
 
   function handleKeyDown(e, id) {
@@ -140,17 +165,70 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
     );
   }
 
+  const isFreshConversation =
+    cells.length === 1 && cells[0]?.status === "editing" && !cells[0]?.content;
+
+  const suggestionPrompts = [
+    "I had a weird dream last night 😴",
+    "We had a tiny fight today...",
+    "Tell me something sweet about us 💗",
+    "I'm a little stressed lately",
+  ];
+
+  const handleSuggestion = (text) => {
+    const firstCell = cells[0];
+    if (!firstCell) return;
+    handleChange(firstCell.id, text);
+    const el = inputRefs.current[firstCell.id];
+    setTimeout(() => el && el.focus(), 50);
+  };
+
   return (
     <div className="w-full max-w-[100%] mx-auto space-y-6 pb-20">
+      {/* Warm welcome when the page is fresh */}
+      {isFreshConversation && (
+        <div className="fade-up-in flex flex-col items-center text-center gap-5 pt-6 pb-4">
+          <div className="relative">
+            <div className="animate-blob absolute -inset-6 rounded-full bg-gradient-to-br from-[#ffae88]/25 to-[#ffd9e2]/25 blur-2xl pointer-events-none" />
+            <img
+              src="/cat-ai.png"
+              alt="Riceee AI"
+              className="relative w-24 h-24 object-contain mix-blend-multiply animate-float"
+              style={{ animationDuration: "5s" }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <h3 className="text-2xl font-bold text-[#393832] tracking-tight">
+              Hey, I&apos;m <span className="text-[#ab4400]">Riceee</span> 🐾
+            </h3>
+            <p className="text-sm text-[#66645e] max-w-sm mx-auto leading-relaxed">
+              Your in-house listener. Vent, wonder, overthink — this notebook keeps it all between us.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-center gap-2 max-w-lg">
+            {suggestionPrompts.map((prompt) => (
+              <button
+                key={prompt}
+                type="button"
+                onClick={() => handleSuggestion(prompt)}
+                className="px-4 py-2 rounded-full bg-white/80 border border-[#ffdfcf] text-[#6a2700] text-xs font-semibold hover:bg-[#fff0e8] hover:border-[#ffba99] hover:-translate-y-0.5 active:scale-95 transition-all shadow-sm"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {cells.map((cell, index) => (
-        <div key={cell.id} className="relative group" data-purpose="code-cell">
-          <div className={`bg-white rounded-xl border flex flex-col overflow-hidden shadow-cell-shadow relative z-0 transition-all ${cell.status === 'editing'
+        <div key={cell.id} className="fade-up-in relative group" data-purpose="code-cell">
+          <div className={`bg-white rounded-2xl border flex flex-col overflow-hidden shadow-cell-shadow relative z-0 transition-all ${cell.status === 'editing'
             ? 'border-action-yellow-border/50 focus-within:border-action-yellow-border focus-within:ring-2 focus-within:ring-action-yellow-border/20'
-            : 'border-cell-border'
+            : 'border-[#ffdfcf]'
             }`}>
             {/* Top Part: Input Area */}
             <div className="flex">
-              <div className="w-12 flex-shrink-0 flex items-start justify-center border-r border-cell-border pt-4">
+              <div className="w-12 flex-shrink-0 flex items-start justify-center border-r border-[#ffede2] bg-[#fff5f0]/60 pt-4">
                 <span className="text-base font-bold font-mono text-cell-num-text">{index + 1}</span>
               </div>
               <div className="flex-grow flex items-center p-2 pl-4">
@@ -187,7 +265,7 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
 
             {/* Bottom Part: Response Area (if exists) */}
             {cell.response && (
-              <div className="border-t border-cell-border bg-gray-50/30 flex px-4 py-4 items-center">
+              <div className="fade-up-in border-t border-[#ffede2] bg-[#fffaf6] flex px-4 py-4 items-center">
                 <div className="flex-shrink-0 mr-4">
                   <img
                     alt="AI Cat Icon"
@@ -198,11 +276,11 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
                 <div className="text-gray-800 text-[15px] leading-relaxed w-full">
                   {cell.response.status === "loading" ? (
                     <div className="flex items-center space-x-2">
-                      <p className="text-gray-400 font-medium italic">Thinking...</p>
+                      <p className="text-[#9d4867]/60 font-medium italic">Riceee is thinking...</p>
                       <div className="flex space-x-1">
-                        <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                        <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                        <span className="w-1.5 h-1.5 bg-gray-300 rounded-full animate-bounce"></span>
+                        <span className="w-1.5 h-1.5 bg-[#ffae88] rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                        <span className="w-1.5 h-1.5 bg-[#ffae88] rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                        <span className="w-1.5 h-1.5 bg-[#ffae88] rounded-full animate-bounce"></span>
                       </div>
                     </div>
                   ) : (
