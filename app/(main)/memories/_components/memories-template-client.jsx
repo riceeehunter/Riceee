@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { deleteMemory, updateMemoryCaption } from "@/actions/memory";
 import { plusJakarta, manrope } from "@/lib/fonts";
@@ -21,6 +22,32 @@ function formatBytes(bytes) {
   const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
   const value = bytes / 1024 ** index;
   return `${value.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+// Pull #hashtags out of a caption so they can render as sticker chips
+// instead of raw text
+function splitCaption(caption) {
+  const text = caption || "";
+  const tags = (text.match(/#[\p{L}\p{N}_]+/gu) || []).map((tag) => tag.slice(1));
+  const clean = text.replace(/#[\p{L}\p{N}_]+/gu, "").replace(/\s+/g, " ").trim();
+  return { clean, tags };
+}
+
+// Deterministic scrapbook scatter — static classes so Tailwind can see them
+const TILT_CLASSES = ["-rotate-2", "rotate-1", "-rotate-1", "rotate-2", "-rotate-3", "rotate-1"];
+const WASHI_COLORS = ["bg-[#ffd9e2]/80", "bg-[#ffae88]/70", "bg-[#fed07f]/70"];
+
+function Postmark({ date }) {
+  const d = new Date(date);
+  return (
+    <div className="shrink-0 h-16 w-16 rounded-full border-[1.5px] border-dashed border-[#9d4867]/45 text-[#9d4867]/80 rotate-6 flex flex-col items-center justify-center leading-none select-none">
+      <span className="text-[7px] font-bold tracking-[0.22em]">RICEEE</span>
+      <span className="my-1 text-[13px] font-black tracking-tight uppercase">
+        {d.toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
+      </span>
+      <span className="text-[7px] font-bold tracking-[0.22em]">{d.getFullYear()}</span>
+    </div>
+  );
 }
 
 function uploaderTheme(value, partnerNames) {
@@ -120,27 +147,29 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
   };
 
   return (
-    <div className={`${manrope.className} bg-[#fffbff] text-[#393832] min-h-dvh relative overflow-x-hidden selection:bg-[#ffae88] selection:text-[#6a2700]`}>
+    <div className={`${manrope.className} text-[#393832] min-h-dvh relative overflow-x-hidden selection:bg-[#ffae88] selection:text-[#6a2700]`}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');`}</style>
       <style>{`
-        .paper-grain {
-          background-image: url(https://lh3.googleusercontent.com/aida/ADBb0ugl7r1oOHE4zCR_sKi8RK7Mtdx3ISHK1IZ0MBtT-kJGasZy58BqnL1thgxavaUGY-Qae83LCT7T8K6xu2K2LHofpluC3UyJmRAWpbllLI4KDowKGokcsm5-8mKkzug7L5oOJ3Mu2pZpii4vbrR3533r8g2ISHhzRoNUtduDkDyQ1WppEShT3X4ezOA9kZXltWFh5zCfl6ZOVbRGDF1toBY5l65ZuHp7_55gQriYMJumYHHHZ33pnHUsl5SbLLmlLBmYpp2IHJqe);
-          background-size: 600px;
-          opacity: 0.25;
-          pointer-events: none;
-          mix-blend-mode: multiply;
-        }
         .hero-gradient {
           background: radial-gradient(circle at top right, rgba(255, 174, 136, 0.15), transparent 60%), radial-gradient(circle at bottom left, rgba(255, 217, 226, 0.2), transparent 60%);
         }
         .material-symbols-outlined {
           font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
         }
-        .polaroid-tilt-left { transform: rotate(-1deg); }
-        .polaroid-tilt-right { transform: rotate(1.5deg); }
+        /* Postage-stamp frame: tiled punch-holes show only in the padding
+           ring; drop-shadow traces the perforated silhouette */
+        .stamp-frame {
+          padding: 12px;
+          background-image: radial-gradient(circle, transparent 0 4.5px, #ffffff 5px);
+          background-size: 16px 16px;
+          background-position: center;
+          filter: drop-shadow(0 2px 3px rgba(57, 56, 50, 0.12));
+          transition: filter 0.3s ease;
+        }
+        .group:hover .stamp-frame {
+          filter: drop-shadow(0 6px 10px rgba(57, 56, 50, 0.14));
+        }
       `}</style>
-
-      <div className="fixed inset-0 paper-grain z-[60] pointer-events-none" />
 
       <div>
         <main className="page-shell pt-12 pb-24 space-y-12">
@@ -183,68 +212,83 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
             </div>
           </section>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 md:gap-12">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14 md:gap-y-16 lg:pb-10">
             {filtered.map((memory, index) => {
-              const tiltClass = index % 3 === 0 ? "polaroid-tilt-left" : index % 3 === 1 ? "polaroid-tilt-right" : "";
               const imageUrl = memory.url || fallbackImages[index % fallbackImages.length];
+              const tiltClass = TILT_CLASSES[index % TILT_CLASSES.length];
+              const washiColor = WASHI_COLORS[index % WASHI_COLORS.length];
+              const { clean, tags } = splitCaption(memory.caption);
 
               return (
-                <div key={memory.id} className={`${tiltClass} group`}>
-                  <div className="bg-white p-5 pb-12 rounded-sm shadow-[0_10px_30px_rgba(57,56,50,0.08)] transition-transform duration-300 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_rgba(57,56,50,0.12)]">
-                    <div
-                      className="relative aspect-[4/5] overflow-hidden mb-6 cursor-pointer"
-                      onClick={() => openPreview(memory)}
-                    >
-                      <img className="w-full h-full object-cover" src={imageUrl} alt={memory.caption || "Memory"} />
-                      <div className="absolute top-4 right-4 flex flex-col gap-2">
-                        <button
-                          className="w-10 h-10 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center text-[#9d4867] hover:text-[#ab4400] transition-colors"
-                          type="button"
-                          onClick={(event) => event.stopPropagation()}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontVariationSettings: '"FILL" 1' }}>favorite</span>
-                        </button>
+                <motion.div
+                  key={memory.id}
+                  initial={{ opacity: 0, y: 28 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: Math.min(index * 0.07, 0.6), ease: "easeOut" }}
+                  className={`group ${index % 3 === 1 ? "lg:translate-y-10" : ""}`}
+                >
+                  <div
+                    className={`stamp-frame cursor-pointer transition-transform duration-300 ease-out ${tiltClass} group-hover:rotate-0 group-hover:-translate-y-2`}
+                    onClick={() => openPreview(memory)}
+                  >
+                    <div className="relative bg-white p-3 pb-4">
+                      {/* Washi tape holding the stamp to the page */}
+                      <div
+                        className={`absolute -top-3.5 left-1/2 z-10 h-7 w-28 -translate-x-1/2 -rotate-3 rounded-[2px] ${washiColor}`}
+                      />
+
+                      <div className="relative aspect-[4/5] overflow-hidden">
+                        <img
+                          className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                          src={imageUrl}
+                          alt={clean || "Memory"}
+                        />
                       </div>
-                    </div>
-                    <div className="space-y-3 px-1">
-                      <div className="flex justify-between items-start gap-3">
-                        <h3 className={`${plusJakarta.className} font-bold text-xl text-[#393832] leading-tight`}>
-                          {memory.caption || "A sweet memory"}
-                        </h3>
-                        <span className="text-xs uppercase tracking-widest text-[#828079] whitespace-nowrap">
-                          {new Date(memory.createdAt).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "2-digit",
-                            year: "numeric",
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${uploaderTheme(memory.uploadedBy, partnerNames)}`}>
-                          {memory.uploadedBy || "Both Partners"}
-                        </span>
+
+                      <div className="flex items-start justify-between gap-3 px-1 pt-3">
+                        <div className="min-w-0 space-y-1.5">
+                          <h3 className={`${plusJakarta.className} font-semibold text-lg leading-snug text-[#393832]`}>
+                            {clean || "A sweet memory"}
+                          </h3>
+                          {tags.length > 0 && (
+                            <p className="text-[12px] italic lowercase leading-tight text-[#9d4867]/75">
+                              {tags.join(" · ")}
+                            </p>
+                          )}
+                          <div className="pt-0.5">
+                            <span className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${uploaderTheme(memory.uploadedBy, partnerNames)}`}>
+                              {memory.uploadedBy || "Both Partners"}
+                            </span>
+                          </div>
+                        </div>
+                        <Postmark date={memory.createdAt} />
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </section>
 
-          {filtered.length === 0 && (
+          {filtered.length === 0 && memories.length > 0 && (
             <div className="mt-16 text-center text-[#66645e]">No memories match your search yet.</div>
           )}
 
-          <div className="mt-24 flex justify-center">
-            <button
-              className="bg-[#fdf9f4] text-[#ab4400] px-10 py-4 rounded-full font-bold shadow-sm hover:shadow-md transition-all flex items-center gap-3 active:scale-95"
-              type="button"
-              onClick={() => setSearch("")}
-            >
-              <span className="material-symbols-outlined">auto_awesome</span>
-              Uncover More Memories
-            </button>
-          </div>
+          {memories.length === 0 && (
+            <div className="mt-4 flex justify-center">
+              <Link href="/memories/upload" className="group block max-w-xs">
+                <div className="stamp-frame -rotate-2 transition-transform duration-300 group-hover:rotate-0 group-hover:-translate-y-2">
+                  <div className="bg-white p-3 pb-5">
+                    <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 border-2 border-dashed border-[#ffae88]/50 bg-[#fff8f3] text-center px-6">
+                      <span className="material-symbols-outlined text-4xl text-[#ab4400]/50">add_photo_alternate</span>
+                      <p className={`${plusJakarta.className} font-semibold text-[#6a2700]`}>Your first memory goes here</p>
+                      <p className="text-xs text-[#828079]">Every great story starts with one photo.</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          )}
         </main>
 
         <div className="md:hidden fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 flex justify-around items-center px-6 py-4 max-w-md mx-auto bg-[#fffbff]/70 backdrop-blur-xl rounded-full shadow-[0_20px_50px_rgba(57,56,50,0.1)]">
@@ -295,19 +339,23 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
                   </button>
                 </div>
 
-                <h3 className={`${plusJakarta.className} text-2xl font-semibold text-[#393832] mb-2`}>
-                  {new Date(selectedMemory.createdAt).toLocaleDateString("en-US", {
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </h3>
-
-                <div className="text-sm text-[#828079] mb-6">
-                  {new Date(selectedMemory.createdAt).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
+                <div className="mb-6 flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className={`${plusJakarta.className} text-2xl font-semibold text-[#393832] mb-2`}>
+                      {new Date(selectedMemory.createdAt).toLocaleDateString("en-US", {
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </h3>
+                    <div className="text-sm text-[#828079]">
+                      {new Date(selectedMemory.createdAt).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  </div>
+                  <Postmark date={selectedMemory.createdAt} />
                 </div>
 
                 <label className={`${plusJakarta.className} text-sm font-semibold text-[#6a2700] mb-2`}>
@@ -322,8 +370,16 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
                     placeholder="Add your memory caption..."
                   />
                 ) : (
-                  <div className="min-h-[140px] bg-[#fdf9f4] border border-[#bcb9b1]/20 rounded-xl p-4 text-[#393832] whitespace-pre-wrap">
-                    {selectedMemory.caption || "No caption yet. Add one to preserve this memory."}
+                  <div className="min-h-[140px] bg-[#fdf9f4] border border-[#bcb9b1]/20 rounded-xl p-4 text-[#393832]">
+                    <p className="whitespace-pre-wrap">
+                      {splitCaption(selectedMemory.caption).clean ||
+                        (selectedMemory.caption ? "" : "No caption yet. Add one to preserve this memory.")}
+                    </p>
+                    {splitCaption(selectedMemory.caption).tags.length > 0 && (
+                      <p className="mt-3 text-[13px] italic lowercase text-[#9d4867]/75">
+                        {splitCaption(selectedMemory.caption).tags.join(" · ")}
+                      </p>
+                    )}
                   </div>
                 )}
 

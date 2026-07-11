@@ -12,6 +12,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 const TAGS = ["Warmth", "Playful", "Adventure", "Cafe Date", "Cozy", "Sunset", "Foodie", "Home", "Travel"];
 
+function Postmark({ date }) {
+  const d = new Date(date);
+  return (
+    <div className="shrink-0 h-16 w-16 rounded-full border-[1.5px] border-dashed border-[#9d4867]/45 text-[#9d4867]/80 rotate-6 flex flex-col items-center justify-center leading-none select-none">
+      <span className="text-[7px] font-bold tracking-[0.22em]">RICEEE</span>
+      <span className="my-1 text-[13px] font-black tracking-tight uppercase">
+        {d.toLocaleDateString("en-US", { month: "short", day: "2-digit" })}
+      </span>
+      <span className="text-[7px] font-bold tracking-[0.22em]">{d.getFullYear()}</span>
+    </div>
+  );
+}
+
 export default function UploadMemoryPageClient({ partnerNames }) {
   const router = useRouter();
   const fileInputRef = useRef(null);
@@ -139,12 +152,6 @@ export default function UploadMemoryPageClient({ partnerNames }) {
     <div className={`${manrope.className} text-[#393832] selection:bg-[#ffae88] selection:text-[#491900]`}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');`}</style>
       <style>{`
-        .upload-bg {
-          background-color: #fffbff;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-          background-blend-mode: overlay;
-          background-size: 200px 200px;
-        }
         .material-symbols-outlined {
           font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
@@ -157,10 +164,22 @@ export default function UploadMemoryPageClient({ partnerNames }) {
           height: 0;
           display: none;
         }
+        /* Same postage-stamp frame as the memories wall */
+        .stamp-frame {
+          padding: 12px;
+          background-image: radial-gradient(circle, transparent 0 4.5px, #ffffff 5px);
+          background-size: 16px 16px;
+          background-position: center;
+          filter: drop-shadow(0 2px 3px rgba(57, 56, 50, 0.12));
+          transition: filter 0.3s ease;
+        }
+        .stamp-frame:hover {
+          filter: drop-shadow(0 6px 10px rgba(57, 56, 50, 0.14));
+        }
       `}</style>
 
-      <div className="upload-bg min-h-dvh">
-        <main className="max-w-4xl mx-auto px-6 pt-16 pb-12">
+      <div className="min-h-dvh">
+        <main className="max-w-6xl mx-auto px-6 pt-16 pb-12">
           <div className="mb-10 flex items-start justify-between">
             <div className="flex-1">
               <h1 className={`${plusJakarta.className} text-4xl md:text-5xl font-bold text-[#ab4400] tracking-tight leading-tight`}>
@@ -178,37 +197,63 @@ export default function UploadMemoryPageClient({ partnerNames }) {
             </Link>
           </div>
 
-          <form className="space-y-12" onSubmit={onSubmit}>
-            <section className="group">
-              <label className={`${plusJakarta.className} block text-lg font-semibold text-[#393832] mb-4 px-2`}>The Visual Memory</label>
-              <div
-                className={`relative aspect-[4/5] md:aspect-[4/3] w-full bg-white rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-4 transition-all duration-300 shadow-2xl shadow-[#393832]/5 overflow-hidden ${
-                  isDragOver ? "border-[#ab4400]/60" : "border-[#bcb9b1]/30"
-                }`}
-                onClick={openFilePicker}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragOver(true);
-                }}
-                onDragLeave={(event) => {
-                  event.preventDefault();
-                  setIsDragOver(false);
-                }}
-                onDrop={onDrop}
-              >
-                {!previewUrl && (
-                  <div className="flex flex-col items-center justify-center p-8 text-center">
-                    <div className="w-16 h-16 rounded-full bg-[#ffae88]/20 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <span className="material-symbols-outlined text-[#ab4400] text-3xl">add_a_photo</span>
-                    </div>
-                    <p className="text-[#66645e] font-medium">Drop your photo here</p>
-                    <p className="text-xs text-[#828079] mt-2">Supports JPG, PNG, WEBP, GIF (up to 10MB)</p>
-                  </div>
-                )}
+          <form onSubmit={onSubmit}>
+            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-12 lg:gap-14 items-start">
+              {/* LIVE STAMP PREVIEW — the dropzone is the stamp itself */}
+              <div className="lg:sticky lg:top-28 pt-4">
+                <div
+                  className="stamp-frame -rotate-2 hover:rotate-0 transition-transform duration-300 cursor-pointer"
+                  onClick={openFilePicker}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setIsDragOver(true);
+                  }}
+                  onDragLeave={(event) => {
+                    event.preventDefault();
+                    setIsDragOver(false);
+                  }}
+                  onDrop={onDrop}
+                >
+                  <div className="relative bg-white p-3 pb-4">
+                    <div className="absolute -top-3.5 left-1/2 z-10 h-7 w-28 -translate-x-1/2 -rotate-3 rounded-[2px] bg-[#ffd9e2]/80" />
 
-                {previewUrl && (
-                  <img alt="Memory preview" className="w-full h-full object-cover" src={previewUrl} />
-                )}
+                    <div
+                      className={`relative aspect-[4/5] overflow-hidden transition-colors ${
+                        previewUrl
+                          ? ""
+                          : `border-2 border-dashed ${isDragOver ? "border-[#ab4400]/70 bg-[#fff0e8]" : "border-[#ffae88]/50 bg-[#fff8f3]"}`
+                      }`}
+                    >
+                      {previewUrl ? (
+                        <img alt="Memory preview" className="h-full w-full object-cover" src={previewUrl} />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center">
+                          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#ffae88]/20">
+                            <span className="material-symbols-outlined text-3xl text-[#ab4400]">add_a_photo</span>
+                          </div>
+                          <p className="font-medium text-[#66645e]">Drop your photo here</p>
+                          <p className="text-xs text-[#828079]">JPG, PNG, WEBP or GIF — up to 10MB</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-start justify-between gap-3 px-1 pt-3">
+                      <div className="min-w-0 space-y-1.5">
+                        <h3 className={`${plusJakarta.className} truncate font-semibold text-lg leading-snug ${caption.trim() ? "text-[#393832]" : "text-[#bcb9b1]"}`}>
+                          {caption.trim() || "A sweet memory"}
+                        </h3>
+                        {selectedTags.length > 0 ? (
+                          <p className="text-[12px] italic lowercase leading-tight text-[#9d4867]/75">
+                            {selectedTags.map((tag) => tag.toLowerCase()).join(" · ")}
+                          </p>
+                        ) : (
+                          <p className="text-[12px] italic text-[#d8d4cb]">your vibe tags will ink here</p>
+                        )}
+                      </div>
+                      <Postmark date={memoryDate || new Date()} />
+                    </div>
+                  </div>
+                </div>
 
                 <input
                   ref={fileInputRef}
@@ -217,10 +262,15 @@ export default function UploadMemoryPageClient({ partnerNames }) {
                   accept="image/*"
                   onChange={onFileChange}
                 />
-              </div>
-            </section>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <p className="mt-6 text-center text-xs italic text-[#828079]">
+                  exactly how it will hang on your memory wall
+                </p>
+              </div>
+
+              {/* THE STORY SIDE */}
+              <div className="space-y-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="md:col-span-2">
                 <label className={`${plusJakarta.className} block text-lg font-semibold text-[#393832] mb-4 px-2`}>
                   Tell the story behind this moment...
@@ -427,17 +477,18 @@ export default function UploadMemoryPageClient({ partnerNames }) {
             </div>
 
             <section>
-              <label className={`${plusJakarta.className} block text-lg font-semibold text-[#393832] mb-4 px-2`}>Vibe Tags</label>
-              <div className="grid grid-cols-3 gap-3">
-                {TAGS.map((tag) => {
+              <label className={`${plusJakarta.className} block text-lg font-semibold text-[#393832] mb-1 px-2`}>Vibe Tags</label>
+              <p className="mb-4 px-2 text-xs text-[#828079]">Pick the feelings — they get inked onto the stamp.</p>
+              <div className="flex flex-wrap gap-2.5">
+                {TAGS.map((tag, tagIndex) => {
                   const active = selectedTags.includes(tag);
                   return (
                     <button
                       key={tag}
-                      className={`w-full px-2 py-3 rounded-full text-sm transition-all text-center flex items-center justify-center ${
+                      className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all active:scale-95 ${
                         active
-                          ? "bg-[#ffd9e2] text-[#863655] font-bold shadow-sm"
-                          : "bg-[#ebe8df] text-[#393832] hover:bg-[#fed07f]/50"
+                          ? `bg-[#ffd9e2] border-[#f3bfd0] text-[#863655] shadow-sm ${tagIndex % 2 ? "rotate-1" : "-rotate-1"}`
+                          : "bg-white border-[#ebe8df] text-[#66645e] hover:border-[#ffae88]/60 hover:text-[#ab4400] hover:-translate-y-0.5"
                       }`}
                       type="button"
                       onClick={() => toggleTag(tag)}
@@ -449,15 +500,17 @@ export default function UploadMemoryPageClient({ partnerNames }) {
               </div>
             </section>
 
-            <div className="pt-8 flex justify-center">
+            <div className="pt-4">
               <button
-                className="w-full max-w-sm py-5 rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] text-white font-semibold text-xl shadow-xl shadow-[#ab4400]/20 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-60 disabled:hover:scale-100"
+                className="w-full py-5 rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] text-white font-semibold text-xl shadow-xl shadow-[#ab4400]/20 hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 disabled:opacity-60 disabled:hover:scale-100"
                 type="submit"
                 disabled={isSaving}
               >
-                <span className="material-symbols-outlined">auto_awesome</span>
-                {isSaving ? "Saving..." : "Save This Memory"}
+                <span className="material-symbols-outlined">local_post_office</span>
+                {isSaving ? "Sealing it in..." : "Post This Memory"}
               </button>
+            </div>
+              </div>
             </div>
           </form>
         </main>
