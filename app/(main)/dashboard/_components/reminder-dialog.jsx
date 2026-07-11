@@ -23,6 +23,7 @@ import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Plus, Trash2 } fr
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { plusJakarta, manrope } from "@/lib/fonts";
+import { getReminders, addReminder, deleteReminder } from "@/actions/reminder";
 
 const monthNames = [
   "January",
@@ -48,67 +49,66 @@ const ReminderDialog = () => {
   const [reminderTitle, setReminderTitle] = useState("");
   const [reminderNote, setReminderNote] = useState("");
   const [reminders, setReminders] = useState([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from(
     { length: currentYear - 1900 + 1 },
     (_, index) => currentYear - index
   );
 
-  // Load reminders from localStorage on mount
+  // Reminders live in the DB (shared by both partners) — fetch when opened
   useEffect(() => {
-    const stored = localStorage.getItem("reminders");
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        // Convert date strings back to Date objects
-        const withDates = parsed.map(r => ({
-          ...r,
-          date: new Date(r.date)
-        }));
-        setReminders(withDates);
-      } catch (error) {
-        console.error("Failed to load reminders:", error);
+    if (!open) return;
+    getReminders().then((res) => {
+      if (res.success) {
+        setReminders(res.data.map((r) => ({ ...r, date: new Date(r.date) })));
       }
-    }
-    setIsLoaded(true);
-  }, []);
+    });
+  }, [open]);
 
-  // Save reminders to localStorage whenever they change
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("reminders", JSON.stringify(reminders));
-    }
-  }, [reminders, isLoaded]);
-
-  const handleAddReminder = () => {
+  const handleAddReminder = async () => {
     if (!reminderTitle.trim()) {
       toast.error("Please enter a reminder title");
       return;
     }
 
-    const newReminder = {
-      id: Date.now(),
+    setIsSaving(true);
+    const res = await addReminder({
       date: selectedDate,
       title: reminderTitle,
       note: reminderNote,
-    };
+    });
+    setIsSaving(false);
 
-    setReminders([...reminders, newReminder]);
+    if (!res.success) {
+      toast.error(res.error || "Couldn't save the reminder");
+      return;
+    }
+
+    setReminders((prev) => [...prev, { ...res.data, date: new Date(res.data.date) }]);
     setReminderTitle("");
     setReminderNote("");
     toast.success("Reminder added!");
   };
 
-  const handleDeleteReminder = (id) => {
-    setReminders(reminders.filter((r) => r.id !== id));
+  const handleDeleteReminder = async (id) => {
+    const removed = reminders.find((r) => r.id === id);
+    setReminders((prev) => prev.filter((r) => r.id !== id));
+
+    const res = await deleteReminder(id);
+    if (!res.success) {
+      // Put it back if the server refused
+      if (removed) setReminders((prev) => [...prev, removed]);
+      toast.error("Couldn't delete the reminder");
+      return;
+    }
     toast.success("Reminder deleted");
   };
 
   const sortedReminders = [...reminders].sort((a, b) => a.date - b.date);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen} modal={false}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" className="rounded-full border-[#ffae88]/45 bg-white/90 text-[#6a2700] hover:bg-[#fff1e8] hover:text-[#ab4400]">
           <CalendarDays className="h-5 w-5" />
@@ -353,12 +353,13 @@ const ReminderDialog = () => {
               />
             </div>
 
-            <Button 
-              onClick={handleAddReminder} 
-              className="w-full rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] shadow-[0_10px_20px_rgba(171,68,0,0.24)] transition-all"
+            <Button
+              onClick={handleAddReminder}
+              disabled={isSaving}
+              className="w-full rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] shadow-[0_10px_20px_rgba(171,68,0,0.24)] transition-all disabled:opacity-60"
             >
               <Plus className="h-4 w-4 mr-2" />
-              Add Reminder
+              {isSaving ? "Saving..." : "Add Reminder"}
             </Button>
           </div>
 
