@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, MessageCircle, Heart, Users, Clock, Zap, Swords, Flame } from "lucide-react";
-import Link from "next/link";
+import { MessageCircle, Zap } from "lucide-react";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
 import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
+import {
+  LobbyScreen,
+  GameFrame,
+  BackToArena,
+} from "../_components/game-ui";
 
 
 const TRUTH_QUESTIONS = [
@@ -220,186 +222,136 @@ function TruthOrDareGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "menu") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
-        <div className="max-w-xl w-full">
-          <div className="flex items-center gap-3 mb-6">
-            <Link href="/games">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
-            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
-              Truth or Dare
-            </h1>
-          </div>
-
-          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
-            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
-              <CardTitle className="text-center">
-                <Flame size={28} className="mx-auto mb-2 opacity-80" />
-                <span className="text-xl sm:text-2xl font-black tracking-tight">The Honest Truth</span>
-                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">Reveal your secrets or take a dare.</p>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 sm:p-6 space-y-6">
-               <div className="grid grid-cols-2 gap-3">
-                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
-                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
-                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
-                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
-                      {localReady ? "READY" : "WAITING"}
-                    </div>
-                  </div>
-                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
-                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
-                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
-                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
-                      {remoteReady ? "READY" : "WAITING"}
-                    </div>
-                  </div>
-               </div>
-
-               <Button 
-                onClick={handleReady}
-                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
-                  localReady 
-                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
-                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
-                }`}
-               >
-                 {localReady ? "WAITING FOR PARTNER..." : "LET'S PLAY! 🎭"}
-               </Button>
-
-               {!remoteConnected && (
-                 <p className="text-center text-[10px] sm:text-xs text-[#9d4867] font-medium animate-pulse">
-                   Waiting for {remotePlayerName} to join...
-                 </p>
-               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <LobbyScreen
+        gameTitle="Truth or Dare"
+        tagline="The classic that starts better conversations."
+        localName={localPlayerName}
+        remoteName={remotePlayerName}
+        localReady={localReady}
+        remoteReady={remoteReady}
+        remoteConnected={remoteConnected}
+        onReady={handleReady}
+        localRole="You"
+      />
     );
   }
 
   if (gameState === "choosing") {
     return (
-      <div className="flex flex-col p-2 sm:p-4 min-h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
-        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col justify-center py-8">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <div className="flex items-center gap-3">
-              <Link href="/games">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft size={20} />
-                </Button>
-              </Link>
-              <h1 className={`${plusJakarta.className} text-xl font-bold text-[#ab4400]`}>
-                Truth or Dare
-              </h1>
-            </div>
-            <div className="flex items-center gap-4 bg-[#fff0e8] px-4 py-2 rounded-full border border-[#ffae88]/30">
-               <div className="flex items-center gap-1.5 border-r border-[#ffae88]/30 pr-3">
-                  <span className="text-[10px] font-bold text-[#ab4400] uppercase">{localPlayerName}:</span>
-                  <span className="text-sm font-black text-[#ab4400]">{score[localPlayer]}</span>
-               </div>
-               <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-bold text-[#9d4867] uppercase">{remotePlayerName}:</span>
-                  <span className="text-sm font-black text-[#9d4867]">{score[remotePlayer]}</span>
-               </div>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-col items-center justify-center space-y-12 pb-20">
-             <div className="text-center space-y-2">
-                <p className="text-xs font-black text-[#9d4867] uppercase tracking-widest opacity-60">
-                  {currentTurn === localPlayer ? "YOUR TURN" : "PARTNER'S TURN"}
-                </p>
-                <h2 className="text-3xl font-black text-[#ab4400]">
-                  {currentTurn === localPlayer ? "Choose your fate!" : `Watching ${remotePlayerName}...`}
-                </h2>
-             </div>
-
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full max-w-2xl px-4">
-                <button
-                  disabled={currentTurn !== localPlayer}
-                  onClick={() => chooseType("truth")}
-                  className={`p-10 rounded-3xl border-4 transition-all transform active:scale-95 group ${
-                    currentTurn === localPlayer 
-                    ? "bg-white border-orange-100 hover:border-orange-400 shadow-xl" 
-                    : "bg-stone-50 border-stone-100 opacity-50 cursor-default"
-                  }`}
-                >
-                   <div className="text-6xl mb-4 transition-transform group-hover:scale-110">💭</div>
-                   <p className="text-2xl font-black text-[#ab4400]">TRUTH</p>
-                   <p className="text-xs font-bold text-stone-400 mt-1 uppercase">Share a secret</p>
-                </button>
-                <button
-                  disabled={currentTurn !== localPlayer}
-                  onClick={() => chooseType("dare")}
-                  className={`p-10 rounded-3xl border-4 transition-all transform active:scale-95 group ${
-                    currentTurn === localPlayer 
-                    ? "bg-white border-pink-100 hover:border-pink-400 shadow-xl" 
-                    : "bg-stone-50 border-stone-100 opacity-50 cursor-default"
-                  }`}
-                >
-                   <div className="text-6xl mb-4 transition-transform group-hover:scale-110">⚡</div>
-                   <p className="text-2xl font-black text-[#9d4867]">DARE</p>
-                   <p className="text-xs font-bold text-stone-400 mt-1 uppercase">Take a risk</p>
-                </button>
-             </div>
+      <GameFrame size="max-w-2xl">
+        <div className="mb-5 flex items-center justify-between">
+          <BackToArena />
+          <div className="flex items-center gap-3 rounded-full border border-[#efe9e2] bg-white px-4 py-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#ab4400]">
+              {localPlayerName.split(" ")[0]} <span className={plusJakarta.className}>{score[localPlayer]}</span>
+            </span>
+            <span className="h-3 w-px bg-[#efe9e2]" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#9d4867]">
+              {remotePlayerName.split(" ")[0]} <span className={plusJakarta.className}>{score[remotePlayer]}</span>
+            </span>
           </div>
         </div>
-      </div>
+
+        <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+          <div className="border-b border-[#f5f2ee] px-7 pb-6 pt-7 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#ab4400]/70">
+              {currentTurn === localPlayer ? "Your turn" : `${remotePlayerName.split(" ")[0]}'s turn`}
+            </p>
+            <h2 className={`${plusJakarta.className} mt-2 text-3xl font-extrabold tracking-tight text-[#393832]`}>
+              {currentTurn === localPlayer ? "Choose your fate." : `${remotePlayerName.split(" ")[0]} is deciding…`}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 p-6 sm:grid-cols-2 sm:gap-4 sm:p-7">
+            <button
+              disabled={currentTurn !== localPlayer}
+              onClick={() => chooseType("truth")}
+              className={`group flex flex-col items-center gap-3 rounded-3xl border p-9 transition-all active:scale-[0.98] ${
+                currentTurn === localPlayer
+                  ? "border-[#ffdfcf] bg-[#fff9f5] hover:-translate-y-1 hover:border-[#ab4400] hover:shadow-[0_16px_32px_rgba(171,68,0,0.14)]"
+                  : "cursor-default border-[#f5f2ee] bg-white opacity-40"
+              }`}
+            >
+              <MessageCircle className="h-8 w-8 text-[#ab4400] transition-transform group-hover:scale-110" strokeWidth={2} />
+              <p className={`${plusJakarta.className} text-2xl font-extrabold tracking-tight text-[#ab4400]`}>Truth</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#a09d95]">Say it honestly</p>
+            </button>
+            <button
+              disabled={currentTurn !== localPlayer}
+              onClick={() => chooseType("dare")}
+              className={`group flex flex-col items-center gap-3 rounded-3xl border p-9 transition-all active:scale-[0.98] ${
+                currentTurn === localPlayer
+                  ? "border-[#ffd9e2] bg-[#fffafc] hover:-translate-y-1 hover:border-[#9d4867] hover:shadow-[0_16px_32px_rgba(157,72,103,0.14)]"
+                  : "cursor-default border-[#f5f2ee] bg-white opacity-40"
+              }`}
+            >
+              <Zap className="h-8 w-8 text-[#9d4867] transition-transform group-hover:scale-110" strokeWidth={2} />
+              <p className={`${plusJakarta.className} text-2xl font-extrabold tracking-tight text-[#9d4867]`}>Dare</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#a09d95]">Do it anyway</p>
+            </button>
+          </div>
+        </div>
+      </GameFrame>
     );
   }
 
   if (gameState === "challenge") {
+    const accent = currentType === "truth" ? "#ab4400" : "#9d4867";
+    const wash = currentType === "truth" ? "#fff4ec" : "#fff1f6";
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-hidden">
-        <div className="max-w-2xl mx-auto w-full flex-1 flex flex-col justify-center">
-           <Card className="border-none shadow-[0_30px_70px_rgba(171,68,0,0.15)] overflow-visible rounded-[2.5rem]">
-              <CardHeader className={`p-8 text-center rounded-t-[2.5rem] ${currentType === "truth" ? "bg-orange-500" : "bg-pink-500"} text-white`}>
-                 <div className="text-5xl mb-4">
-                   {currentType === "truth" ? "💭" : "⚡"}
-                 </div>
-                 <p className="text-xs font-black uppercase tracking-[0.2em] opacity-70">
-                   {currentTurn === localPlayer ? "YOUR CHALLENGE" : `${remotePlayerName.toUpperCase()}'S CHALLENGE`}
-                 </p>
-                 <CardTitle className="text-3xl font-black">{currentType.toUpperCase()}</CardTitle>
-              </CardHeader>
-              <CardContent className="p-10 text-center space-y-8 bg-white rounded-b-[2.5rem]">
-                 <p className="text-2xl font-bold text-[#6a2700] leading-relaxed">
-                   {currentChallenge}
-                 </p>
-
-                 {currentTurn === localPlayer ? (
-                   <div className="space-y-4 pt-4">
-                      <Button 
-                        onClick={completeChallenge}
-                        className={`w-full py-8 text-xl font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
-                          currentType === "truth" ? "bg-orange-500 hover:bg-orange-600" : "bg-pink-500 hover:bg-pink-600"
-                        }`}
-                      >
-                        DONE! (+1 PT) ✨
-                      </Button>
-                      <Button variant="ghost" onClick={() => setGameState("choosing")} className="w-full text-stone-400 font-bold">
-                        Skip this one
-                      </Button>
-                   </div>
-                 ) : (
-                   <div className="pt-4 flex flex-col items-center gap-2">
-                      <div className="flex gap-1">
-                        <div className="w-2 h-2 bg-stone-300 rounded-full animate-bounce" />
-                        <div className="w-2 h-2 bg-stone-300 rounded-full animate-bounce [animation-delay:0.2s]" />
-                        <div className="w-2 h-2 bg-stone-300 rounded-full animate-bounce [animation-delay:0.4s]" />
-                      </div>
-                      <p className="text-xs font-black text-stone-400 uppercase tracking-widest">Waiting for partner...</p>
-                   </div>
-                 )}
-              </CardContent>
-           </Card>
+      <GameFrame size="max-w-2xl">
+        <div className="mb-5 flex items-center justify-between">
+          <BackToArena />
+          <span
+            className="rounded-full px-4 py-2 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
+            style={{ backgroundColor: accent }}
+          >
+            {currentType}
+          </span>
         </div>
-      </div>
+
+        <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+          <div className="px-7 pb-4 pt-8 text-center" style={{ backgroundColor: wash }}>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em]" style={{ color: accent, opacity: 0.75 }}>
+              {currentTurn === localPlayer ? "Your challenge" : `${remotePlayerName.split(" ")[0]}'s challenge`}
+            </p>
+            <h2 className={`${plusJakarta.className} mx-auto mt-4 max-w-lg pb-6 text-2xl font-extrabold leading-snug tracking-tight text-[#393832] sm:text-3xl`}>
+              {currentChallenge}
+            </h2>
+          </div>
+
+          <div className="space-y-3 p-6 sm:p-7">
+            {currentTurn === localPlayer ? (
+              <>
+                <button
+                  onClick={completeChallenge}
+                  className="w-full rounded-2xl py-5 text-base font-extrabold tracking-tight text-white transition-all hover:opacity-90 active:scale-[0.98]"
+                  style={{ backgroundColor: accent, boxShadow: `0 14px 30px ${accent}44` }}
+                >
+                  Done — claim the point
+                </button>
+                <button
+                  onClick={() => setGameState("choosing")}
+                  className="w-full rounded-2xl py-3 text-[11px] font-bold uppercase tracking-[0.2em] text-[#a09d95] transition-colors hover:text-[#ab4400]"
+                >
+                  Coward&apos;s exit (skip)
+                </button>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-2.5 py-3">
+                <div className="flex gap-1.5">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#d8d4cb]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#d8d4cb] [animation-delay:0.15s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#d8d4cb] [animation-delay:0.3s]" />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#a09d95]">
+                  {remotePlayerName.split(" ")[0]} is on the spot
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </GameFrame>
     );
   }
 
