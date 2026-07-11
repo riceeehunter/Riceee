@@ -87,7 +87,9 @@ const MoodAnalytics = () => {
   } = useFetch(getAnalytics);
 
   useEffect(() => {
-    fetchAnalytics(period);
+    // Days must be bucketed in the reader's zone — the server runs on UTC,
+    // which pushed post-midnight entries onto the previous day
+    fetchAnalytics(period, Intl.DateTimeFormat().resolvedOptions().timeZone);
   }, [period]);
 
   // Scroll to end on mount or when data changes

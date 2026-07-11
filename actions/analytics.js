@@ -3,36 +3,59 @@
 import { db } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/auth";
 
-export async function getAnalytics(period = "30d") {
+// Which calendar day an instant falls on, in the reader's timezone.
+// Using UTC here silently shifted late-night entries to the previous day
+// (an 00:30 IST entry is still the day before in UTC).
+function dayKeyInTimeZone(date, timeZone) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+export async function getAnalytics(period = "30d", timeZone = "UTC") {
   const user = await getOrCreateUser();
 
-  // Calculate start date based on period
-  const startDate = new Date();
-  switch (period) {
-    case "7d":
-      startDate.setDate(startDate.getDate() - 7);
-      break;
-    case "15d":
-      startDate.setDate(startDate.getDate() - 15);
-      break;
-    case "30d":
-    default:
-      startDate.setDate(startDate.getDate() - 30);
-      break;
+  // Reject a bogus timezone rather than crashing the dashboard
+  let zone = timeZone;
+  try {
+    dayKeyInTimeZone(new Date(), zone);
+  } catch {
+    zone = "UTC";
   }
 
-  // Get entries for the period
-  const entries = await db.entry.findMany({
+  const daysInPeriod = period === "7d" ? 7 : period === "15d" ? 15 : 30;
+
+  // Build the calendar days of the period, oldest → today, in the reader's zone.
+  // Anchor at noon UTC so adding/subtracting days can't drift across a boundary.
+  const todayKey = dayKeyInTimeZone(new Date(), zone);
+  const anchor = new Date(`${todayKey}T12:00:00Z`);
+  const allDates = [];
+  for (let i = daysInPeriod - 1; i >= 0; i--) {
+    const day = new Date(anchor);
+    day.setUTCDate(day.getUTCDate() - i);
+    allDates.push(day.toISOString().split("T")[0]);
+  }
+  const periodDays = new Set(allDates);
+
+  // Over-fetch by a day on each side (no timezone is more than ~14h from UTC),
+  // then keep only the entries whose local day actually falls in the period.
+  const fetchFrom = new Date(`${allDates[0]}T00:00:00Z`);
+  fetchFrom.setUTCDate(fetchFrom.getUTCDate() - 1);
+
+  const candidates = await db.entry.findMany({
     where: {
       userId: user.id,
-      createdAt: {
-        gte: startDate,
-      },
+      createdAt: { gte: fetchFrom },
     },
-    orderBy: {
-      createdAt: "asc",
-    },
+    orderBy: { createdAt: "asc" },
   });
+
+  const entries = candidates.filter((entry) =>
+    periodDays.has(dayKeyInTimeZone(entry.createdAt, zone))
+  );
 
   const allTimeEntriesCount = await db.entry.count({
     where: {
@@ -42,7 +65,7 @@ export async function getAnalytics(period = "30d") {
 
   // Process entries for analytics
   const moodData = entries.reduce((acc, entry) => {
-    const date = entry.createdAt.toISOString().split("T")[0];
+    const date = dayKeyInTimeZone(entry.createdAt, zone);
     if (!acc[date]) {
       acc[date] = {
         totalScore: 0,
@@ -55,15 +78,6 @@ export async function getAnalytics(period = "30d") {
     acc[date].entries.push(entry);
     return acc;
   }, {});
-
-  // Fill in missing dates to create a continuous timeline
-  const daysInPeriod = period === "7d" ? 7 : period === "15d" ? 15 : 30;
-  const allDates = [];
-  for (let i = daysInPeriod - 1; i >= 0; i--) {
-    const date = new Date();
-    date.setDate(date.getDate() - i);
-    allDates.push(date.toISOString().split("T")[0]);
-  }
 
   // Calculate averages and format data for charts with all dates
   const analyticsData = allDates.map((date) => {
@@ -114,11 +128,7 @@ export async function getAnalytics(period = "30d") {
       totalEntries > 0
         ? Object.entries(moodCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
         : null,
-    dailyAverage: Number(
-      (
-        totalEntries / (period === "7d" ? 7 : period === "15d" ? 15 : 30)
-      ).toFixed(1)
-    ),
+    dailyAverage: Number((totalEntries / daysInPeriod).toFixed(1)),
   };
 
   return {
