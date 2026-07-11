@@ -103,10 +103,10 @@ const Collections = ({ collections = [], entriesByCollection }) => {
         initial="hidden"
         whileInView="show"
         viewport={{ once: true, margin: "-40px" }}
-        className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        className="grid gap-6 md:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-stretch"
       >
         {/* Create New Collection Button */}
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} className="h-full">
           <CollectionPreview
             isCreateNew={true}
             onCreateNew={() => setIsCollectionDialogOpen(true)}
@@ -115,7 +115,7 @@ const Collections = ({ collections = [], entriesByCollection }) => {
 
         {/* Unorganized Collection */}
         {entriesByCollection?.unorganized?.length > 0 && (
-          <motion.div variants={fadeUp}>
+          <motion.div variants={fadeUp} className="h-full">
             <CollectionPreview
               name="Unorganized"
               entries={entriesByCollection.unorganized}
@@ -126,7 +126,7 @@ const Collections = ({ collections = [], entriesByCollection }) => {
 
         {/* User Collections */}
         {collections?.map((collection) => (
-          <motion.div key={collection.id} variants={fadeUp}>
+          <motion.div key={collection.id} variants={fadeUp} className="h-full">
             <CollectionPreview
               id={collection.id}
               name={collection.name}

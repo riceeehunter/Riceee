@@ -46,11 +46,11 @@ const CollectionPreview = ({
     return (
       <button
         onClick={onCreateNew}
-        className="group relative h-[230px] cursor-pointer"
+        className="group relative h-full min-h-[232px] w-full cursor-pointer"
       >
-        <FolderTab colorClass={colorSchemes["createCollection"].bg} />
+        <FolderTab colorClass={colorSchemes["createCollection"].tab} />
         <div
-          className={`relative h-full rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_16px_34px_rgba(57,56,50,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center gap-4 ${colorSchemes["createCollection"].tab}`}
+          className={`relative h-full rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_16px_34px_rgba(57,56,50,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center gap-4 ${colorSchemes["createCollection"].bg}`}
         >
           <div className="h-14 w-14 rounded-full bg-[#ffae88]/20 group-hover:bg-[#ffae88]/35 group-hover:scale-110 group-hover:rotate-90 flex items-center justify-center border border-[#ffae88]/30 transition-transform duration-300">
             <Plus className="h-7 w-7 text-[#ab4400]" />
@@ -65,7 +65,7 @@ const CollectionPreview = ({
   return (
     <Link
       href={`/collection/${isUnorganized ? "unorganized" : id}`}
-      className="group relative"
+      className="group relative block h-full min-h-[232px]"
     >
       <FolderTab
         colorClass={
@@ -73,7 +73,7 @@ const CollectionPreview = ({
         }
       />
       <div
-        className={`relative rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_18px_36px_rgba(57,56,50,0.13)] hover:-translate-y-1 transition-all duration-300 ${
+        className={`relative h-full rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_18px_36px_rgba(57,56,50,0.13)] hover:-translate-y-1 transition-all duration-300 ${
           colorSchemes[isUnorganized ? "unorganized" : "collection"].bg
         }`}
       >
@@ -83,7 +83,9 @@ const CollectionPreview = ({
         </div>
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-[#66645e]">
-            <span className="font-medium">{entries.length} entries</span>
+            <span className="font-medium">
+              {entries.length} {entries.length === 1 ? "entry" : "entries"}
+            </span>
             {entries.length > 0 && (
               <span>
                 {formatDistanceToNow(new Date(entries[0].createdAt), {

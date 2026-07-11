@@ -68,10 +68,34 @@ export async function getAnalytics(period = "30d") {
   // Calculate averages and format data for charts with all dates
   const analyticsData = allDates.map((date) => {
     const data = moodData[date];
+
+    // Every mood felt that day (most frequent first) — a day can hold several
+    let moods = [];
+    if (data) {
+      const counts = data.entries.reduce((acc, entry) => {
+        acc[entry.mood] = (acc[entry.mood] || 0) + 1;
+        return acc;
+      }, {});
+      moods = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .map(([mood, count]) => ({ mood, count }));
+    }
+
     return {
       date,
       averageScore: data ? Number((data.totalScore / data.count).toFixed(1)) : null,
       entryCount: data ? data.count : 0,
+      moods,
+      mostFrequentMood: moods[0]?.mood ?? null,
+      // What was actually written that day — makes the chart personal, not statistical
+      titles: data
+        ? data.entries.slice(0, 3).map((entry) => ({
+            id: entry.id,
+            title: entry.title,
+            mood: entry.mood,
+            author: entry.author,
+          }))
+        : [],
     };
   });
 

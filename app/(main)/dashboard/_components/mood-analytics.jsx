@@ -16,7 +16,7 @@ import {
 } from "recharts";
 import { getAnalytics } from "@/actions/analytics";
 import { getMoodById, getMoodTrend } from "@/app/lib/moods";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, isToday, subDays, isSameDay } from "date-fns";
 import useFetch from "@/hooks/use-fetch";
 import MoodAnalyticsSkeleton from "./analytics-loading";
 import { useUser } from "@clerk/nextjs";
@@ -119,24 +119,92 @@ const MoodAnalytics = () => {
   const selectedPeriodLabel =
     timeOptions.find((option) => option.value === period)?.label ?? "this period";
 
+  // Last 7 days, oldest → today: did we write, and how did it feel?
+  const weekStrip = Array.from({ length: 7 }, (_, i) => {
+    const day = subDays(new Date(), 6 - i);
+    const match = timeline.find((point) => isSameDay(parseISO(point.date), day));
+    const hasEntry = Boolean(match && match.entryCount > 0);
+    return {
+      key: day.toISOString(),
+      label: format(day, "EEEEE"), // single letter: M T W T F S S
+      isToday: isToday(day),
+      hasEntry,
+      emoji: hasEntry ? getMoodById(match.mostFrequentMood)?.emoji : null,
+      entryCount: hasEntry ? match.entryCount : 0,
+      moodCount: hasEntry ? match.moods?.length ?? 1 : 0,
+    };
+  });
+  const wroteToday = weekStrip[weekStrip.length - 1]?.hasEntry;
+
   const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length) {
-      const moodValue = payload[0]?.value;
-      const entriesValue = payload[0]?.payload?.entryCount;
-      
-      return (
-        <div className="bg-[#fffbff] p-4 border border-[#ffae88]/35 rounded-xl shadow-[0_12px_24px_rgba(57,56,50,0.12)]">
-          <p className="font-semibold text-[#6a2700]">
-            {label && typeof label === "string" ? format(parseISO(label), "MMM d, yyyy") : "Date"}
-          </p>
-          {moodValue !== null && moodValue !== undefined && (
-            <p className="text-[#ab4400]">Average Mood: {moodValue}</p>
+    if (!active || !payload?.length) return null;
+
+    const point = payload[0]?.payload ?? {};
+    const moodValue = payload[0]?.value;
+    const entriesValue = point.entryCount || 0;
+    const dayMoods = point.moods ?? [];
+    const titles = point.titles ?? [];
+    const date = label && typeof label === "string" ? parseISO(label) : null;
+    const leadMood = getMoodById(point.mostFrequentMood);
+
+    return (
+      <div className="w-[236px] overflow-hidden rounded-2xl border border-[#ffdfcf] bg-[#fffbff]/95 backdrop-blur-sm shadow-[0_16px_36px_rgba(57,56,50,0.16)]">
+        <div className="px-4 pt-3 pb-2.5">
+          {/* The day, and how it felt — named, not emoji-d */}
+          <div className="flex items-baseline justify-between gap-2">
+            <p className={`${plusJakarta.className} font-bold text-[#393832] leading-tight`}>
+              {date ? (isToday(date) ? "Today" : format(date, "EEEE")) : "Day"}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-[#c3b5ab]">
+              {date ? format(date, "MMM d") : ""}
+            </p>
+          </div>
+
+          {leadMood?.label && (
+            <p className="mt-1 text-[13px] font-semibold text-[#ab4400]">
+              {leadMood.label}
+              {dayMoods.length > 1 && (
+                <span className="text-[#9d4867]/70 font-medium">
+                  {" "}
+                  + {dayMoods.slice(1).map((m) => getMoodById(m.mood)?.label ?? m.mood).join(", ")}
+                </span>
+              )}
+            </p>
           )}
-          <p className="text-[#9d4867]">Entries: {entriesValue || 0}</p>
         </div>
-      );
-    }
-    return null;
+
+        {/* What was actually written that day */}
+        {titles.length > 0 && (
+          <div className="px-4 pb-3 space-y-1">
+            {titles.map((entry) => (
+              <p
+                key={entry.id}
+                className="text-[13px] text-[#66645e] leading-5 line-clamp-1 border-l-2 border-[#ffdfcf] pl-2.5"
+              >
+                {entry.title}
+              </p>
+            ))}
+            {entriesValue > titles.length && (
+              <p className="text-[11px] text-[#9f8f83] italic pl-2.5">
+                +{entriesValue - titles.length} more
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between bg-[#fff8f3] border-t border-[#ffede2] px-4 py-2 text-[11px]">
+          <span className="font-bold uppercase tracking-wider text-[#9d4867]/70">
+            {entriesValue} {entriesValue === 1 ? "entry" : "entries"}
+          </span>
+          {moodValue !== null && moodValue !== undefined && (
+            <span className={`${plusJakarta.className} font-black text-[#ab4400]`}>
+              {moodValue}
+              <span className="text-[#ab4400]/50 font-bold">/10</span>
+            </span>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -349,93 +417,88 @@ const MoodAnalytics = () => {
           
           <CardContent className="pt-4 px-0">
             {hasEntriesInPeriod || isInactiveForSelectedPeriod ? (
-              <div className="relative group">
-                {/* Scrollable Container */}
-                <div 
-                  ref={scrollContainerRef}
-                  className="overflow-x-auto hide-scrollbar pb-6 px-6 scroll-smooth"
-                >
-                  <div 
-                    style={{ 
-                      width: `${Math.max(timeline.length * 60, 320)}px`,
-                      height: '240px' 
-                    }}
-                    className="relative"
-                  >
-                    {/* Background Subtle Grid */}
-                    <div className="absolute inset-0 flex flex-col justify-between py-6 pointer-events-none opacity-[0.03]">
-                      {[...Array(5)].map((_, i) => (
-                        <div key={i} className="h-px w-full bg-[#ab4400]" />
-                      ))}
-                    </div>
+              // Chart fills the card width; no horizontal scrolling
+              <div className="px-4 sm:px-6">
+                <div className="h-[240px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={timeline}
+                      margin={{ top: 56, right: 16, left: 16, bottom: 4 }}
+                    >
+                      <defs>
+                        <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#ab4400" stopOpacity={0.18} />
+                          <stop offset="95%" stopColor="#ab4400" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        vertical={false}
+                        stroke="#ab4400"
+                        strokeOpacity={0.07}
+                        strokeDasharray="4 6"
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tickLine={false}
+                        axisLine={false}
+                        interval="preserveStartEnd"
+                        minTickGap={16}
+                        tick={{ fontSize: 10, fontWeight: 700, fill: "#a8a29e" }}
+                        tickFormatter={(value) => {
+                          const date = parseISO(value);
+                          return isToday(date) ? "TODAY" : format(date, "MMM d").toUpperCase();
+                        }}
+                      />
+                      {/* Anchor the scale so the line sits in the middle of the card */}
+                      <YAxis domain={[0, 10]} hide />
+                      <Tooltip
+                        content={<CustomTooltip />}
+                        cursor={{ stroke: "#ffae88", strokeWidth: 1, strokeDasharray: "4 4" }}
+                        // Without this the box glides across the chart from its last spot
+                        isAnimationActive={false}
+                        // Pinned above the plot so it never covers neighbouring days
+                        position={{ y: -12 }}
+                        allowEscapeViewBox={{ x: false, y: true }}
+                        offset={20}
+                        wrapperStyle={{ outline: "none", zIndex: 30 }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="averageScore"
+                        stroke="#ab4400"
+                        strokeWidth={4}
+                        fillOpacity={1}
+                        fill="url(#colorMood)"
+                        activeDot={{
+                          r: 8,
+                          fill: "#ab4400",
+                          stroke: "#fff",
+                          strokeWidth: 3,
+                        }}
+                        dot={(props) => {
+                          const { cx, cy, payload } = props;
+                          if (!(payload.averageScore > 0)) return null;
 
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={timeline}
-                        margin={{ top: 40, right: 20, left: 20, bottom: 20 }}
-                      >
-                        <defs>
-                          <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#ab4400" stopOpacity={0.15}/>
-                            <stop offset="95%" stopColor="#ab4400" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <Tooltip 
-                          content={<CustomTooltip />} 
-                          cursor={{ stroke: '#ffae88', strokeWidth: 1, strokeDasharray: '4 4' }}
-                        />
-                        <Area
-                          type="monotone"
-                          dataKey="averageScore"
-                          stroke="#ab4400"
-                          strokeWidth={5}
-                          fillOpacity={1}
-                          fill="url(#colorMood)"
-                          activeDot={{ 
-                            r: 8, 
-                            fill: "#ab4400", 
-                            stroke: "#fff", 
-                            strokeWidth: 3 
-                          }}
-                          dot={(props) => {
-                            const { cx, cy, payload } = props;
-                            if (payload.averageScore > 0) {
-                              const emoji = getMoodById(payload.mostFrequentMood)?.emoji;
-                              return (
-                                <g key={payload.date}>
-                                  <foreignObject x={cx - 12} y={cy - 35} width="24" height="24">
-                                    <div className="text-lg flex items-center justify-center animate-bounce-slow">
-                                      {emoji}
-                                    </div>
-                                  </foreignObject>
-                                  <circle cx={cx} cy={cy} r={4} fill="#ab4400" stroke="#fff" strokeWidth={2} />
-                                </g>
-                              );
-                            }
-                            return null;
-                          }}
-                          connectNulls={true}
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                    
-                    {/* Date Tape */}
-                    <div className="absolute bottom-0 left-0 w-full flex justify-between px-5 pointer-events-none">
-                      {timeline.map((d, i) => (
-                        <div key={i} className="flex flex-col items-center gap-1 w-[60px]">
-                          <div className="h-2 w-0.5 bg-stone-200 rounded-full" />
-                          <span className="text-[9px] font-black text-stone-400 uppercase tracking-tighter">
-                            {format(parseISO(d.date), "MMM d")}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Scroll Indicator Overlay */}
-                <div className="absolute top-1/2 right-2 -translate-y-1/2 w-8 h-12 bg-gradient-to-l from-white/80 to-transparent flex items-center justify-end pr-1 pointer-events-none group-hover:opacity-0 transition-opacity">
-                   <div className="animate-pulse text-[#ab4400]/40">→</div>
+                          // The one place emoji earns its keep: the day's mood on the line.
+                          // Counts and extra moods live in the tooltip instead.
+                          const emoji = getMoodById(payload.mostFrequentMood)?.emoji;
+
+                          return (
+                            <g key={payload.date}>
+                              {/* Generous box so the bounce never clips the emoji */}
+                              <foreignObject x={cx - 20} y={cy - 50} width="40" height="40" style={{ overflow: "visible" }}>
+                                <div className="flex items-end justify-center h-full">
+                                  <span className="text-lg leading-none animate-bounce-slow">{emoji}</span>
+                                </div>
+                              </foreignObject>
+                              <circle cx={cx} cy={cy} r={4.5} fill="#ab4400" stroke="#fff" strokeWidth={2} />
+                            </g>
+                          );
+                        }}
+                        connectNulls={true}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
             ) : (
@@ -448,29 +511,66 @@ const MoodAnalytics = () => {
                 </div>
               </div>
             )}
-            
-            <div className="mt-1 px-6 flex justify-between items-center bg-stone-50/50 py-2.5 border-t border-stone-100">
-               <div className="flex items-center gap-4">
-                  <div className="flex -space-x-2">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="w-7 h-7 rounded-full border-2 border-white bg-stone-100 flex items-center justify-center text-[10px] grayscale">
-                        {i === 0 ? "✨" : i === 1 ? "📝" : "❤️"}
+
+            {/* Week ritual strip: which days you showed up, and a nudge for today */}
+            <div className="mt-3 px-4 sm:px-6 flex flex-wrap gap-4 justify-between items-center bg-[#fff8f3] py-3 border-t border-[#ffede2]">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  {weekStrip.map((day) => (
+                    <div key={day.key} className="flex flex-col items-center gap-1">
+                      <div
+                        title={
+                          day.hasEntry
+                            ? `${day.entryCount} ${day.entryCount === 1 ? "entry" : "entries"}${
+                                day.moodCount > 1 ? ` across ${day.moodCount} moods` : ""
+                              }`
+                            : day.isToday
+                            ? "Nothing written today yet"
+                            : "No entry"
+                        }
+                        className={`relative h-7 w-7 rounded-xl flex items-center justify-center transition-all ${
+                          day.hasEntry
+                            ? "bg-gradient-to-br from-[#ab4400] to-[#ff9969] shadow-sm shadow-[#ab4400]/25"
+                            : day.isToday
+                            ? "border-2 border-dashed border-[#ffae88]"
+                            : "bg-[#ffece0]"
+                        }`}
+                      >
+                        {day.hasEntry && (
+                          <span className={`${plusJakarta.className} text-white text-[11px] font-black`}>
+                            {day.entryCount > 1 ? day.entryCount : ""}
+                          </span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                  <p className="text-[9px] font-bold text-stone-500 max-w-[120px] leading-tight uppercase tracking-tight">
-                    Journey recorded with love
-                  </p>
-               </div>
-              
-              <div className="text-right">
-                <p className="text-[8px] font-bold text-[#9d4867] uppercase tracking-widest opacity-60">Current Vibe</p>
-                <div className="flex items-center gap-2 justify-end">
-                  <span className="text-xl animate-pulse">{moodSummaryEmoji}</span>
-                  <span className={`${plusJakarta.className} text-lg font-black text-[#ab4400]`}>
-                    {averageMoodText}
-                  </span>
+                      <span
+                        className={`text-[8px] font-black uppercase tracking-tight ${
+                          day.isToday ? "text-[#ab4400]" : "text-[#c3b5ab]"
+                        }`}
+                      >
+                        {day.label}
+                      </span>
+                    </div>
+                  ))}
                 </div>
+
+                {!wroteToday && (
+                  <Link
+                    href="/journal/write"
+                    className="group flex items-center gap-1.5 rounded-full bg-[#ab4400] text-white px-3.5 py-2 text-[11px] font-bold shadow-md shadow-[#ab4400]/20 hover:bg-[#973b00] hover:-translate-y-0.5 transition-all"
+                  >
+                    <NotebookPen className="h-3.5 w-3.5 group-hover:rotate-6 transition-transform" />
+                    Write today
+                  </Link>
+                )}
+              </div>
+
+              <div className="text-right">
+                <p className="text-[8px] font-bold text-[#9d4867] uppercase tracking-widest opacity-60">
+                  {period === "7d" ? "This week" : period === "15d" ? "Last 15 days" : "This month"}
+                </p>
+                <p className={`${plusJakarta.className} text-lg font-black text-[#ab4400] leading-tight`}>
+                  {averageMoodText}
+                </p>
               </div>
             </div>
           </CardContent>
