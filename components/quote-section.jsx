@@ -4,36 +4,36 @@ import { useState, useEffect } from "react";
 
 const QUOTES = [
   {
-    text: "In you, I found the home I never knew I was searching for.",
-    author: "— with you, always",
+    text: "We didn't fall in love. We built it — one ordinary Tuesday at a time.",
+    author: "— ours, for keeps",
   },
   {
-    text: "Every love story is beautiful, but ours is my favourite.",
-    author: "— always & forever",
+    text: "Home isn't a place. It's the person who makes your chaos feel quiet.",
+    author: "— a note left on the fridge",
   },
   {
-    text: "You're my person. The one I choose, every single day.",
-    author: "— written in the stars",
+    text: "I love you not only for what you are, but for what I am when I am with you.",
+    author: "— Roy Croft",
+  },
+  {
+    text: "In all the world, there is no heart for me like yours.",
+    author: "— Maya Angelou",
+  },
+  {
+    text: "The little things? The little moments? They aren't little.",
+    author: "— Jon Kabat-Zinn",
   },
   {
     text: "I fell in love the way you fall asleep — slowly, and then all at once.",
     author: "— John Green",
   },
   {
-    text: "Whatever our souls are made of, yours and mine are the same.",
-    author: "— Emily Brontë",
+    text: "Grow old along with me — the best is yet to be.",
+    author: "— Robert Browning",
   },
   {
-    text: "To love and be loved is to feel the sun from both sides.",
-    author: "— David Viscott",
-  },
-  {
-    text: "The best thing to hold onto in life is each other.",
-    author: "— Audrey Hepburn",
-  },
-  {
-    text: "You are my today and all of my tomorrows.",
-    author: "— Leo Christopher",
+    text: "Someday we'll scroll back to today and whisper: look how far we've come.",
+    author: "— your future selves",
   },
 ];
 
