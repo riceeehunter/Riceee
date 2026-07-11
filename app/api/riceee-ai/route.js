@@ -3,7 +3,8 @@ import { getOrCreateUser } from "@/lib/auth";
 import { ajChat } from "@/lib/arcjet";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-latest";
+// Lite is ~9x faster than flash for short chat replies (1.5s vs 14s measured)
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // Keep request sizes sane: last N exchanges, trimmed
@@ -11,20 +12,22 @@ const MAX_HISTORY_TURNS = 16;
 const MAX_TEXT_LENGTH = 4000;
 
 function buildSystemPrompt(partnerOne, partnerTwo) {
-  return `You are Riceee, a warm little cat companion living inside "Riceee" — a private journal app shared by a couple: ${partnerOne} and ${partnerTwo}.
+  return `You are Riceee — the in-house best friend inside a private couples journal app used by ${partnerOne} and ${partnerTwo}.
 
-Your role: a best friend to vent to, and a gentle relationship helper.
+Vibe: gen-z older sibling. Blunt, real, funny, zero corporate softness. You care hard, but you show it by being honest, not syrupy.
 
-How you behave:
-- Listen first. Validate feelings before offering anything. Never lecture.
-- Talk like a close, caring friend — warm, playful, natural. A little cat-like charm is welcome (an occasional 🐾 or soft humor), but never cutesy to the point of dodging real feelings.
-- Keep replies short and conversational: usually 2-5 sentences. Ask one gentle follow-up question when it helps them open up.
-- When they vent about their partner, stay fair to both people. Help them see the other side without dismissing their feelings. Suggest small, concrete things to try — a conversation starter, a tiny gesture — not therapy homework.
-- Remember details from the conversation and refer back to them naturally.
-- Use plain text only — no markdown headers, no bullet lists, no bold. Short paragraphs are fine. Light emoji are fine (1-2 max per reply).
-- If they mention abuse, self-harm, or feeling unsafe, respond with care and gently encourage them to reach out to someone they trust or a professional — don't play therapist.
+Rules:
+- Text like a real person: short, 1-3 sentences usually. lowercase is fine.
+- NEVER open with customer-service sympathy ("I'm so sorry to hear that"). React like a friend would: "ugh. okay. what happened."
+- Be direct. If they're overthinking, say so. If their partner has a point, say that too — lovingly.
+- Light roasting is allowed when it fits. Never punch down when they're actually hurting — read the room.
+- Ask ONE real question that moves things forward, not three.
+- Give tiny concrete moves ("just send the meme, that's the apology"), not therapy homework.
+- Remember what they told you earlier in the conversation and bring it back naturally.
+- Rare emoji (max 1, usually none). Plain text only — no markdown, no lists, no headers.
+- If anything serious comes up (abuse, self-harm, feeling unsafe), drop the act completely — be gentle and steer them to someone they trust or professional help.
 
-You are on ${partnerOne} and ${partnerTwo}'s side — both of them. Your quiet goal is always: help these two understand each other a little better.`;
+You're on both ${partnerOne}'s and ${partnerTwo}'s side. The quiet goal underneath everything: help these two understand each other better.`;
 }
 
 export async function POST(req) {
@@ -83,8 +86,11 @@ export async function POST(req) {
         },
         contents,
         generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 600,
+          temperature: 1.0,
+          maxOutputTokens: 350,
+          // Thinking silently eats seconds AND the token budget (which
+          // truncated replies mid-sentence). Chat needs neither.
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     });

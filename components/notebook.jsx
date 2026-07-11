@@ -5,22 +5,20 @@ import { saveChatCell, getConversation, updateConversationTitle } from "@/action
 export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) {
   const [cells, setCells] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
-  const prevChatIdRef = useRef(activeChatId);
   const nextId = useRef(2);
   const inputRefs = useRef({});
   const endRef = useRef(null);
+  // Chat id this client just created via lazy creation — its cells are
+  // already on screen, so the DB fetch for it can be skipped
+  const justCreatedIdRef = useRef(null);
 
   // Load existing cells from DB
   useEffect(() => {
     async function loadChat() {
-      // If we just transitioned from null to a real ID, we likely already have the cells 
-      // (from the lazy creation logic below). Skip the redundant DB fetch.
-      if (!prevChatIdRef.current && activeChatId) {
-        prevChatIdRef.current = activeChatId;
+      if (activeChatId && justCreatedIdRef.current === activeChatId) {
+        justCreatedIdRef.current = null;
         return;
       }
-
-      prevChatIdRef.current = activeChatId;
 
       if (!activeChatId) {
         setCells([{ id: 1, content: "", status: "editing", response: null }]);
@@ -113,6 +111,8 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
     // If no active chat, create one now
     if (!currentChatId && onCreateChat) {
       currentChatId = await onCreateChat(cell.content.trim());
+      // Cells are already on screen; don't refetch when activeChatId updates
+      justCreatedIdRef.current = currentChatId;
     }
 
     // Update UI immediately for responsiveness
