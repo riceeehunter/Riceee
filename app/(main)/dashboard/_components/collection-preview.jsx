@@ -50,9 +50,9 @@ const CollectionPreview = ({
       >
         <FolderTab colorClass={colorSchemes["createCollection"].bg} />
         <div
-          className={`relative h-full rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_16px_34px_rgba(57,56,50,0.12)] transition-all flex flex-col items-center justify-center gap-4 ${colorSchemes["createCollection"].tab}`}
+          className={`relative h-full rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_16px_34px_rgba(57,56,50,0.12)] hover:-translate-y-1 transition-all duration-300 flex flex-col items-center justify-center gap-4 ${colorSchemes["createCollection"].tab}`}
         >
-          <div className="h-14 w-14 rounded-full bg-[#ffae88]/20 group-hover:bg-[#ffae88]/35 flex items-center justify-center border border-[#ffae88]/30">
+          <div className="h-14 w-14 rounded-full bg-[#ffae88]/20 group-hover:bg-[#ffae88]/35 group-hover:scale-110 group-hover:rotate-90 flex items-center justify-center border border-[#ffae88]/30 transition-transform duration-300">
             <Plus className="h-7 w-7 text-[#ab4400]" />
           </div>
           <p className={`${plusJakarta.className} text-[#6a2700] font-semibold text-xl`}>Create New Collection</p>
@@ -73,12 +73,12 @@ const CollectionPreview = ({
         }
       />
       <div
-        className={`relative rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_18px_36px_rgba(57,56,50,0.13)] transition-all ${
+        className={`relative rounded-[1.6rem] p-6 shadow-[0_12px_30px_rgba(57,56,50,0.08)] hover:shadow-[0_18px_36px_rgba(57,56,50,0.13)] hover:-translate-y-1 transition-all duration-300 ${
           colorSchemes[isUnorganized ? "unorganized" : "collection"].bg
         }`}
       >
         <div className="flex items-center gap-3 mb-4">
-          <span className="text-2xl">{isUnorganized ? "📂" : "📁"}</span>
+          <span className="text-2xl icon-wiggle inline-block">{isUnorganized ? "📂" : "📁"}</span>
           <h3 className={`${plusJakarta.className} text-xl font-semibold truncate text-[#393832]`}>{name}</h3>
         </div>
         <div className="space-y-2">

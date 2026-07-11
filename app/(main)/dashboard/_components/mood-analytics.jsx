@@ -23,8 +23,9 @@ import { useUser } from "@clerk/nextjs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import Link from "next/link";
 import ReminderDialog from "./reminder-dialog";
-import { Check, ChevronDown, MessageCircle, Sparkles } from "lucide-react";
+import { Check, ChevronDown, MessageCircle, NotebookPen, HeartPulse, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { plusJakarta } from "@/lib/fonts";
 
 const timeOptions = [
@@ -33,10 +34,51 @@ const timeOptions = [
   { value: "30d", label: "Last 30 Days" },
 ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 22 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.1 } },
+};
+
+// Eases a number from 0 to its real value; display-only
+function CountUp({ value, duration = 900 }) {
+  const [display, setDisplay] = useState(0);
+  const decimals = String(value).includes(".") ? 1 : 0;
+
+  useEffect(() => {
+    const target = Number(value) || 0;
+    let raf;
+    const start = performance.now();
+    const step = (now) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(eased * target);
+      if (progress < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+
+  return <>{display.toFixed(decimals)}</>;
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 5) return { text: "Still up", emoji: "🌙" };
+  if (hour < 12) return { text: "Morning", emoji: "☀️" };
+  if (hour < 17) return { text: "Hey there", emoji: "🌤️" };
+  return { text: "Evening", emoji: "🌆" };
+}
+
 const MoodAnalytics = () => {
   const [period, setPeriod] = useState("7d");
   const [periodMenuOpen, setPeriodMenuOpen] = useState(false);
   const scrollContainerRef = useRef(null);
+  const { user: clerkUser } = useUser();
 
   const {
     loading,
@@ -99,10 +141,25 @@ const MoodAnalytics = () => {
 
   return (
     <>
-      <div className="flex flex-col md:flex-row justify-center md:justify-between items-center md:items-end gap-6 w-full text-center md:text-left mb-8">
-        <h2 className={`${plusJakarta.className} text-4xl md:text-5xl font-extrabold text-[#ab4400] tracking-tight leading-tight text-center md:text-left whitespace-nowrap`}>
-          Welcome Back
-        </h2>
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        animate="show"
+        className="flex flex-col md:flex-row justify-center md:justify-between items-center md:items-end gap-6 w-full text-center md:text-left mb-8"
+      >
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.3em] text-[#9d4867]/60">
+            {format(new Date(), "EEEE, MMMM d")}
+          </p>
+          <h2 className={`${plusJakarta.className} text-[2rem] sm:text-4xl md:text-5xl font-extrabold text-[#ab4400] tracking-tight leading-tight whitespace-nowrap`}>
+            {getGreeting().text}
+            {clerkUser?.firstName ? `, ${clerkUser.firstName}` : ""}{" "}
+            <span className="inline-block">{getGreeting().emoji}</span>
+          </h2>
+          <p className="text-sm text-[#66645e] font-medium">
+            Here&apos;s how your story is going.
+          </p>
+        </div>
 
         <div className="flex flex-wrap items-center justify-center md:justify-end gap-2 sm:gap-3 w-full">
           <Link href="/riceee-chat">
@@ -148,7 +205,7 @@ const MoodAnalytics = () => {
             </PopoverContent>
           </Popover>
         </div>
-      </div>
+      </motion.div>
 
       {isNewUser && (
         <Card className="bg-white/70 border-[#ffae88]/30 rounded-3xl shadow-[0_10px_28px_rgba(57,56,50,0.08)]">
@@ -197,52 +254,84 @@ const MoodAnalytics = () => {
       )}
 
       <div className="space-y-6">
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3">
-          <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[11px] sm:text-sm font-bold text-[#6a2700] uppercase tracking-wider">
-                Entries
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`${plusJakarta.className} text-[1.75rem] sm:text-3xl font-extrabold text-[#ab4400]`}>{stats.totalEntries}</div>
-              <p className="text-[10px] sm:text-xs text-[#66645e] font-medium">
-                Total so far
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-[11px] sm:text-sm font-bold text-[#6a2700] uppercase tracking-wider">
-                Mood
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`${plusJakarta.className} text-[1.75rem] sm:text-3xl font-extrabold text-[#ab4400]`}>{averageMoodText}</div>
-              <p className="text-[10px] sm:text-xs text-[#66645e] font-medium">
-                Avg. Score
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-2 lg:col-span-1 bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)]">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-[#6a2700]">
-                Mood Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-start gap-2">
-                <span className="text-xl leading-none mt-0.5">{moodSummaryEmoji}</span>
-                <p className={`${plusJakarta.className} text-base sm:text-lg md:text-xl font-semibold leading-snug tracking-tight text-balance text-[#393832]`}>
-                  {moodSummaryText}
+        <motion.div
+          variants={stagger}
+          initial="hidden"
+          animate="show"
+          className="grid gap-4 grid-cols-2 lg:grid-cols-3"
+        >
+          <motion.div variants={fadeUp}>
+            <Card className="h-full relative overflow-hidden bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)] hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(171,68,0,0.12)] transition-all duration-300 group">
+              <div className="animate-blob absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#ffae88]/15 blur-2xl pointer-events-none" />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[11px] sm:text-sm font-bold text-[#6a2700] uppercase tracking-wider flex items-center gap-2">
+                  <span className="h-7 w-7 rounded-xl bg-gradient-to-br from-[#ab4400] to-[#ff9969] text-white flex items-center justify-center shadow-md shadow-[#ab4400]/20 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
+                    <NotebookPen className="h-3.5 w-3.5" />
+                  </span>
+                  Entries
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`${plusJakarta.className} text-[1.75rem] sm:text-3xl font-extrabold text-[#ab4400]`}>
+                  <CountUp value={stats.totalEntries} />
+                </div>
+                <p className="text-[10px] sm:text-xs text-[#66645e] font-medium">
+                  Total so far
                 </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
+          <motion.div variants={fadeUp}>
+            <Card className="h-full relative overflow-hidden bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)] hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(157,72,103,0.12)] transition-all duration-300 group">
+              <div className="animate-blob absolute -top-10 -right-10 w-28 h-28 rounded-full bg-[#ffd9e2]/25 blur-2xl pointer-events-none" style={{ animationDelay: "2s" }} />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-[11px] sm:text-sm font-bold text-[#6a2700] uppercase tracking-wider flex items-center gap-2">
+                  <span className="h-7 w-7 rounded-xl bg-gradient-to-br from-[#9d4867] to-[#d3567f] text-white flex items-center justify-center shadow-md shadow-[#9d4867]/20 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">
+                    <HeartPulse className="h-3.5 w-3.5" />
+                  </span>
+                  Mood
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`${plusJakarta.className} text-[1.75rem] sm:text-3xl font-extrabold text-[#ab4400]`}>
+                  {hasEntriesInPeriod ? (
+                    <>
+                      <CountUp value={stats.averageScore} />
+                      <span className="text-lg text-[#ab4400]/60">/10</span>
+                    </>
+                  ) : (
+                    averageMoodText
+                  )}
+                </div>
+                <p className="text-[10px] sm:text-xs text-[#66645e] font-medium">
+                  Avg. Score
+                </p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="col-span-2 lg:col-span-1">
+            <Card className="h-full relative overflow-hidden bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_10px_24px_rgba(57,56,50,0.08)] hover:-translate-y-1 hover:shadow-[0_16px_34px_rgba(57,56,50,0.1)] transition-all duration-300">
+              <div className="animate-blob absolute -bottom-10 -left-10 w-28 h-28 rounded-full bg-[#fed07f]/20 blur-2xl pointer-events-none" style={{ animationDelay: "4s" }} />
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-[#6a2700]">
+                  Mood Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-start gap-2">
+                  <span className="text-xl leading-none mt-0.5">{moodSummaryEmoji}</span>
+                  <p className={`${plusJakarta.className} text-base sm:text-lg md:text-xl font-semibold leading-snug tracking-tight text-balance text-[#393832]`}>
+                    {moodSummaryText}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+
+        <motion.div variants={fadeUp} initial="hidden" animate="show" transition={{ delay: 0.15 }}>
         <Card className="bg-white/75 border-[#ffae88]/28 rounded-3xl shadow-[0_12px_30px_rgba(57,56,50,0.08)] overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className={`${plusJakarta.className} text-[#ab4400] text-xl font-extrabold tracking-tight flex items-center justify-between`}>
@@ -403,6 +492,7 @@ const MoodAnalytics = () => {
             }
           `}</style>
         </Card>
+        </motion.div>
       </div>
     </>
   );

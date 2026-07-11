@@ -258,6 +258,101 @@ html {
   animation: float 3s ease-in-out infinite;
 }
 
+/* Themed scrollbar — warm, thin, unobtrusive */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #ecd9cc;
+  border-radius: 999px;
+  border: 2px solid #fffbff;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ffae88;
+}
+
+/* Micro-celebration: hearts floating up (e.g. after sending a sweet note) */
+@keyframes heart-float-up {
+  0% {
+    transform: translate(0, 0) scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), -90px) scale(1.2) rotate(var(--dr, 0deg));
+    opacity: 0;
+  }
+}
+.heart-burst-particle {
+  animation: heart-float-up 1.1s ease-out forwards;
+  pointer-events: none;
+  position: absolute;
+  will-change: transform, opacity;
+}
+
+/* Generic soft entrance for dynamically added elements (chat cells, etc.) */
+@keyframes fade-up-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-up-in {
+  animation: fade-up-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Full-screen save celebration: bigger hearts, wider spread */
+@keyframes celebrate-heart {
+  0% {
+    transform: translate(0, 0) scale(0.4) rotate(0deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--dx, 0px), -170px) scale(1.35) rotate(var(--dr, 0deg));
+    opacity: 0;
+  }
+}
+.celebrate-heart-particle {
+  animation: celebrate-heart 1s ease-out forwards;
+  pointer-events: none;
+  position: absolute;
+  will-change: transform, opacity;
+}
+@keyframes celebrate-chip-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.06); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.celebrate-chip {
+  animation: celebrate-chip-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Slow ambient drift for decorative background orbs */
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(14px, -18px) scale(1.06); }
+}
+.animate-blob {
+  animation: blob-drift 9s ease-in-out infinite;
+}
+
+/* Playful icon wiggle on hover (games hub, etc.) */
+@keyframes icon-wiggle {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.1); }
+  75% { transform: rotate(8deg) scale(1.1); }
+}
+.group:hover .icon-wiggle {
+  animation: icon-wiggle 0.5s ease-in-out;
+}
+
 /* Hide Clerk sign-up link */
 .cl-footer,
 .cl-footerAction,

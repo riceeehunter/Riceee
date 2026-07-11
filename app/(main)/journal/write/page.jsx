@@ -38,6 +38,7 @@ export default function JournalEntryPage() {
   const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
   const [isMoodOpen, setIsMoodOpen] = useState(false);
   const [isAuthorOpen, setIsAuthorOpen] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
   const [isCollectionOpen, setIsCollectionOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
@@ -159,15 +160,21 @@ export default function JournalEntryPage() {
         saveDraftFn({ title: "", content: "", mood: "" });
       }
 
-      router.push(
-        `/collection/${
-          actionResult.collectionId ? actionResult.collectionId : "unorganized"
-        }`
-      );
-
+      // Brief heart celebration, then continue to the collection
+      setCelebrating(true);
       toast.success(
         `Entry ${isEditMode ? "updated" : "created"} successfully!`
       );
+
+      const redirectTimer = setTimeout(() => {
+        router.push(
+          `/collection/${
+            actionResult.collectionId ? actionResult.collectionId : "unorganized"
+          }`
+        );
+      }, 900);
+
+      return () => clearTimeout(redirectTimer);
     }
   }, [actionResult, actionLoading]);
 
@@ -208,6 +215,33 @@ export default function JournalEntryPage() {
 
   return (
     <div className={`${manrope.className} max-w-6xl mx-auto px-4 md:px-6 pb-10`}>
+      {/* Save celebration overlay — shows briefly before redirecting */}
+      {celebrating && (
+        <div className="fixed inset-0 z-[200] pointer-events-none flex items-center justify-center bg-[#fffbff]/40 backdrop-blur-[2px]">
+          <div className="relative">
+            {["💗", "💛", "🧡", "💕", "✨", "💖", "🌸", "💘", "⭐", "💞"].map((heart, i) => (
+              <span
+                key={i}
+                className="celebrate-heart-particle text-2xl left-1/2 top-1/2"
+                style={{
+                  "--dx": `${(i - 4.5) * 34}px`,
+                  "--dr": `${(i - 4.5) * 14}deg`,
+                  animationDelay: `${i * 45}ms`,
+                }}
+              >
+                {heart}
+              </span>
+            ))}
+            <div className="celebrate-chip bg-white/95 border border-[#ffdfcf] rounded-full px-7 py-4 shadow-2xl shadow-[#ab4400]/15 flex items-center gap-3">
+              <span className="text-2xl">💖</span>
+              <span className={`${plusJakarta.className} text-lg font-extrabold text-[#ab4400]`}>
+                Saved to your story!
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={onSubmit} className="space-y-5 mx-auto">
         <section className="rounded-[2rem] border border-[#ffdfcf] bg-gradient-to-br from-[#fff8f2] to-[#fff1f6] p-6 md:p-8 shadow-[0_14px_36px_rgba(57,56,50,0.08)]">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">

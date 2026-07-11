@@ -10,7 +10,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import { plusJakarta } from "@/lib/fonts";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 22 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1] } },
+};
+
+const gridStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.08 } },
+};
 
 const Collections = ({ collections = [], entriesByCollection }) => {
   const [isCollectionDialogOpen, setIsCollectionDialogOpen] = useState(false);
@@ -42,14 +53,22 @@ const Collections = ({ collections = [], entriesByCollection }) => {
 
   return (
     <section id="collections" className="space-y-6">
-      <div className="space-y-2">
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-60px" }}
+        className="space-y-2 relative"
+      >
+        {/* washi tape accent */}
+        <div className="absolute -top-3 left-24 w-20 h-5 bg-[#ffae88]/30 rotate-[-3deg] rounded-sm pointer-events-none hidden md:block" />
         <h2 className={`${plusJakarta.className} text-4xl md:text-5xl font-bold text-[#ab4400] tracking-tight`}>
-          Collections
+          Collections <span className="text-2xl md:text-3xl align-middle">🗂️</span>
         </h2>
         <p className="text-base text-[#66645e]">
           Organize your journal into themes so it is easier to revisit memories later.
         </p>
-      </div>
+      </motion.div>
 
       {showSetupHint && (
         <Card className="bg-white/70 border-[#ffae88]/25 rounded-3xl shadow-[0_12px_32px_rgba(57,56,50,0.08)]">
@@ -79,30 +98,41 @@ const Collections = ({ collections = [], entriesByCollection }) => {
         </Card>
       )}
 
-      <div className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+      <motion.div
+        variants={gridStagger}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-40px" }}
+        className="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+      >
         {/* Create New Collection Button */}
-        <CollectionPreview
-          isCreateNew={true}
-          onCreateNew={() => setIsCollectionDialogOpen(true)}
-        />
+        <motion.div variants={fadeUp}>
+          <CollectionPreview
+            isCreateNew={true}
+            onCreateNew={() => setIsCollectionDialogOpen(true)}
+          />
+        </motion.div>
 
         {/* Unorganized Collection */}
         {entriesByCollection?.unorganized?.length > 0 && (
-          <CollectionPreview
-            name="Unorganized"
-            entries={entriesByCollection.unorganized}
-            isUnorganized={true}
-          />
+          <motion.div variants={fadeUp}>
+            <CollectionPreview
+              name="Unorganized"
+              entries={entriesByCollection.unorganized}
+              isUnorganized={true}
+            />
+          </motion.div>
         )}
 
         {/* User Collections */}
         {collections?.map((collection) => (
-          <CollectionPreview
-            key={collection.id}
-            id={collection.id}
-            name={collection.name}
-            entries={entriesByCollection[collection.id] || []}
-          />
+          <motion.div key={collection.id} variants={fadeUp}>
+            <CollectionPreview
+              id={collection.id}
+              name={collection.name}
+              entries={entriesByCollection[collection.id] || []}
+            />
+          </motion.div>
         ))}
 
         <CollectionForm
@@ -111,7 +141,7 @@ const Collections = ({ collections = [], entriesByCollection }) => {
           open={isCollectionDialogOpen}
           setOpen={setIsCollectionDialogOpen}
         />
-      </div>
+      </motion.div>
     </section>
   );
 };

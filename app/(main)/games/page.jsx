@@ -2,26 +2,28 @@
 
 import React from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { plusJakarta, manrope } from "@/lib/fonts";
-import { 
-  Swords, 
-  Layers, 
-  Package, 
-  Grid3x3, 
-  Dices, 
-  GitCompare, 
-  Target, 
-  MessageCircle, 
+import {
+  Swords,
+  Layers,
+  Package,
+  Grid3x3,
+  Dices,
+  GitCompare,
+  Target,
+  MessageCircle,
   Pencil,
-  ArrowUpRight
+  Flame,
+  ArrowUpRight,
 } from "lucide-react";
 
 const games = [
   {
     id: "word-duel",
     title: "Word Duel Arena",
-    description: "Race to guess words in real-time multiplayer!",
+    description: "Race your partner to guess the word first!",
     icon: Swords,
     color: "from-red-500 to-orange-500",
     path: "/games/word-duel",
@@ -30,16 +32,25 @@ const games = [
   {
     id: "speed-stacker",
     title: "Speed Stacker",
-    description: "Real-time multiplayer block stacking!",
+    description: "Stack blocks faster than your partner!",
     icon: Layers,
     color: "from-blue-500 to-cyan-500",
     path: "/games/speed-stacker",
     isNew: true,
   },
   {
+    id: "daily-dare",
+    title: "Daily Dare",
+    description: "One dare a day — do you accept?",
+    icon: Flame,
+    color: "from-orange-500 to-red-600",
+    path: "/games/daily-dare",
+    isNew: true,
+  },
+  {
     id: "treasure-hunt",
     title: "Treasure Hunt Race",
-    description: "Variety king - find treasures fast!",
+    description: "Race through the clues to the hidden treasure!",
     icon: Package,
     color: "from-yellow-500 to-amber-600",
     path: "/games/treasure-hunt",
@@ -47,7 +58,7 @@ const games = [
   {
     id: "tic-tac-toe",
     title: "Tic Tac Toe",
-    description: "Classic strategy in real-time multiplayer!",
+    description: "The classic showdown, live on both screens!",
     icon: Grid3x3,
     color: "from-purple-500 to-pink-500",
     path: "/games/tic-tac-toe",
@@ -56,7 +67,7 @@ const games = [
   {
     id: "story-dice",
     title: "Story Dice",
-    description: "Write stories together in real-time!",
+    description: "Roll the dice, write a story together!",
     icon: Dices,
     color: "from-green-500 to-emerald-500",
     path: "/games/story-dice",
@@ -65,7 +76,7 @@ const games = [
   {
     id: "this-or-that",
     title: "This or That",
-    description: "Quick to build, instant value",
+    description: "Would you rather...? Learn each other fast.",
     icon: GitCompare,
     color: "from-indigo-500 to-blue-500",
     path: "/games/this-or-that",
@@ -73,7 +84,7 @@ const games = [
   {
     id: "snakes-ladders",
     title: "Snakes & Ladders",
-    description: "Classic board game in real-time multiplayer!",
+    description: "Climb, slide, and race to square 100!",
     icon: Target,
     color: "from-rose-500 to-pink-600",
     path: "/games/snakes-ladders",
@@ -82,7 +93,7 @@ const games = [
   {
     id: "truth-or-dare",
     title: "Truth or Dare",
-    description: "Emotional connection game",
+    description: "Spill secrets, take dares, get closer.",
     icon: MessageCircle,
     color: "from-violet-500 to-purple-600",
     path: "/games/truth-or-dare",
@@ -98,6 +109,16 @@ const games = [
   },
 ];
 
+const gridStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const cardPop = {
+  hidden: { opacity: 0, y: 18, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } },
+};
+
 export default function GamesHub() {
   return (
     <div className={`${manrope.className} page-shell py-8 md:py-10`}>
@@ -110,45 +131,52 @@ export default function GamesHub() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 md:gap-4.5">
+      <motion.div
+        variants={gridStagger}
+        initial="hidden"
+        animate="show"
+        className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 md:gap-4.5"
+      >
         {games.map((game) => {
           const Icon = game.icon;
           return (
-            <Link key={game.id} href={game.path}>
-              <Card className="h-full bg-white/70 border border-[#ffdfcf] rounded-3xl overflow-hidden hover:shadow-[0_14px_30px_rgba(57,56,50,0.12)] hover:-translate-y-0.5 transition-all duration-300 group">
-                <CardContent className="p-3 md:p-3.5">
-                  <div className="relative rounded-2xl bg-gradient-to-br from-[#fff4ec] to-[#fff1f6] border border-[#ffe5d6] h-28 md:h-32 flex items-center justify-center mb-3">
-                    <div className={`w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-[0_8px_20px_rgba(57,56,50,0.18)]`}>
-                      <Icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            <motion.div key={game.id} variants={cardPop}>
+              <Link href={game.path}>
+                <Card className="h-full bg-white/70 border border-[#ffdfcf] rounded-3xl overflow-hidden hover:shadow-[0_18px_38px_rgba(171,68,0,0.14)] hover:border-[#ffba99] hover:-translate-y-1 active:scale-[0.98] transition-all duration-300 group">
+                  <CardContent className="p-3 md:p-3.5">
+                    <div className="relative rounded-2xl bg-gradient-to-br from-[#fff4ec] to-[#fff1f6] border border-[#ffe5d6] h-28 md:h-32 flex items-center justify-center mb-3 overflow-hidden">
+                      <div className={`icon-wiggle w-11 h-11 md:w-12 md:h-12 rounded-2xl bg-gradient-to-br ${game.color} flex items-center justify-center shadow-[0_8px_20px_rgba(57,56,50,0.18)]`}>
+                        <Icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                      </div>
+
+                      {game.isNew && (
+                        <span className="absolute top-2 left-2 rounded-full bg-[#ab4400] text-white text-[9px] font-bold px-2 py-0.5 tracking-wide">
+                          NEW
+                        </span>
+                      )}
+
+                      <span className="absolute right-2.5 bottom-2.5 text-[#ab4400]/60 group-hover:text-[#ab4400] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all">
+                        <ArrowUpRight className="w-4 h-4" />
+                      </span>
                     </div>
 
-                    {game.isNew && (
-                      <span className="absolute top-2 left-2 rounded-full bg-[#ab4400] text-white text-[9px] font-bold px-2 py-0.5 tracking-wide">
-                        NEW
-                      </span>
-                    )}
-
-                    <span className="absolute right-2.5 bottom-2.5 text-[#ab4400]/60">
-                      <ArrowUpRight className="w-4 h-4" />
-                    </span>
-                  </div>
-
-                  <h3 className={`${plusJakarta.className} text-sm md:text-base font-bold text-[#393832] leading-tight line-clamp-1`}>
-                    {game.title}
-                  </h3>
-                  <p className="mt-1 text-[11px] md:text-xs text-[#66645e] leading-snug line-clamp-1">
-                    {game.description}
-                  </p>
-                </CardContent>
-              </Card>
-            </Link>
+                    <h3 className={`${plusJakarta.className} text-sm md:text-base font-bold text-[#393832] leading-tight line-clamp-1`}>
+                      {game.title}
+                    </h3>
+                    <p className="mt-1 text-[11px] md:text-xs text-[#66645e] leading-snug line-clamp-1">
+                      {game.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </motion.div>
           );
         })}
-      </div>
+      </motion.div>
 
       <div className="mt-6 text-center">
         <p className="text-xs md:text-sm text-[#66645e]">
-          New game drops coming soon.
+          New game drops coming soon. 🎁
         </p>
       </div>
     </div>

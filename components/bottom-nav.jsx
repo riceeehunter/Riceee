@@ -3,12 +3,13 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  Home, 
-  BookOpen, 
-  Heart, 
-  Gamepad2, 
-  LayoutDashboard 
+import { motion } from "framer-motion";
+import {
+  Home,
+  BookOpen,
+  Heart,
+  Gamepad2,
+  LayoutDashboard
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -79,7 +80,7 @@ const BottomNav = () => {
                 className="flex flex-col items-center justify-center"
               >
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white flex items-center justify-center shadow-lg transition-transform active:scale-95 mb-1",
+                  "w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white flex items-center justify-center shadow-lg shadow-[#ab4400]/25 transition-transform active:scale-90 hover:scale-105 mb-1",
                   isActive && "ring-2 ring-[#ab4400]/20"
                 )}>
                   <Icon size={24} className="fill-white/20" />
@@ -92,17 +93,25 @@ const BottomNav = () => {
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center justify-center px-1.5 min-[400px]:px-3 py-1 gap-1"
+              className="relative flex flex-col items-center justify-center px-1.5 min-[400px]:px-3 py-1.5 gap-1 active:scale-90 transition-transform"
             >
-              <Icon 
-                size={22} 
+              {/* Springy pill that glides to the active tab */}
+              {isActive && (
+                <motion.span
+                  layoutId="bottom-nav-pill"
+                  transition={{ type: "spring", stiffness: 420, damping: 32 }}
+                  className="absolute inset-0 rounded-2xl bg-[#fff0e8] border border-[#ffae88]/30"
+                />
+              )}
+              <Icon
+                size={22}
                 className={cn(
-                  "transition-colors",
-                  isActive ? "text-[#ab4400]" : "text-stone-400"
-                )} 
+                  "relative transition-all duration-300",
+                  isActive ? "text-[#ab4400] scale-110 -translate-y-0.5" : "text-stone-400"
+                )}
               />
               <span className={cn(
-                "text-[10px] font-bold uppercase tracking-tight transition-colors",
+                "relative text-[10px] font-bold uppercase tracking-tight transition-colors",
                 isActive ? "text-[#ab4400]" : "text-stone-400"
               )}>
                 {item.label}
