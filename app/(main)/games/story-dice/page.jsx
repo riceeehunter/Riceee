@@ -1,14 +1,18 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Dices, Sparkles, Users, Clock, Zap, BookOpen, ScrollText } from "lucide-react";
 import Link from "next/link";
+import { Check, RotateCcw } from "lucide-react";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
-import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
+import {
+  LobbyScreen,
+  GameFrame,
+  BackToArena,
+  PlayerDisc,
+} from "../_components/game-ui";
 
 const STORY_ELEMENTS = {
   characters: ["🧙‍♂️ A wizard", "🦸‍♀️ A superhero", "🐉 A dragon", "👸 A princess", "🤖 A robot", "🧛‍♂️ A vampire", "🦊 A clever fox", "👻 A friendly ghost"],
@@ -45,8 +49,6 @@ function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
   const remotePlayer = getOtherPlayer(localPlayer);
   const localPlayerName = getPlayerName(localPlayer);
   const remotePlayerName = getPlayerName(remotePlayer);
-  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "📖";
-  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "📖";
 
   // Initialize Pusher
   useEffect(() => {
@@ -203,212 +205,167 @@ function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "menu") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
-        <div className="max-w-xl w-full">
-          <div className="flex items-center gap-3 mb-6">
-            <Link href="/games">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
-            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
-              Story Dice
-            </h1>
-          </div>
-
-          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
-            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
-              <CardTitle className="text-center">
-                <Users size={28} className="mx-auto mb-2 opacity-80" />
-                <span className="text-xl sm:text-2xl font-black tracking-tight">Co-op Narrative</span>
-                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">Roll the dice and weave a tale together.</p>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 sm:p-6 space-y-6">
-               <div className="grid grid-cols-2 gap-3">
-                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
-                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
-                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
-                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
-                      {localReady ? "READY" : "WAITING"}
-                    </div>
-                  </div>
-                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
-                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
-                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
-                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
-                      {remoteReady ? "READY" : "WAITING"}
-                    </div>
-                  </div>
-               </div>
-
-               <Button 
-                onClick={handleReady}
-                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
-                  localReady 
-                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
-                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
-                }`}
-               >
-                 {localReady ? "WAITING FOR PARTNER..." : "READY TO WRITE! ✍️"}
-               </Button>
-
-               {!remoteConnected && (
-                 <p className="text-center text-xs text-[#9d4867] font-medium animate-pulse">
-                   Waiting for {remotePlayerName} to join...
-                 </p>
-               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <LobbyScreen
+        gameTitle="Story Dice"
+        tagline="Roll five dice, write one ridiculous story together."
+        localName={localPlayerName}
+        remoteName={remotePlayerName}
+        localReady={localReady}
+        remoteReady={remoteReady}
+        remoteConnected={remoteConnected}
+        onReady={handleReady}
+        localRole="You"
+      />
     );
   }
 
   if (gameState === "playing") {
+    const elements = [
+      { label: "Character", val: rolledStory?.character },
+      { label: "Setting", val: rolledStory?.setting },
+      { label: "Object", val: rolledStory?.object },
+      { label: "Twist", val: rolledStory?.twist },
+    ];
+
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-4 px-2">
-            <div className="flex items-center gap-3">
-              <Link href="/games">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft size={20} />
-                </Button>
-              </Link>
-              <h1 className={`${plusJakarta.className} text-xl font-bold text-[#ab4400]`}>
-                Story Arena
-              </h1>
+      <GameFrame size="max-w-5xl">
+        <div className="mb-5 flex items-center justify-between">
+          <BackToArena />
+          <span className="rounded-full border border-[#ffdfcf] bg-[#fff5ef] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[#ab4400]">
+            Both writing live
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)]">
+          {/* The prompt the dice dealt */}
+          <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+            <div className="border-b border-[#f5f2ee] px-6 py-5">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#ab4400]/70">The dice dealt</p>
+              <h2 className={`${plusJakarta.className} mt-1 text-xl font-extrabold tracking-tight text-[#393832]`}>
+                Work all four in.
+              </h2>
             </div>
-            <div className="flex items-center gap-2 bg-[#fff0e8] px-4 py-2 rounded-full border border-[#ffae88]/30">
-              <Users size={16} className="text-[#ab4400]" />
-              <p className="text-xs font-bold text-[#ab4400] uppercase tracking-widest">
-                Writing Live
-              </p>
+            <div className="space-y-2.5 p-5">
+              {elements.map((el) => (
+                <div key={el.label} className="rounded-2xl border border-[#efe9e2] bg-[#fdfaf7] px-4 py-3">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#a09d95]">{el.label}</p>
+                  <p className={`${plusJakarta.className} mt-0.5 text-sm font-bold text-[#393832]`}>{el.val}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col lg:flex-row gap-6 min-h-0 pb-4">
-             {/* Story Elements Panel */}
-             <div className="lg:w-1/3 flex flex-col gap-3">
-                <Card className="border-none shadow-xl bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-orange-50 overflow-hidden">
-                   <CardHeader className="bg-[#ab4400] text-white py-3">
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">STORY ELEMENTS</p>
-                   </CardHeader>
-                   <CardContent className="p-4 space-y-3">
-                      {[
-                        { label: "CHARACTER", val: rolledStory?.character, color: "bg-orange-50 text-orange-700 border-orange-100" },
-                        { label: "SETTING", val: rolledStory?.setting, color: "bg-blue-50 text-blue-700 border-blue-100" },
-                        { label: "OBJECT", val: rolledStory?.object, color: "bg-amber-50 text-amber-700 border-amber-100" },
-                        { label: "TWIST", val: rolledStory?.twist, color: "bg-pink-50 text-pink-700 border-pink-100" }
-                      ].map((el, i) => (
-                        <div key={i} className={`p-3 rounded-2xl border-2 ${el.color}`}>
-                           <p className="text-[8px] font-black uppercase tracking-widest opacity-60 mb-0.5">{el.label}</p>
-                           <p className="font-bold text-sm">{el.val}</p>
-                        </div>
-                      ))}
-                   </CardContent>
-                </Card>
-                <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-                   <ScrollText size={48} className="text-[#9d4867] opacity-20 mb-4" />
-                   <p className="text-xs font-bold text-[#9d4867] uppercase tracking-widest italic opacity-40">Write your masterpiece...</p>
+          {/* Both stories */}
+          <div className="grid grid-rows-2 gap-4">
+            <div className="flex flex-col overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+              <div className="flex items-center justify-between border-b border-[#f5f2ee] px-5 py-3">
+                <div className="flex items-center gap-2.5">
+                  <PlayerDisc name={localPlayerName} kind="local" size="sm" />
+                  <p className={`${plusJakarta.className} text-xs font-bold text-[#393832]`}>Your story</p>
                 </div>
-             </div>
+                <button
+                  onClick={handleFinish}
+                  disabled={localFinished}
+                  className={`rounded-full px-4 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] transition-all active:scale-95 ${
+                    localFinished
+                      ? "bg-[#f5f2ee] text-[#a09d95]"
+                      : "bg-[#ab4400] text-white hover:bg-[#973b00]"
+                  }`}
+                >
+                  {localFinished ? "Locked in" : "Finish"}
+                </button>
+              </div>
+              <div className="relative flex-1">
+                <textarea
+                  value={userStory}
+                  onChange={(e) => setUserStory(e.target.value)}
+                  disabled={localFinished}
+                  placeholder="Once upon a time…"
+                  className="custom-scrollbar h-full min-h-[180px] w-full resize-none break-words bg-transparent p-5 text-sm leading-relaxed text-[#393832] placeholder:text-[#c9c5bd] focus:outline-none"
+                />
+                {localFinished && <div className="absolute inset-0 bg-white/50" />}
+              </div>
+            </div>
 
-             {/* Writing Area */}
-             <div className="lg:w-2/3 flex flex-col gap-4">
-                <div className="flex-1 grid grid-rows-2 gap-4">
-                   {/* Local Writing Area */}
-                   <Card className="border-none shadow-xl bg-white rounded-3xl border-2 border-orange-100 flex flex-col overflow-hidden">
-                      <CardHeader className="py-2 px-4 border-b border-orange-50 flex flex-row items-center justify-between">
-                         <span className="text-xs font-black text-[#ab4400]">{localEmoji} YOUR STORY</span>
-                         <Button 
-                          onClick={handleFinish} 
-                          disabled={localFinished}
-                          className={`h-7 text-[10px] font-black px-4 rounded-full ${localFinished ? "bg-green-500" : "bg-[#ab4400] hover:bg-[#973b00]"}`}
-                         >
-                           {localFinished ? "FINISHED ✅" : "FINISH STORY"}
-                         </Button>
-                      </CardHeader>
-                      <CardContent className="p-0 flex-1 relative">
-                         <textarea 
-                           value={userStory}
-                           onChange={(e) => setUserStory(e.target.value)}
-                           disabled={localFinished}
-                           placeholder="Once upon a time..."
-                           className="w-full h-full p-4 text-sm font-medium text-[#6a2700] resize-none focus:outline-none custom-scrollbar break-words"
-                         />
-                         {localFinished && <div className="absolute inset-0 bg-white/40 backdrop-blur-[1px]" />}
-                      </CardContent>
-                   </Card>
-
-                   {/* Remote Watching Area */}
-                   <Card className="border-none shadow-xl bg-stone-50/50 rounded-3xl border-2 border-dashed border-stone-200 flex flex-col overflow-hidden">
-                      <CardHeader className="py-2 px-4 border-b border-stone-200 flex flex-row items-center justify-between">
-                         <span className="text-xs font-black text-stone-400">{remoteEmoji} {remotePlayerName.toUpperCase()}'S TALE</span>
-                         {remoteFinished && <span className="text-[10px] font-black text-green-500">READY ✅</span>}
-                      </CardHeader>
-                      <CardContent className="p-4 flex-1 overflow-y-auto custom-scrollbar">
-                         <p className="text-sm font-medium text-stone-500 whitespace-pre-wrap break-words italic">
-                           {remoteStory || "Watching for ink on paper..."}
-                         </p>
-                      </CardContent>
-                   </Card>
+            <div className="flex flex-col overflow-hidden rounded-[2rem] border border-dashed border-[#e8e3dc] bg-[#fdfaf7]">
+              <div className="flex items-center justify-between border-b border-[#f0ebe4] px-5 py-3">
+                <div className="flex items-center gap-2.5">
+                  <PlayerDisc name={remotePlayerName} kind="remote" size="sm" dim={!remoteStory} />
+                  <p className={`${plusJakarta.className} text-xs font-bold text-[#393832]`}>
+                    {remotePlayerName.split(" ")[0]}&apos;s story
+                  </p>
                 </div>
-             </div>
+                {remoteFinished && (
+                  <span className="flex items-center gap-1 rounded-full bg-[#9d4867] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                    <Check className="h-3 w-3" />
+                    Done
+                  </span>
+                )}
+              </div>
+              <div className="custom-scrollbar min-h-[180px] flex-1 overflow-y-auto p-5">
+                <p className="whitespace-pre-wrap break-words text-sm italic leading-relaxed text-[#66645e]">
+                  {remoteStory || "Nothing on their page yet…"}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </GameFrame>
     );
   }
 
   if (gameState === "finished") {
     return (
-      <div className="flex flex-col items-center pt-2 p-4">
-        <div className="max-w-4xl w-full">
-          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
-            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-8 text-center">
-              <Sparkles size={48} className="mx-auto mb-4 text-yellow-300 animate-pulse" />
-              <CardTitle className="text-3xl font-black tracking-tight">The Library of Tales</CardTitle>
-              <p className="text-white/70 font-medium mt-2">Both of your stories are complete.</p>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2 font-black text-[#ab4400]">
-                     {localEmoji} {localPlayerName}
-                   </div>
-                   <div className="p-6 bg-white rounded-3xl border-4 border-orange-50 shadow-inner min-h-[300px] text-sm text-[#6a2700] leading-relaxed whitespace-pre-wrap">
-                      {userStory || "No story was written..."}
-                   </div>
-                </div>
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2 font-black text-[#9d4867]">
-                     {remoteEmoji} {remotePlayerName}
-                   </div>
-                   <div className="p-6 bg-white rounded-3xl border-4 border-pink-50 shadow-inner min-h-[300px] text-sm text-[#6a2700] leading-relaxed whitespace-pre-wrap">
-                      {remoteStory || "No story was written..."}
-                   </div>
-                </div>
-              </div>
+      <GameFrame size="max-w-4xl">
+        <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+          <div className="border-b border-[#f5f2ee] px-7 pb-7 pt-9 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#ab4400]/70">Same prompt, two minds</p>
+            <h1 className={`${plusJakarta.className} mt-3 text-4xl font-extrabold tracking-tighter text-[#393832] sm:text-5xl`}>
+              Read them side by side.
+            </h1>
+            <p className="mt-3 text-sm text-[#66645e]">No scores here. Just evidence of how differently you two think.</p>
+          </div>
 
-              <div className="flex flex-col gap-3 max-w-sm mx-auto">
-                <Button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-8 text-xl font-black bg-[#ab4400] text-white rounded-2xl shadow-lg hover:bg-[#973b00] transition-all active:scale-95 shadow-[#ab4400]/20"
-                >
-                  TELL ANOTHER 🔄
-                </Button>
-                <Link href="/games">
-                  <Button variant="ghost" className="w-full py-6 text-[#9d4867] font-bold">
-                    BACK TO MENU
-                  </Button>
-                </Link>
+          <div className="space-y-6 p-6 sm:p-7">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <PlayerDisc name={localPlayerName} kind="local" size="sm" />
+                  <p className={`${plusJakarta.className} text-sm font-bold text-[#393832]`}>{localPlayerName}</p>
+                </div>
+                <div className="min-h-[260px] whitespace-pre-wrap rounded-3xl border border-[#ffdfcf] bg-[#fff9f5] p-6 text-sm leading-relaxed text-[#393832]">
+                  {userStory || "Wrote nothing. Bold choice."}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <PlayerDisc name={remotePlayerName} kind="remote" size="sm" />
+                  <p className={`${plusJakarta.className} text-sm font-bold text-[#393832]`}>{remotePlayerName}</p>
+                </div>
+                <div className="min-h-[260px] whitespace-pre-wrap rounded-3xl border border-[#ffd9e2] bg-[#fffafc] p-6 text-sm leading-relaxed text-[#393832]">
+                  {remoteStory || "Wrote nothing. Bold choice."}
+                </div>
+              </div>
+            </div>
+
+            <div className="mx-auto flex max-w-sm flex-col gap-2.5">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#ab4400] py-5 text-base font-extrabold tracking-tight text-white shadow-[0_14px_30px_rgba(171,68,0,0.28)] transition-all hover:bg-[#973b00] active:scale-[0.98]"
+              >
+                <RotateCcw className="h-4 w-4" />
+                Roll a new prompt
+              </button>
+              <Link
+                href="/games"
+                className="w-full rounded-2xl py-3.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-[#a09d95] transition-colors hover:text-[#ab4400]"
+              >
+                Back to Arena
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
+      </GameFrame>
     );
   }
 

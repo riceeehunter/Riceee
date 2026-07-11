@@ -1,16 +1,19 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Trophy, Clock, Users, Sparkles, Send, RefreshCcw } from "lucide-react";
-import Link from "next/link";
+import { Clock } from "lucide-react";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
-import { PLAYER_IDS, getPlayerMeta, getOtherPlayer } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  LobbyScreen,
+  ResultScreen,
+  GameFrame,
+  BackToArena,
+  PlayerDisc,
+} from "../_components/game-ui";
 
 const plusJakarta = Plus_Jakarta_Sans({ subsets: ["latin"] });
 
@@ -72,32 +75,6 @@ async function safeTrigger({ channel, event, data }) {
   }
 }
 
-// Stunning Animated Background
-const GameBackground = () => {
-  return (
-    <div className="absolute inset-0 -z-10 overflow-hidden bg-[#fffaf8]">
-      <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-gradient-to-br from-orange-300 to-transparent blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-gradient-to-tr from-rose-300 to-transparent blur-[100px]" />
-      </div>
-      <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
-        <div className="grid grid-cols-6 gap-20 transform rotate-12">
-          {Array.from({ length: 24 }).map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="text-8xl font-black text-[#ab4400]"
-            >
-              {String.fromCharCode(65 + (i % 26))}
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
 
 function WordDuelGame({ localPlayer, sessionId, getPlayerName, localPlayerName, remotePlayerName }) {
   const [pusherClient, setPusherClient] = useState(null);
@@ -132,10 +109,6 @@ function WordDuelGame({ localPlayer, sessionId, getPlayerName, localPlayerName, 
   const [lastWordScore, setLastWordScore] = useState(0);
 
   // Player Meta
-  const localMeta = localPlayer ? getPlayerMeta(localPlayer) : null;
-  const remoteMeta = localPlayer ? getPlayerMeta(getOtherPlayer(localPlayer)) : null;
-  const localEmoji = localMeta?.emoji || "👤";
-  const remoteEmoji = remoteMeta?.emoji || "👤";
 
   // Remote player state
   const [remoteGameState, setRemoteGameState] = useState("waiting");
@@ -550,389 +523,199 @@ function WordDuelGame({ localPlayer, sessionId, getPlayerName, localPlayerName, 
     return "tie";
   };
 
-  return (
-    <div className={`fixed inset-0 bg-[#fffaf8] z-[40] flex flex-col ${plusJakarta.className}`}>
-      <GameBackground />
+  if (gameState === "menu") {
+    return (
+      <LobbyScreen
+        gameTitle="Word Duel"
+        tagline="Same word. Two brains. First to crack it gloats forever."
+        localName={localPlayerName}
+        remoteName={remotePlayerName}
+        localReady={localReady}
+        remoteReady={remoteReady}
+        remoteConnected={!!remotePlayer}
+        onReady={startGame}
+        localRole="You"
+      />
+    );
+  }
 
-      {/* Game Content Container */}
-      <div className="flex-1 flex flex-col pt-24 md:pt-28 pb-20 md:pb-10 relative">
-        {/* Header (Internal Game Header) */}
-        <div className="flex items-center justify-between px-6 py-1 md:px-12 z-20">
-          <div className="flex items-center gap-3">
-            <Link href="/games">
-              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/50 backdrop-blur-md shadow-sm border border-white/20">
-                  <ArrowLeft size={20} className="text-[#ab4400]" />
-                </Button>
-              </motion.div>
-            </Link>
-            <div className="flex flex-col">
-              <h1 className="text-xl sm:text-2xl font-black text-[#ab4400] leading-none">Word Duel</h1>
-              <span className="text-[10px] font-bold text-[#9d4867] uppercase tracking-[0.2em] opacity-60">Multiplayer Arena</span>
-            </div>
+  if (gameState === "playing") {
+    const lowTime = timeLeft < 10;
+    return (
+      <GameFrame size="max-w-4xl">
+        <div className="mb-5 flex items-center justify-between">
+          <BackToArena />
+          <span
+            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold tabular-nums transition-colors ${
+              lowTime
+                ? "animate-pulse border-[#9d4867] bg-[#9d4867] text-white"
+                : "border-[#ffdfcf] bg-[#fff5ef] text-[#ab4400]"
+            }`}
+          >
+            <Clock size={13} />
+            {timeLeft}s
+          </span>
+        </div>
+
+        <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+          <div className="border-b border-[#f5f2ee] px-7 pb-6 pt-7 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#9d4867]/70">
+              {targetCategory}
+            </p>
+            <h2 className={`${plusJakarta.className} mt-2 text-2xl font-extrabold tracking-tight text-[#393832] sm:text-3xl`}>
+              {targetWord.length} letters
+            </h2>
           </div>
 
-          {gameState === "playing" && (
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="flex items-center gap-2 bg-white/60 backdrop-blur-xl px-4 py-2 rounded-full border border-[#ffae88]/30 shadow-lg shadow-orange-500/5"
-            >
-              <Clock size={16} className="text-[#ab4400]" />
-              <span className="text-sm font-black text-[#ab4400] tabular-nums">{timeLeft}s</span>
-            </motion.div>
-          )}
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 flex items-center justify-center p-6 sm:p-12 relative">
-          {gameState === "menu" && (
-            <div className="max-w-md w-full z-10 px-4 md:-translate-y-12">
-              <Card className="border-none shadow-[0_50px_200px_rgba(171,68,0,0.25)] bg-white/70 backdrop-blur-3xl overflow-hidden rounded-[2.5rem]">
-                <div className="bg-gradient-to-br from-[#ab4400] via-[#ab4400] to-[#9d4867] p-4 sm:p-5 text-center relative overflow-hidden">
-                  <div className="absolute inset-0 opacity-20">
-                    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_120%,rgba(255,255,255,0.4),transparent)]" />
-                  </div>
-                  <motion.div
-                    animate={{ rotate: [0, -10, 10, 0] }}
-                    transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                    className="relative z-10 inline-block mb-4"
-                  >
-                    <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
-                      <Users size={32} className="text-white" />
-                    </div>
-                  </motion.div>
-                  <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight relative z-10">Lexical Battle</h2>
-                  <p className="text-white/70 text-[9px] font-medium mt-1 relative z-10 uppercase tracking-widest">Arena Ready</p>
-                </div>
-
-                <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <PlayerSlot
-                      name={localPlayerName}
-                      emoji={localEmoji}
-                      ready={localReady}
-                      isLocal={true}
-                    />
-                    <PlayerSlot
-                      name={remotePlayerName}
-                      emoji={remoteEmoji}
-                      ready={remoteReady}
-                      isLocal={false}
-                      isConnected={!!remotePlayer}
-                    />
-                  </div>
-
-                  <motion.div
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="pt-2"
-                  >
-                    <Button
-                      onClick={startGame}
-                      disabled={!remotePlayer || localReady}
-                      className={`w-full h-12 sm:h-16 text-sm sm:text-lg font-black rounded-2xl shadow-xl transition-all duration-300 relative overflow-hidden ${localReady
-                        ? "bg-emerald-500 text-white cursor-default"
-                        : !remotePlayer
-                          ? "bg-stone-100 text-stone-400 cursor-not-allowed"
-                          : "bg-[#ab4400] text-white hover:bg-[#973b00] hover:shadow-orange-500/40"
-                        }`}
-                    >
-                      {!remotePlayer ? (
-                        <span className="flex items-center gap-2">
-                          <RefreshCcw className="animate-spin" size={20} /> SEARCHING...
-                        </span>
-                      ) : localReady ? (
-                        <span className="flex items-center gap-2 text-white">
-                          WAITING...
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          READY TO SPELL! <Sparkles size={20} />
-                        </span>
-                      )}
-                    </Button>
-                  </motion.div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {gameState === "playing" && (
-            <div className="w-full max-w-4xl flex flex-col items-center justify-center gap-4 sm:gap-8 z-10 px-4 md:-translate-y-14">
-              {/* Category Header */}
-              <div className="text-center space-y-1">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="inline-block px-4 py-1.5 rounded-full bg-[#9d4867]/10 text-[#9d4867] text-[10px] font-black uppercase tracking-[0.3em]"
-                >
-                  Category: {targetCategory}
-                </motion.div>
-                <h2 className="text-2xl sm:text-4xl font-black text-[#ab4400]">
-                  {targetWord.length} Letter Word
-                </h2>
-              </div>
-
-              {/* Main Game Area */}
-              <div className="w-full grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-6 sm:gap-8 items-center">
-                {/* Local Player Side */}
-                <div className="flex flex-col items-center gap-4">
-                  <div className="flex flex-wrap justify-center gap-2">
-                    {targetWord.split('').map((char, i) => {
-                      const isGuessed = guessedLetters.includes(char);
-                      return (
-                        <motion.div
-                          key={i}
-                          initial={false}
-                          animate={isGuessed ? {
-                            scale: [1, 1.1, 1],
-                            backgroundColor: "#f97316",
-                            color: "#fff",
-                            borderColor: "#ea580c"
-                          } : {
-                            backgroundColor: "#fff",
-                            color: "#ab4400",
-                            borderColor: "#ffedd5"
-                          }}
-                          className={`w-8 h-12 sm:w-16 sm:h-20 rounded-xl sm:rounded-2xl border-4 flex items-center justify-center text-xl sm:text-4xl font-black shadow-lg shadow-orange-500/5`}
-                        >
-                          {isGuessed ? char : ""}
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-
-                  <div className="flex items-center gap-4 bg-white/40 backdrop-blur-md px-6 py-2 rounded-2xl border border-white/20 shadow-sm">
-                    <div className="text-xl">{localEmoji}</div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-[#ab4400]/40 uppercase tracking-widest">Your Score</span>
-                      <span className="text-lg font-black text-[#ab4400] tabular-nums">{totalScore + score}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* VS Divider */}
-                <div className="hidden md:flex flex-col items-center gap-4">
-                  <div className="w-px h-16 bg-gradient-to-b from-transparent via-[#ab4400]/20 to-transparent" />
-                  <div className="w-10 h-10 rounded-full bg-white/50 backdrop-blur-md border border-[#ab4400]/20 flex items-center justify-center text-[10px] font-black text-[#ab4400]">VS</div>
-                  <div className="w-px h-16 bg-gradient-to-b from-[#ab4400]/20 via-[#ab4400]/20 to-transparent" />
-                </div>
-
-                {/* Remote Player Side */}
-                <div className="flex flex-col items-center gap-4 opacity-60">
-                  <div className="flex flex-wrap justify-center gap-1.5">
-                    {targetWord.split('').map((_, i) => (
-                      <motion.div
-                        key={i}
-                        animate={i < remoteRevealedCount ? {
-                          backgroundColor: "#ec4899",
-                          color: "#fff",
-                          borderColor: "#db2777"
-                        } : {
-                          backgroundColor: "#fff",
-                          color: "#9d4867",
-                          borderColor: "#fce7f3"
-                        }}
-                        className="w-7 h-10 sm:w-10 sm:h-14 rounded-xl border-2 flex items-center justify-center text-sm sm:text-xl font-black"
-                      >
-                        {i < remoteRevealedCount ? "•" : ""}
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  <div className="flex items-center gap-4 bg-white/40 backdrop-blur-md px-5 py-2 rounded-xl border border-white/20">
-                    <div className="text-lg">{remoteEmoji}</div>
-                    <div className="flex flex-col">
-                      <span className="text-[9px] font-black text-[#9d4867]/40 uppercase tracking-widest">{remotePlayerName.split(' ')[0]}</span>
-                      <span className="text-lg font-black text-[#9d4867] tabular-nums">{remoteTotalScore + remoteScore}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Input Area */}
-              <div className="w-full max-w-xs sm:max-w-sm flex flex-col items-center gap-3 relative">
-                <AnimatePresence>
-                  {showCelebration && (
+          <div className="space-y-7 p-6 sm:p-8">
+            {/* Your board */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex flex-wrap justify-center gap-2">
+                {targetWord.split("").map((char, i) => {
+                  const isGuessed = guessedLetters.includes(char);
+                  return (
                     <motion.div
-                      initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                      animate={{ opacity: 1, scale: 1, y: -40 }}
-                      exit={{ opacity: 0, scale: 1.5 }}
-                      className="absolute top-0 left-0 right-0 text-center pointer-events-none z-50"
+                      key={i}
+                      initial={false}
+                      animate={
+                        isGuessed
+                          ? { scale: [1, 1.08, 1], backgroundColor: "#ab4400", color: "#fff", borderColor: "#ab4400" }
+                          : { backgroundColor: "#fdfaf7", color: "#ab4400", borderColor: "#efe9e2" }
+                      }
+                      className={`${plusJakarta.className} flex h-14 w-10 items-center justify-center rounded-xl border text-2xl font-extrabold sm:h-20 sm:w-14 sm:text-3xl`}
                     >
-                      <div className="inline-block bg-emerald-500 text-white px-6 py-2 rounded-full font-black shadow-2xl text-sm">
-                        EXCELLENT! +{lastWordScore} ✨
-                      </div>
+                      {isGuessed ? char : ""}
                     </motion.div>
-                  )}
-                </AnimatePresence>
+                  );
+                })}
+              </div>
 
-                <form onSubmit={handleGuess} className="w-full relative group">
-                  <motion.div
-                    animate={shakeInput ? { x: [-10, 10, -10, 10, 0] } : {}}
-                    transition={{ duration: 0.4 }}
-                  >
-                    <Input
-                      value={input}
-                      onChange={(e) => setInput(e.target.value.toUpperCase())}
-                      placeholder="Letter..."
-                      maxLength={1}
-                      className="h-14 sm:h-16 text-center text-3xl font-black border-4 border-white/80 rounded-[2rem] bg-white/80 backdrop-blur-xl shadow-[0_20px_50px_rgba(171,68,0,0.1)] focus:border-[#ab4400] focus:ring-0 transition-all duration-300 placeholder:text-stone-200"
-                      autoFocus
-                      autoComplete="off"
-                    />
-                  </motion.div>
-                </form>
-                <p className="text-[9px] font-black text-[#ab4400]/40 uppercase tracking-[0.2em]">Press Enter to Guess</p>
+              <div className="flex items-center gap-3 rounded-full border border-[#efe9e2] bg-[#fdfaf7] px-5 py-2">
+                <PlayerDisc name={localPlayerName} kind="local" size="sm" />
+                <div className="leading-tight">
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a09d95]">Your score</p>
+                  <p className={`${plusJakarta.className} text-base font-extrabold tabular-nums text-[#ab4400]`}>
+                    {totalScore + score}
+                  </p>
+                </div>
               </div>
             </div>
-          )}
 
-          {gameState === "finished" && (
-            <div className="max-w-md w-full z-10 px-4 md:-translate-y-20">
-              {(() => {
-                const winner = getWinner();
-                const localFinalScore = totalScore + score;
-                const remoteFinalScore = remoteTotalScore + remoteScore;
-                const isVictory = winner === localPlayer;
-                const isTie = winner === "tie";
+            {/* Input */}
+            <div className="relative mx-auto flex w-full max-w-xs flex-col items-center gap-2.5">
+              <AnimatePresence>
+                {showCelebration && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.6, y: 10 }}
+                    animate={{ opacity: 1, scale: 1, y: -44 }}
+                    exit={{ opacity: 0, scale: 1.3 }}
+                    className="pointer-events-none absolute inset-x-0 top-0 z-50 text-center"
+                  >
+                    <span className="inline-block rounded-full bg-[#ab4400] px-5 py-2 text-xs font-bold uppercase tracking-[0.16em] text-white shadow-lg">
+                      Nailed it +{lastWordScore}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-                return (
-                  <Card className="border-none shadow-[0_40px_150px_rgba(171,68,0,0.2)] bg-white/80 backdrop-blur-3xl rounded-[2.5rem] overflow-hidden">
-                    <div className={`p-3 sm:p-4 text-center relative overflow-hidden ${isVictory ? "bg-gradient-to-br from-amber-400 to-orange-600" :
-                      isTie ? "bg-gradient-to-br from-indigo-500 to-purple-600" :
-                        "bg-gradient-to-br from-rose-500 to-pink-600"
-                      } text-white`}>
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1, rotate: [0, 10, -10, 0] }}
-                        transition={{ delay: 0.2, duration: 0.6, ease: "easeInOut" }}
-                        className="mb-2 inline-block"
-                      >
-                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-xl">
-                          {isVictory ? <Trophy size={28} className="text-white" /> : <Sparkles size={28} className="text-white" />}
-                        </div>
-                      </motion.div>
-                      <h2 className="text-2xl sm:text-3xl font-black tracking-tight mb-1">
-                        {isVictory ? "Victory!" : isTie ? "Draw!" : "Nice Try!"}
-                      </h2>
-                      <p className="text-white/70 font-bold uppercase tracking-widest text-[9px]">Final Verdict</p>
-                    </div>
-
-                    <CardContent className="p-4 sm:p-5 space-y-2 sm:space-y-3">
-                      <div className="space-y-2">
-                        <ResultRow
-                          name={localPlayerName}
-                          emoji={localEmoji}
-                          score={localFinalScore}
-                          rounds={round}
-                          isWinner={winner === localPlayer}
-                          primaryColor="#ab4400"
-                          bgColor="bg-orange-50"
-                        />
-                        <ResultRow
-                          name={remotePlayerName}
-                          emoji={remoteEmoji}
-                          score={remoteFinalScore}
-                          rounds={remoteRound}
-                          isWinner={winner === remotePlayer}
-                          primaryColor="#9d4867"
-                          bgColor="bg-rose-50"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3 pt-1">
-                        <Button
-                          onClick={resetGame}
-                          variant="outline"
-                          className="h-10 rounded-xl font-black text-[#ab4400] border-orange-100 hover:bg-orange-50 text-xs"
-                        >
-                          LOBBY
-                        </Button>
-                        <Button
-                          onClick={playAgain}
-                          className="h-10 rounded-xl font-black bg-[#ab4400] text-white hover:bg-[#973b00] shadow-xl shadow-orange-500/20 text-xs"
-                        >
-                          REMATCH
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })()}
+              <form onSubmit={handleGuess} className="w-full">
+                <motion.div animate={shakeInput ? { x: [-8, 8, -8, 8, 0] } : {}} transition={{ duration: 0.4 }}>
+                  <input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value.toUpperCase())}
+                    placeholder="?"
+                    maxLength={1}
+                    autoFocus
+                    autoComplete="off"
+                    className={`${plusJakarta.className} h-16 w-full rounded-2xl border border-[#efe9e2] bg-[#fdfaf7] text-center text-3xl font-extrabold text-[#393832] transition-colors placeholder:text-[#d8d4cb] focus:border-[#ab4400] focus:bg-white focus:outline-none`}
+                  />
+                </motion.div>
+              </form>
+              <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#a09d95]">Enter to guess</p>
             </div>
-          )}
+
+            {/* Their progress */}
+            <div className="flex items-center justify-between gap-4 rounded-2xl border border-dashed border-[#e8e3dc] bg-[#fdfaf7] px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <PlayerDisc name={remotePlayerName} kind="remote" size="sm" />
+                <div className="leading-tight">
+                  <p className={`${plusJakarta.className} text-xs font-bold text-[#393832]`}>
+                    {remotePlayerName.split(" ")[0]}
+                  </p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#a09d95]">
+                    {remoteRevealedCount} of {targetWord.length} revealed
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="hidden gap-1 sm:flex">
+                  {targetWord.split("").map((_, i) => (
+                    <motion.span
+                      key={i}
+                      animate={{ backgroundColor: i < remoteRevealedCount ? "#9d4867" : "#efe9e2" }}
+                      className="h-2 w-2 rounded-full"
+                    />
+                  ))}
+                </div>
+                <span className={`${plusJakarta.className} text-base font-extrabold tabular-nums text-[#9d4867]`}>
+                  {remoteTotalScore + remoteScore}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
+      </GameFrame>
+    );
+  }
+
+  if (gameState === "finished") {
+    const winner = getWinner();
+    const localFinalScore = totalScore + score;
+    const remoteFinalScore = remoteTotalScore + remoteScore;
+
+    return (
+      <ResultScreen
+        outcome={winner === localPlayer ? "win" : winner === "tie" ? "draw" : "lose"}
+        localName={localPlayerName}
+        remoteName={remotePlayerName}
+        onRematch={playAgain}
+        rematchLabel="Rematch"
+        subline={
+          winner === localPlayer
+            ? `${localFinalScore} points across ${round} rounds. The dictionary bends to you.`
+            : winner === "tie"
+              ? "Identical scores. The words refuse to pick a side."
+              : `They finished on ${remoteFinalScore}. You got ${localFinalScore}. Read more.`
+        }
+      >
+        <div className="flex items-center justify-center gap-8 rounded-2xl border border-[#efe9e2] bg-[#fdfaf7] py-4">
+          <div className="text-center">
+            <p className={`${plusJakarta.className} text-2xl font-extrabold tabular-nums text-[#ab4400]`}>
+              {localFinalScore}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a09d95]">{round} rounds</p>
+          </div>
+          <span className="h-8 w-px bg-[#efe9e2]" />
+          <div className="text-center">
+            <p className={`${plusJakarta.className} text-2xl font-extrabold tabular-nums text-[#9d4867]`}>
+              {remoteFinalScore}
+            </p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#a09d95]">{remoteRound} rounds</p>
+          </div>
+        </div>
+      </ResultScreen>
+    );
+  }
+
+  return null;
 }
-
-// Sub-components
-const PlayerSlot = ({ name, emoji, ready, isLocal, isConnected = true }) => (
-  <div className={`relative p-3 sm:p-4 rounded-3xl border-2 transition-all duration-500 flex flex-col items-center gap-2 ${ready
-    ? "bg-emerald-50 border-emerald-200 shadow-[0_10px_30px_rgba(16,185,129,0.1)]"
-    : isConnected
-      ? "bg-white border-stone-100 shadow-sm"
-      : "bg-stone-50 border-dashed border-stone-200"
-    }`}>
-    <div className="relative">
-      <span className={`text-4xl sm:text-5xl block transition-opacity duration-300 ${!isConnected ? "opacity-20 grayscale" : "opacity-100"}`}>
-        {emoji}
-      </span>
-      {ready && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center"
-        >
-          <div className="w-2 h-2 bg-white rounded-full animate-ping" />
-        </motion.div>
-      )}
-    </div>
-    <div className="text-center w-full">
-      <p className={`font-black text-xs sm:text-sm truncate max-w-full ${!isConnected ? "text-stone-300" : "text-[#6a2700]"}`}>
-        {isConnected ? (isLocal ? "You" : name.split(' ')[0]) : "???"}
-      </p>
-      <div className={`mt-2 inline-block text-[8px] px-3 py-1 rounded-full font-black uppercase tracking-widest ${ready
-        ? "bg-emerald-500 text-white"
-        : isConnected
-          ? "bg-amber-100 text-amber-700 animate-pulse"
-          : "bg-stone-200 text-stone-400"
-        }`}>
-        {ready ? "READY" : isConnected ? "WAITING" : "IDLE"}
-      </div>
-    </div>
-  </div>
-);
-
-const ResultRow = ({ name, emoji, score, rounds, isWinner, primaryColor, bgColor }) => (
-  <div
-    style={isWinner ? { borderColor: primaryColor, boxShadow: `0 10px 30px ${primaryColor}20` } : {}}
-    className={`p-2 sm:p-3 rounded-2xl border-2 ${isWinner ? `ring-4 ring-[${primaryColor}]/20 ring-offset-2` : "border-transparent"} ${bgColor} flex items-center justify-between`}
-  >
-    <div className="flex items-center gap-2">
-      <span className="text-3xl">{emoji}</span>
-      <div className="flex flex-col">
-        <span className="font-black text-[#6a2700] text-sm leading-tight">{name}</span>
-        <span className="text-[8px] font-bold opacity-40 uppercase tracking-widest">{rounds} Rounds</span>
-      </div>
-    </div>
-    <div className="text-right">
-      <div className={`text-2xl font-black`} style={{ color: primaryColor }}>{score}</div>
-      <div className={`text-[8px] font-black opacity-30 uppercase tracking-tighter`}>PTS</div>
-    </div>
-  </div>
-);
 
 export default function WordDuelPage() {
   return (
     <LocalMultiplayerWrapper
       gameId="word-duel"
       gameName="Word Duel Arena"
-      hunterColor="from-purple-500 to-blue-600"
-      riceeeColor="from-pink-500 to-rose-600"
     >
       {(props) => <WordDuelGame {...props} />}
     </LocalMultiplayerWrapper>

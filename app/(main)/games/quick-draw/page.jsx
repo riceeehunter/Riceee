@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ArrowLeft, Pencil, Clock, Eraser, RotateCcw, Users, Crown, Palette, Brush } from "lucide-react";
 import Link from "next/link";
+import { Clock, RotateCcw } from "lucide-react";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
-import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
+import {
+  LobbyScreen,
+  GameFrame,
+  BackToArena,
+  PlayerDisc,
+} from "../_components/game-ui";
 
 const DRAWING_PROMPTS = [
   "Draw a cat riding a bicycle 🚴",
@@ -72,8 +75,6 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
   const remotePlayer = getOtherPlayer(localPlayer);
   const localPlayerName = getPlayerName(localPlayer);
   const remotePlayerName = getPlayerName(remotePlayer);
-  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎨";
-  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎨";
 
   const CHANNEL_NAME = sessionId;
 
@@ -342,209 +343,178 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
 
   if (gameState === "menu") {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh p-4 pb-20 sm:pb-4">
-        <div className="max-w-xl w-full">
-          <div className="flex items-center gap-3 mb-6">
-            <Link href="/games">
-              <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-10 sm:w-10">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
-            <h1 className={`${plusJakarta.className} text-2xl sm:text-3xl font-bold text-[#ab4400]`}>
-              Quick Draw
-            </h1>
-          </div>
-
-          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
-            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-5 sm:p-6">
-              <CardTitle className="text-center">
-                <Palette size={28} className="mx-auto mb-2 opacity-80" />
-                <span className="text-xl sm:text-2xl font-black tracking-tight">Art Battle!</span>
-                <p className="text-white/70 text-[10px] sm:text-xs font-medium mt-1">Both draw the same prompt live.</p>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-5 sm:p-6 space-y-6">
-               <div className="grid grid-cols-2 gap-3">
-                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${localReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
-                    <span className="text-2xl sm:text-3xl">{localEmoji}</span>
-                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] truncate max-w-full">{localPlayerName}</span>
-                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${localReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
-                      {localReady ? "READY" : "WAITING"}
-                    </div>
-                  </div>
-                  <div className={`p-3 sm:p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${remoteReady ? "bg-green-50 border-green-200" : "bg-stone-50 border-stone-100"}`}>
-                    <span className="text-2xl sm:text-3xl opacity-50">{remoteEmoji}</span>
-                    <span className="font-bold text-xs sm:text-sm text-[#6a2700] opacity-50 truncate max-w-full">{remotePlayerName}</span>
-                    <div className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest ${remoteReady ? "bg-green-500 text-white" : "bg-stone-200 text-stone-500"}`}>
-                      {remoteReady ? "READY" : "WAITING"}
-                    </div>
-                  </div>
-               </div>
-
-               <Button 
-                onClick={handleReady}
-                className={`w-full py-6 sm:py-8 text-base sm:text-lg font-black rounded-2xl shadow-lg transition-all active:scale-95 ${
-                  localReady 
-                  ? "bg-stone-200 text-stone-600 hover:bg-stone-300" 
-                  : "bg-[#ab4400] text-white hover:bg-[#973b00] shadow-[#ab4400]/20"
-                }`}
-               >
-                 {localReady ? "WAITING FOR PARTNER..." : "LET'S DRAW! 🎨"}
-               </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <LobbyScreen
+        gameTitle="Quick Draw"
+        tagline="One canvas, two pens, zero artistic dignity."
+        localName={localPlayerName}
+        remoteName={remotePlayerName}
+        localReady={localReady}
+        remoteReady={remoteReady}
+        remoteConnected={remoteConnected}
+        onReady={handleReady}
+        localRole="You"
+      />
     );
   }
 
   if (gameState === "playing") {
+    const lowTime = timeLeft < 10;
     return (
-      <div className="flex flex-col p-2 sm:p-4 h-dvh overflow-y-auto scrollbar-hide bg-[#fffaf8]">
-        <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-2 sm:mb-4 px-2">
-            <div className="flex items-center gap-2">
-              <Link href="/games">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <ArrowLeft size={18} />
-                </Button>
-              </Link>
-              <h1 className={`${plusJakarta.className} text-lg sm:text-xl font-bold text-[#ab4400]`}>
-                Art Arena
-              </h1>
+      <GameFrame size="max-w-6xl">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <BackToArena />
+          <div className="min-w-0 text-center">
+            <p className="text-[9px] font-bold uppercase tracking-[0.24em] text-[#9d4867]/70">Draw this</p>
+            <h2 className={`${plusJakarta.className} truncate text-base font-extrabold tracking-tight text-[#393832] sm:text-lg`}>
+              {currentPrompt}
+            </h2>
+          </div>
+          <span
+            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-[11px] font-bold tabular-nums transition-colors ${
+              lowTime
+                ? "animate-pulse border-[#9d4867] bg-[#9d4867] text-white"
+                : "border-[#ffdfcf] bg-[#fff5ef] text-[#ab4400]"
+            }`}
+          >
+            <Clock size={13} />
+            {timeLeft}s
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {/* Your canvas */}
+          <div className="relative flex flex-col overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+            <div className="flex items-center justify-between gap-2 border-b border-[#f5f2ee] px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <PlayerDisc name={localPlayerName} kind="local" size="sm" />
+                <p className={`${plusJakarta.className} text-xs font-bold text-[#393832]`}>You</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setSelectedColor(c)}
+                    className={`h-5 w-5 rounded-full transition-transform ${
+                      selectedColor === c ? "scale-110 ring-2 ring-[#393832] ring-offset-2" : "ring-1 ring-[#efe9e2]"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+                <button
+                  onClick={clearCanvas}
+                  className="ml-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-[#efe9e2] text-[#a09d95] transition-colors hover:border-[#ffba99] hover:text-[#ab4400]"
+                >
+                  <RotateCcw size={12} />
+                </button>
+              </div>
             </div>
-            <div className="flex flex-col items-center">
-               <p className="text-[8px] sm:text-[10px] font-bold text-[#9d4867] uppercase tracking-widest">PROMPT:</p>
-               <h2 className="text-sm sm:text-lg font-black text-[#ab4400] leading-none">{currentPrompt}</h2>
-            </div>
-            <div className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full border ${timeLeft < 10 ? "bg-red-50 border-red-200 animate-pulse text-red-600" : "bg-[#fff0e8] border-[#ffae88]/30 text-[#ab4400]"}`}>
-              <Clock size={14} />
-              <span className="text-[10px] sm:text-sm font-black uppercase tracking-wider">{timeLeft}s</span>
+            <div className="relative aspect-[4/3] bg-white">
+              <canvas
+                ref={canvasRef}
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={draw}
+                onTouchEnd={stopDrawing}
+                className="h-full w-full cursor-crosshair touch-none"
+              />
+              {localRoundComplete && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                  <span className="rounded-full bg-[#ab4400] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
+                    Locked in
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-6 flex-1 min-h-0 pb-4">
-            {/* Local Canvas */}
-            <Card className="border-none shadow-xl flex flex-col bg-white overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-orange-100 relative">
-               <CardHeader className="bg-orange-50/50 py-1.5 sm:py-2 border-b border-orange-100 px-3">
-                  <div className="flex items-center justify-between overflow-x-auto no-scrollbar gap-2">
-                    <span className="flex items-center gap-2 font-bold text-[#6a2700] text-[10px] sm:text-sm whitespace-nowrap">
-                      {localEmoji} YOU
-                    </span>
-                    <div className="flex gap-1 items-center">
-                      {COLORS.map(c => (
-                        <button 
-                          key={c} 
-                          onClick={() => setSelectedColor(c)}
-                          className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border-2 ${selectedColor === c ? "border-[#ab4400] scale-110" : "border-white"}`}
-                          style={{ backgroundColor: c }}
-                        />
-                      ))}
-                      <Button variant="ghost" size="icon" onClick={clearCanvas} className="w-5 h-5 sm:w-6 sm:h-6 ml-1">
-                        <RotateCcw size={12} />
-                      </Button>
-                    </div>
-                  </div>
-               </CardHeader>
-               <CardContent className="p-0 flex-1 relative bg-white">
-                  <canvas 
-                    ref={canvasRef}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={stopDrawing}
-                    onMouseLeave={stopDrawing}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={stopDrawing}
-                    className="w-full h-full cursor-crosshair touch-none"
-                  />
-                  {localRoundComplete && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                       <div className="bg-[#ab4400] text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full text-xs sm:text-base font-black shadow-xl">
-                         SAVED! ✨
-                       </div>
-                    </div>
-                  )}
-               </CardContent>
-            </Card>
-
-            {/* Remote Canvas */}
-            <Card className="border-none shadow-xl flex flex-col bg-white overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-pink-100 relative h-32 sm:h-auto">
-               <CardHeader className="bg-pink-50/50 py-1 sm:py-2 border-b border-pink-100 px-3 flex-shrink-0">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2 font-bold text-[#6a2700] opacity-70 text-[10px] sm:text-sm">
-                      {remoteEmoji} {remotePlayerName.split(' ')[0]}
-                    </span>
-                    <span className="text-[8px] sm:text-[10px] font-bold text-[#9d4867] uppercase tracking-widest">Watching...</span>
-                  </div>
-               </CardHeader>
-               <CardContent className="p-0 flex-1 bg-white overflow-hidden">
-                  <canvas 
-                    ref={remoteCanvasRef}
-                    className="w-full h-full pointer-events-none"
-                  />
-                  {remoteRoundComplete && (
-                    <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px] flex items-center justify-center">
-                       <div className="bg-[#9d4867] text-white px-4 py-2 rounded-full text-[10px] font-black shadow-xl">
-                         DONE! 🎨
-                       </div>
-                    </div>
-                  )}
-               </CardContent>
-            </Card>
+          {/* Their canvas */}
+          <div className="relative flex flex-col overflow-hidden rounded-[2rem] border border-dashed border-[#e8e3dc] bg-white">
+            <div className="flex items-center justify-between border-b border-[#f0ebe4] px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <PlayerDisc name={remotePlayerName} kind="remote" size="sm" />
+                <p className={`${plusJakarta.className} text-xs font-bold text-[#393832]`}>
+                  {remotePlayerName.split(" ")[0]}
+                </p>
+              </div>
+              <span className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#a09d95]">Live</span>
+            </div>
+            <div className="relative aspect-[4/3] bg-white">
+              <canvas ref={remoteCanvasRef} className="pointer-events-none h-full w-full" />
+              {remoteRoundComplete && (
+                <div className="absolute inset-0 flex items-center justify-center bg-white/70">
+                  <span className="rounded-full bg-[#9d4867] px-5 py-2 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
+                    Done
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </GameFrame>
     );
   }
 
   if (gameState === "finished") {
     return (
-      <div className="flex flex-col items-center pt-2 p-4">
-        <div className="max-w-4xl w-full">
-          <Card className="border-none shadow-[0_20px_60px_rgba(171,68,0,0.12)] overflow-visible rounded-3xl">
-            <CardHeader className="bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white p-8 text-center">
-              <Trophy size={48} className="mx-auto mb-4 text-yellow-300" />
-              <CardTitle className="text-3xl font-black tracking-tight">The Art Gallery</CardTitle>
-              <p className="text-white/70 font-medium mt-2">Check out your masterpieces!</p>
-            </CardHeader>
-            <CardContent className="p-8 space-y-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2 font-black text-[#ab4400]">
-                     {localEmoji} {localPlayerName}
-                   </div>
-                   <div className="aspect-square bg-white rounded-2xl border-4 border-orange-100 shadow-inner overflow-hidden">
-                      {drawings[0] && <img src={drawings[0].image} className="w-full h-full object-contain" alt="Local masterpiece" />}
-                   </div>
-                </div>
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2 font-black text-[#9d4867]">
-                     {remoteEmoji} {remotePlayerName}
-                   </div>
-                   <div className="aspect-square bg-white rounded-2xl border-4 border-pink-100 shadow-inner overflow-hidden">
-                      {remoteDrawings[0] && <img src={remoteDrawings[0].image} className="w-full h-full object-contain" alt="Remote masterpiece" />}
-                   </div>
-                </div>
-              </div>
+      <GameFrame size="max-w-4xl">
+        <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+          <div className="border-b border-[#f5f2ee] px-7 pb-7 pt-9 text-center">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#ab4400]/70">The Gallery</p>
+            <h1 className={`${plusJakarta.className} mt-3 text-4xl font-extrabold tracking-tighter text-[#393832] sm:text-5xl`}>
+              Same prompt. Different crimes.
+            </h1>
+            <p className="mt-3 text-sm text-[#66645e]">
+              The prompt was <span className="font-semibold text-[#393832]">{currentPrompt}</span>. You be the judge.
+            </p>
+          </div>
 
-              <div className="flex flex-col gap-3 max-w-sm mx-auto">
-                <Button 
-                  onClick={() => window.location.reload()}
-                  className="w-full py-8 text-xl font-black bg-[#ab4400] text-white rounded-2xl shadow-lg hover:bg-[#973b00] transition-all active:scale-95 shadow-[#ab4400]/20"
-                >
-                  DRAW AGAIN 🔄
-                </Button>
-                <Link href="/games">
-                  <Button variant="ghost" className="w-full py-6 text-[#9d4867] font-bold">
-                    BACK TO MENU
-                  </Button>
-                </Link>
+          <div className="space-y-6 p-6 sm:p-7">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <PlayerDisc name={localPlayerName} kind="local" size="sm" />
+                  <p className={`${plusJakarta.className} text-sm font-bold text-[#393832]`}>{localPlayerName}</p>
+                </div>
+                <div className="aspect-square overflow-hidden rounded-3xl border border-[#ffdfcf] bg-white">
+                  {drawings[0] && (
+                    <img src={drawings[0].image} className="h-full w-full object-contain" alt={`${localPlayerName}'s drawing`} />
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2.5">
+                  <PlayerDisc name={remotePlayerName} kind="remote" size="sm" />
+                  <p className={`${plusJakarta.className} text-sm font-bold text-[#393832]`}>{remotePlayerName}</p>
+                </div>
+                <div className="aspect-square overflow-hidden rounded-3xl border border-[#ffd9e2] bg-white">
+                  {remoteDrawings[0] && (
+                    <img src={remoteDrawings[0].image} className="h-full w-full object-contain" alt={`${remotePlayerName}'s drawing`} />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mx-auto flex max-w-sm flex-col gap-2.5">
+              <button
+                onClick={() => window.location.reload()}
+                className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-[#ab4400] py-5 text-base font-extrabold tracking-tight text-white shadow-[0_14px_30px_rgba(171,68,0,0.28)] transition-all hover:bg-[#973b00] active:scale-[0.98]"
+              >
+                <RotateCcw className="h-4 w-4" />
+                New prompt
+              </button>
+              <Link
+                href="/games"
+                className="w-full rounded-2xl py-3.5 text-center text-[11px] font-bold uppercase tracking-[0.2em] text-[#a09d95] transition-colors hover:text-[#ab4400]"
+              >
+                Back to Arena
+              </Link>
+            </div>
+          </div>
         </div>
-      </div>
+      </GameFrame>
     );
   }
 

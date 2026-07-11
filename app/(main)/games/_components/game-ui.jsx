@@ -53,9 +53,60 @@ export function GameFrame({ children, size = "max-w-xl" }) {
   // The (main) layout already pads for the floating header (pt-28/pt-32),
   // so the frame fills only the remaining viewport — no phantom scroll
   return (
-    <div className="flex min-h-[calc(100dvh-8.5rem)] md:min-h-[calc(100dvh-9.5rem)] flex-col items-center justify-center p-4 pb-8">
-      <div className={`w-full ${size}`}>{children}</div>
+    <div className="flex min-h-[calc(100dvh-9rem)] md:min-h-[calc(100dvh-10rem)] flex-col items-center justify-center py-2 pb-8">
+      <div className={`mx-auto w-full ${size}`}>{children}</div>
     </div>
+  );
+}
+
+// Mirrors LobbyScreen's layout exactly so the swap to real data is seamless
+export function LobbySkeleton({ gameTitle }) {
+  const Bar = ({ className = "" }) => (
+    <div className={`animate-pulse rounded-full bg-[#f0ebe4] ${className}`} />
+  );
+
+  return (
+    <GameFrame>
+      <div className="mb-6 flex items-center justify-between">
+        <BackToArena />
+        <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#9d4867]/60">
+          Riceee Arcade
+        </span>
+      </div>
+
+      <div className="overflow-hidden rounded-[2rem] border border-[#efe9e2] bg-white shadow-[0_24px_56px_rgba(57,56,50,0.1)]">
+        <div className="border-b border-[#f5f2ee] px-7 pb-6 pt-7 text-center">
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#ab4400]/70">The Lobby</p>
+          <h1 className={`${plusJakarta.className} mt-2 text-3xl font-extrabold tracking-tight text-[#393832] sm:text-4xl`}>
+            {gameTitle}
+          </h1>
+          <Bar className="mx-auto mt-3 h-3.5 w-56" />
+        </div>
+
+        <div className="space-y-6 p-6 sm:p-7">
+          <div className="flex items-stretch gap-3 sm:gap-4">
+            {[0, 1].map((i) => (
+              <div
+                key={i}
+                className="flex flex-1 flex-col items-center gap-3 rounded-3xl border border-[#efe9e2] bg-white p-5"
+              >
+                <div className="h-16 w-16 animate-pulse rounded-full bg-[#f0ebe4]" />
+                <Bar className="h-3.5 w-20" />
+                <Bar className="h-2.5 w-12" />
+                <Bar className="h-6 w-24" />
+              </div>
+            ))}
+          </div>
+
+          <div className="h-[68px] w-full animate-pulse rounded-2xl bg-[#f0ebe4]" />
+
+          <p className="text-center text-[11px] font-medium text-[#a09d95]">
+            <span className="mr-1.5 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[#ffae88] align-middle" />
+            Setting up the table…
+          </p>
+        </div>
+      </div>
+    </GameFrame>
   );
 }
 

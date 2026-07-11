@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Flame, CheckCircle2, Zap } from "lucide-react";
 import { LocalMultiplayerWrapper } from "@/components/local-multiplayer-wrapper";
 import Pusher from "pusher-js";
-import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
+import { PLAYER_IDS, getOtherPlayer } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
 import {
   LobbyScreen,
@@ -50,8 +50,6 @@ function DailyDareGame({ localPlayer, sessionId, getPlayerName }) {
   const remotePlayer = getOtherPlayer(localPlayer);
   const localPlayerName = getPlayerName(localPlayer);
   const remotePlayerName = getPlayerName(remotePlayer);
-  const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎯";
-  const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎯";
 
   useEffect(() => {
     // Generate today's dare based on date
