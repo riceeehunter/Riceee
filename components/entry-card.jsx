@@ -2,6 +2,7 @@ import React from "react";
 import { Card, CardContent } from "./ui/card";
 import Link from "next/link";
 import { format } from "date-fns";
+import DOMPurify from "isomorphic-dompurify";
 
 const EntryCard = ({ entry }) => {
   return (
@@ -16,7 +17,7 @@ const EntryCard = ({ entry }) => {
               </div>
               <div
                 className="text-gray-600 line-clamp-2 text-sm sm:text-base"
-                dangerouslySetInnerHTML={{ __html: entry.content }}
+                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(entry.content) }}
               />
             </div>
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 whitespace-nowrap self-start">

@@ -2,7 +2,21 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { uploadToR2, deleteFromR2, generateR2Key } from "@/lib/r2";
+import { uploadToR2, deleteFromR2, generateR2Key, getSignedR2Url } from "@/lib/r2";
+
+// Verify the file really is an image by its magic bytes — the MIME type
+// alone is client-supplied and can be faked
+function sniffImageType(buffer) {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return "image/png";
+  if (buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x38) return "image/gif";
+  if (
+    buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
+    buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50
+  ) return "image/webp";
+  return null;
+}
 import aj from "@/lib/arcjet";
 import { request } from "@arcjet/next";
 import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
@@ -71,9 +85,15 @@ export async function uploadMemory(formData) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Generate unique key and upload to R2
+    // The declared MIME type must match what the bytes actually are
+    const sniffedType = sniffImageType(buffer);
+    if (!sniffedType) {
+      throw new Error("File content is not a valid image.");
+    }
+
+    // Generate unique key and upload to R2 (store the *verified* content type)
     const key = generateR2Key(file.name, user.id);
-    const url = await uploadToR2(buffer, key, file.type);
+    const url = await uploadToR2(buffer, key, sniffedType);
 
     // Get image dimensions (optional, for better UI)
     let width = null;
@@ -89,7 +109,7 @@ export async function uploadMemory(formData) {
         uploadedBy,
         userId: user.id,
         fileSize: file.size,
-        mimeType: file.type,
+        mimeType: sniffedType,
         width,
         height,
         createdAt: memoryDate, // Use the selected date instead of default
@@ -97,7 +117,8 @@ export async function uploadMemory(formData) {
     });
 
     revalidatePath("/memories");
-    return memory;
+    // Hand back a short-lived signed URL, never the permanent one
+    return { ...memory, url: await getSignedR2Url(memory.key) };
   } catch (error) {
     console.error("Upload memory error:", error);
     throw new Error(error.message);
@@ -133,7 +154,14 @@ export async function getMemories(filters = {}) {
       orderBy: { createdAt: "desc" },
     });
 
-    return memories;
+    // Replace stored URLs with short-lived signed ones — the bucket can stay
+    // private and a leaked link expires on its own
+    return Promise.all(
+      memories.map(async (memory) => ({
+        ...memory,
+        url: await getSignedR2Url(memory.key),
+      }))
+    );
   } catch (error) {
     console.error("Get memories error:", error);
     throw new Error(error.message);

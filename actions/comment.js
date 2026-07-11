@@ -9,6 +9,13 @@ export async function addComment(data) {
   try {
     const user = await getOrCreateUser();
 
+    // Only allow commenting on entries in the caller's own space
+    const entry = await db.entry.findFirst({
+      where: { id: data.entryId, userId: user.id },
+      select: { title: true },
+    });
+    if (!entry) throw new Error("Entry not found");
+
     const comment = await db.comment.create({
       data: {
         content: data.content,
@@ -16,12 +23,6 @@ export async function addComment(data) {
         entryId: data.entryId,
         userId: user.id,
       },
-    });
-
-    // Get entry title for notification
-    const entry = await db.entry.findUnique({
-      where: { id: data.entryId },
-      select: { title: true },
     });
 
     // Create notification
@@ -43,6 +44,15 @@ export async function addComment(data) {
 
 export async function getComments(entryId) {
   try {
+    const user = await getOrCreateUser();
+
+    // Only return comments for entries in the caller's own space
+    const entry = await db.entry.findFirst({
+      where: { id: entryId, userId: user.id },
+      select: { id: true },
+    });
+    if (!entry) throw new Error("Entry not found");
+
     const comments = await db.comment.findMany({
       where: { entryId },
       orderBy: { createdAt: "asc" },

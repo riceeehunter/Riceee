@@ -1,11 +1,16 @@
 "use server";
 
 import { revalidateTag, unstable_cache } from "next/cache";
+import { getAuthenticatedUserId } from "@/lib/auth";
 
 export async function getPixabayImage(query) {
   try {
+    // Server actions are public endpoints — require a signed-in user so
+    // strangers can't burn the Pixabay quota through this proxy
+    await getAuthenticatedUserId();
+
     const res = await fetch(
-      `https://pixabay.com/api/?q=${query}&key=${process.env.PIXABAY_API_KEY}&min_width=1280&min_height=720&image_type=illustration&category=feelings`
+      `https://pixabay.com/api/?q=${encodeURIComponent(query || "")}&key=${process.env.PIXABAY_API_KEY}&min_width=1280&min_height=720&image_type=illustration&category=feelings`
     );
     const data = await res.json();
     return data.hits[0]?.largeImageURL || null;

@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
+import DOMPurify from "isomorphic-dompurify";
 import { Badge } from "@/components/ui/badge";
 import DeleteDialog from "./_components/delete-dialog";
 import EditButton from "./_components/edit-button";
@@ -85,7 +86,7 @@ export default async function JournalEntryPage({ params }) {
         <div className="ql-snow">
           <div
             className="ql-editor"
-            dangerouslySetInnerHTML={{ __html: entry.content }}
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(entry.content) }}
           />
         </div>
 
