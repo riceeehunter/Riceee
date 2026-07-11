@@ -4,13 +4,32 @@ import { useState, useEffect } from "react";
 import Pusher from "pusher-js";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getCurrentGameSetup } from "@/actions/onboarding";
+import { getSpaceGameChannel } from "@/lib/constants/channels";
 
 export default function PusherTest() {
   const [messages, setMessages] = useState([]);
   const [pusher, setPusher] = useState(null);
   const [connected, setConnected] = useState(false);
+  const [channelName, setChannelName] = useState(null);
 
   useEffect(() => {
+    let mounted = true;
+    getCurrentGameSetup()
+      .then((setup) => {
+        if (mounted && setup?.spaceId) {
+          setChannelName(getSpaceGameChannel("test", setup.spaceId));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!channelName) return;
+
     const pusherClient = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
     });
@@ -24,10 +43,10 @@ export default function PusherTest() {
       addMessage('❌ Pusher error: ' + JSON.stringify(err));
     });
 
-    const channel = pusherClient.subscribe('test-channel');
-    
+    const channel = pusherClient.subscribe(channelName);
+
     channel.bind('pusher:subscription_succeeded', () => {
-      addMessage('✅ Subscribed to test-channel');
+      addMessage('✅ Subscribed to ' + channelName);
     });
 
     channel.bind('test-event', (data) => {
@@ -39,7 +58,7 @@ export default function PusherTest() {
     return () => {
       pusherClient.disconnect();
     };
-  }, []);
+  }, [channelName]);
 
   const addMessage = (msg) => {
     setMessages(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
@@ -52,7 +71,7 @@ export default function PusherTest() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          channel: 'test-channel',
+          channel: channelName,
           event: 'test-event',
           data: { message: 'Hello from ' + Math.random().toString(36).substr(2, 5) }
         })

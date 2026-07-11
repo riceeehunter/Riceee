@@ -10,7 +10,6 @@ import Pusher from "pusher-js";
 import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
 
-const CHANNEL_NAME = "game-truth-or-dare";
 
 const TRUTH_QUESTIONS = [
   "What's your biggest fear? 😨",
@@ -39,6 +38,7 @@ const DARE_CHALLENGES = [
 ];
 
 function TruthOrDareGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [gameState, setGameState] = useState("menu");
   const [localReady, setLocalReady] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);

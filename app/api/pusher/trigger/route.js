@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
-import Pusher from "pusher";
-
-const pusher = new Pusher({
-  appId: process.env.PUSHER_APP_ID,
-  key: process.env.NEXT_PUBLIC_PUSHER_KEY,
-  secret: process.env.PUSHER_SECRET,
-  cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-  useTLS: true,
-});
+import { getOrCreateUser } from "@/lib/auth";
+import { pusherServer } from "@/lib/pusher";
+import { channelBelongsToSpace } from "@/lib/constants/channels";
 
 export async function POST(req) {
   try {
-    const { channel, event, data } = await req.json();
+    const user = await getOrCreateUser();
 
-    console.log("📡 Pusher trigger request:", { channel, event, data });
+    const { channel, event, data } = await req.json();
 
     if (!channel || !event) {
       return NextResponse.json(
@@ -22,15 +16,20 @@ export async function POST(req) {
       );
     }
 
-    const result = await pusher.trigger(channel, event, data);
-    console.log("✅ Pusher trigger successful:", result);
+    // Only allow publishing to channels that belong to the caller's space
+    if (!channelBelongsToSpace(channel, user.id)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await pusherServer.trigger(channel, event, data);
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("❌ Pusher trigger error:", error);
+    console.error("Pusher trigger error:", error);
+    const status = /unauthorized/i.test(error?.message) ? 401 : 500;
     return NextResponse.json(
       { error: "Failed to trigger event", details: error.message },
-      { status: 500 }
+      { status }
     );
   }
 }

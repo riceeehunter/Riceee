@@ -48,7 +48,7 @@ function StackerGame({ localPlayer, sessionId, getPlayerName }) {
   const remotePlayerName = getPlayerName(remotePlayer);
   const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎮";
   const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎮";
-  const channelName = 'game-speed-stacker';
+  const channelName = sessionId;
 
   // Initialize Pusher
   useEffect(() => {

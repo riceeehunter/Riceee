@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { getCurrentGameSetup } from "@/actions/onboarding";
+import { getSpaceGameChannel } from "@/lib/constants/channels";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 import {
   PLAYER_IDS,
@@ -22,7 +23,9 @@ export function LocalMultiplayerWrapper({
 }) {
   const [mode, setMode] = useState("select"); // select, playing
   const [localPlayer, setLocalPlayer] = useState(null);
-  const [sessionId] = useState(() => `local-game-${gameId}`);
+  const [spaceId, setSpaceId] = useState(null);
+  // Scoped per couple space so different accounts never share a game channel
+  const sessionId = spaceId ? getSpaceGameChannel(gameId, spaceId) : `local-game-${gameId}`;
   const [partnerNames, setPartnerNames] = useState({
     ...DEFAULT_PARTNER_NAMES,
     bothLabel: `${DEFAULT_PARTNER_NAMES.partnerOneName} x ${DEFAULT_PARTNER_NAMES.partnerTwoName}`,
@@ -43,6 +46,10 @@ export function LocalMultiplayerWrapper({
 
         if (setup.partnerNames) {
           setPartnerNames(setup.partnerNames);
+        }
+
+        if (setup.spaceId) {
+          setSpaceId(setup.spaceId);
         }
 
         if (setup.assignedPlayerId) {

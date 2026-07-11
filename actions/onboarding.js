@@ -21,6 +21,7 @@ export async function getCurrentGameSetup() {
     return {
       partnerNames: names,
       assignedPlayerId: null,
+      spaceId: user.id,
     };
   }
 
@@ -44,6 +45,7 @@ export async function getCurrentGameSetup() {
   return {
     partnerNames: names,
     assignedPlayerId,
+    spaceId: user.id,
   };
 }
 

@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import Pusher from "pusher-js";
 import { Heart, Loader2 } from "lucide-react";
 import { getCurrentGameSetup } from "@/actions/onboarding";
+import { getSpaceGameChannel } from "@/lib/constants/channels";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 import {
   PLAYER_DEFAULT_COLORS,
@@ -27,6 +28,7 @@ export function PusherMultiplayerWrapper({
   riceeeColor = PLAYER_DEFAULT_COLORS[PLAYER_IDS.TWO]
 }) {
   const [localPlayer, setLocalPlayer] = useState(null);
+  const [spaceId, setSpaceId] = useState(null);
   const [remotePlayer, setRemotePlayer] = useState(null);
   const [pusher, setPusher] = useState(null);
   const [channel, setChannel] = useState(null);
@@ -53,6 +55,10 @@ export function PusherMultiplayerWrapper({
           setPartnerNames(setup.partnerNames);
         }
 
+        if (setup.spaceId) {
+          setSpaceId(setup.spaceId);
+        }
+
         if (setup.assignedPlayerId) {
           setLocalPlayer(setup.assignedPlayerId);
         }
@@ -65,8 +71,8 @@ export function PusherMultiplayerWrapper({
     };
   }, []);
   
-  // Use a simple public channel (no auth required)
-  const sessionId = `game-${gameId}-public`;
+  // Public channel scoped per couple space (space cuid keeps it unguessable)
+  const sessionId = spaceId ? getSpaceGameChannel(gameId, spaceId) : null;
 
   // Initialize Pusher (simple, no auth)
   useEffect(() => {
@@ -94,7 +100,7 @@ export function PusherMultiplayerWrapper({
 
   // Join public channel and exchange hellos
   useEffect(() => {
-    if (pusher && localPlayer && !channel) {
+    if (pusher && localPlayer && sessionId && !channel) {
       setIsConnecting(true);
       console.log(`[${localPlayer}] Subscribing to public channel: ${sessionId}`);
       

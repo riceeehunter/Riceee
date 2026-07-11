@@ -2,10 +2,12 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getOrCreateUser } from "@/lib/auth";
 import { PLAYER_IDS, normalizePlayerId } from "@/lib/constants/players";
 
 export async function createNotification(data) {
   try {
+    const user = await getOrCreateUser();
     const notification = await db.notification.create({
       data: {
         type: data.type,
@@ -14,6 +16,7 @@ export async function createNotification(data) {
         entryTitle: data.entryTitle,
         commentId: data.commentId,
         commentAuthor: data.commentAuthor,
+        userId: user.id,
       },
     });
 
@@ -25,8 +28,10 @@ export async function createNotification(data) {
 
 export async function getUnreadNotifications() {
   try {
+    const user = await getOrCreateUser();
     const notifications = await db.notification.findMany({
       where: {
+        userId: user.id,
         OR: [
           { hunterRead: false },
           { riceeeRead: false },
@@ -43,14 +48,16 @@ export async function getUnreadNotifications() {
 
 export async function markNotificationAsRead(notificationId, reader) {
   try {
+    const user = await getOrCreateUser();
     const readerId = normalizePlayerId(reader) || PLAYER_IDS.ONE;
     const updateData =
       readerId === PLAYER_IDS.ONE
         ? { hunterRead: true }
         : { riceeeRead: true };
 
+    // Scoped to the caller's space so other accounts can't mark/delete ours
     const notification = await db.notification.update({
-      where: { id: notificationId },
+      where: { id: notificationId, userId: user.id },
       data: updateData,
     });
 

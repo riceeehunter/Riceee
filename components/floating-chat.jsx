@@ -8,9 +8,10 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import Pusher from "pusher-js";
 import { PLAYER_IDS } from "@/lib/constants/players";
+import { getSpaceChatChannel } from "@/lib/constants/channels";
 import { plusJakarta } from "@/lib/fonts";
 
-export default function FloatingChat({ partnerNames, user, currentUserId }) {
+export default function FloatingChat({ partnerNames, user, currentUserId, spaceId }) {
   const [mounted, setMounted] = useState(false);
   const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
   const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
@@ -23,9 +24,19 @@ export default function FloatingChat({ partnerNames, user, currentUserId }) {
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [replyingTo, setReplyingTo] = useState(null); 
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [heartBursts, setHeartBursts] = useState([]);
   const messagesEndRef = useRef(null);
   const isOpenRef = useRef(isOpen);
+
+  // Little hearts float up from the send button after a note is sent
+  const triggerHeartBurst = () => {
+    const id = Date.now();
+    setHeartBursts((prev) => [...prev, id]);
+    setTimeout(() => {
+      setHeartBursts((prev) => prev.filter((b) => b !== id));
+    }, 1200);
+  };
 
   const activePartnerName = sender === PLAYER_IDS.ONE ? partnerOneName : partnerTwoName;
 
@@ -84,11 +95,14 @@ export default function FloatingChat({ partnerNames, user, currentUserId }) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (!spaceId) return;
+
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
+      channelAuthorization: { endpoint: "/api/pusher/auth", transport: "ajax" },
     });
 
-    const channel = pusher.subscribe("riceee-chat");
+    const channel = pusher.subscribe(getSpaceChatChannel(spaceId));
     channel.bind("new-message", (data) => {
       setMessages((prev) => [...prev, data]);
       setTimeout(scrollToBottom, 100);
@@ -103,7 +117,7 @@ export default function FloatingChat({ partnerNames, user, currentUserId }) {
       channel.unsubscribe();
       pusher.disconnect();
     };
-  }, []);
+  }, [spaceId]);
 
   const handleSend = async () => {
     if (!newMessage.trim()) return;
@@ -121,6 +135,7 @@ export default function FloatingChat({ partnerNames, user, currentUserId }) {
       if (result.success) {
         setNewMessage("");
         setReplyingTo(null);
+        triggerHeartBurst();
       } else {
         toast.error("Failed to send message: " + (result.error || "Unknown error"));
       }
@@ -308,8 +323,24 @@ export default function FloatingChat({ partnerNames, user, currentUserId }) {
                 </button>
               </div>
             )}
-            <div className="flex items-center gap-2">
-
+            <div className="relative flex items-center gap-2">
+              {/* Heart burst celebration */}
+              {heartBursts.map((burstId) =>
+                [0, 1, 2, 3, 4, 5].map((i) => (
+                  <span
+                    key={`${burstId}-${i}`}
+                    className="heart-burst-particle bottom-8 text-sm"
+                    style={{
+                      right: `${8 + (i % 3) * 14}px`,
+                      "--dx": `${(i - 2.5) * 14}px`,
+                      "--dr": `${(i - 2.5) * 16}deg`,
+                      animationDelay: `${i * 60}ms`,
+                    }}
+                  >
+                    {["💗", "💛", "🧡", "💕", "✨", "💖"][i]}
+                  </span>
+                ))
+              )}
 
               <input
                 value={newMessage}

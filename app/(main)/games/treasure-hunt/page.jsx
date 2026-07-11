@@ -29,9 +29,9 @@ const ALL_CHALLENGES = [
   { type: "math", question: "What is 50 + 75?", answer: "125", emoji: "🧮" },
 ];
 
-const CHANNEL_NAME = 'game-treasure-hunt';
 
 function TreasureHuntGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [gameState, setGameState] = useState("menu");
   const [localReady, setLocalReady] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);

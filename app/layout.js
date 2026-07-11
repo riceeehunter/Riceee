@@ -53,10 +53,11 @@ export default async function RootLayout({ children }) {
         <ClerkProvider>
           <main className="flex-1 min-h-0 overflow-x-hidden pb-24 md:pb-0 px-4 sm:px-6 md:px-8">{children}</main>
           {userId && user && (
-            <FloatingChat 
-              partnerNames={partnerNames} 
-              user={{ clerkUserId: user.clerkUserId }} 
-              currentUserId={userId} 
+            <FloatingChat
+              partnerNames={partnerNames}
+              user={{ clerkUserId: user.clerkUserId }}
+              currentUserId={userId}
+              spaceId={user.id}
             />
           )}
           <BottomNav />

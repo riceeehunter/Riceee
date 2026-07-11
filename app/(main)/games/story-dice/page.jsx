@@ -17,9 +17,9 @@ const STORY_ELEMENTS = {
   twists: ["but everything was a dream", "and discovered a hidden power", "while time was running backwards", "as reality started glitching", "and made an unlikely friend", "but had to make a sacrifice", "and learned a valuable lesson", "while the world watched"],
 };
 
-const CHANNEL_NAME = "game-story-dice";
 
 function StoryDiceGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [gameState, setGameState] = useState("menu");
   const [rolledStory, setRolledStory] = useState(null);
   const [userStory, setUserStory] = useState("");

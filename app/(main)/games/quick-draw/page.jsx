@@ -75,7 +75,7 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
   const localEmoji = getPlayerMeta(localPlayer)?.emoji || "🎨";
   const remoteEmoji = getPlayerMeta(remotePlayer)?.emoji || "🎨";
 
-  const CHANNEL_NAME = `game-quick-draw-${sessionId}`;
+  const CHANNEL_NAME = sessionId;
 
   // Initialize Pusher
   useEffect(() => {

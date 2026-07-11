@@ -14,9 +14,9 @@ const BOARD_SIZE = 100;
 const SNAKES = { 17: 7, 54: 34, 62: 19, 64: 60, 87: 36, 93: 73, 95: 75, 98: 79 };
 const LADDERS = { 3: 22, 5: 8, 11: 26, 20: 29, 27: 53, 40: 59, 51: 67, 61: 79, 71: 92, 88: 91 };
 
-const CHANNEL_NAME = "game-snakes-ladders";
 
 function SnakesAndLaddersGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [gameState, setGameState] = useState("menu");
   const [player1Pos, setPlayer1Pos] = useState(0);
   const [player2Pos, setPlayer2Pos] = useState(0);

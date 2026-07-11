@@ -1,9 +1,11 @@
 "use server";
 
+import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { getOrCreateUser } from "@/lib/auth";
 import { PLAYER_IDS, getOtherPlayer, getPlayerSenderAliases, normalizePlayerId } from "@/lib/constants/players";
+import { getSpaceChatChannel } from "@/lib/constants/channels";
 
 function getOppositeSenderAliases(player) {
   const playerId = normalizePlayerId(player);
@@ -11,13 +13,35 @@ function getOppositeSenderAliases(player) {
   return getPlayerSenderAliases(oppositeId);
 }
 
+// Derive the sender identity server-side (same ordering as getCurrentGameSetup),
+// so one partner can't send messages pretending to be the other
+async function getServerSenderId(user) {
+  try {
+    const { userId: clerkUserId } = await auth();
+    if (!clerkUserId) return null;
+
+    const identities = await db.userIdentity.findMany({
+      where: { userId: user.id },
+      select: { clerkUserId: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    const index = identities.findIndex((identity) => identity.clerkUserId === clerkUserId);
+    if (index === -1) return null;
+    return index % 2 === 0 ? PLAYER_IDS.ONE : PLAYER_IDS.TWO;
+  } catch {
+    return null;
+  }
+}
+
 export async function sendMessage(data) {
   try {
-    console.log("📤 Sending message:", data);
-    
     const user = await getOrCreateUser();
-    console.log("👤 User found:", user?.id);
-    const senderId = normalizePlayerId(data.sender) || PLAYER_IDS.ONE;
+    // Server-derived identity wins; client value is only a legacy fallback
+    const senderId =
+      (await getServerSenderId(user)) ||
+      normalizePlayerId(data.sender) ||
+      PLAYER_IDS.ONE;
 
     const message = await db.message.create({
       data: {
@@ -29,10 +53,8 @@ export async function sendMessage(data) {
         replyToSender: data.replyToSender || null,
       },
     });
-    console.log("💾 Message saved to DB:", message.id);
-
-    // Trigger Pusher event for real-time delivery
-    await pusherServer.trigger("riceee-chat", "new-message", {
+    // Real-time delivery, scoped to this couple's private channel
+    await pusherServer.trigger(getSpaceChatChannel(user.id), "new-message", {
       id: message.id,
       content: message.content,
       sender: message.sender,
@@ -41,7 +63,6 @@ export async function sendMessage(data) {
       replyToSender: message.replyToSender,
       createdAt: message.createdAt,
     });
-    console.log("📡 Pusher event sent");
 
     return { success: true, data: message };
   } catch (error) {
@@ -52,12 +73,12 @@ export async function sendMessage(data) {
 
 export async function getMessages() {
   try {
-    console.log("📥 Fetching messages...");
+    const user = await getOrCreateUser();
     const messages = await db.message.findMany({
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" }, // Get newest first
       take: 100, // Last 100 messages
     });
-    console.log(`✅ Fetched ${messages.length} messages`);
 
     // Reverse to show oldest to newest in chat
     return { success: true, data: messages.reverse() };
@@ -69,8 +90,10 @@ export async function getMessages() {
 
 export async function markMessagesAsRead(sender) {
   try {
+    const user = await getOrCreateUser();
     await db.message.updateMany({
       where: {
+        userId: user.id,
         sender: { in: getOppositeSenderAliases(sender) },
         read: false,
       },
@@ -87,8 +110,10 @@ export async function markMessagesAsRead(sender) {
 
 export async function getUnreadCount(forUser) {
   try {
+    const user = await getOrCreateUser();
     const count = await db.message.count({
       where: {
+        userId: user.id,
         sender: { in: getOppositeSenderAliases(forUser) },
         read: false,
       },

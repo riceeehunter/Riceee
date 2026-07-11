@@ -38,6 +38,7 @@ export async function fileCase({ title, perspective, author }) {
           message: `${author} filed a new case: "${title}"`,
           caseId: courtroomCase.id,
           commentAuthor: author,
+          userId: user.id,
         }
       });
     } catch (e) {
@@ -107,6 +108,7 @@ export async function submitResponse({ caseId, perspective, author }) {
           message: `The AI Judge has delivered a verdict for "${existingCase.title}"`,
           caseId: caseId,
           commentAuthor: "AI Judge",
+          userId: user.id,
         }
       });
     } catch (e) {

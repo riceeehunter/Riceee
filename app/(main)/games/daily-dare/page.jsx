@@ -23,9 +23,9 @@ const DAILY_DARES = [
   { id: 10, dare: "Try a new healthy recipe", emoji: "🥗", points: 20 },
 ];
 
-const CHANNEL_NAME = "game-daily-dare";
 
 function DailyDareGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [gameState, setGameState] = useState("menu");
   const [localReady, setLocalReady] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);

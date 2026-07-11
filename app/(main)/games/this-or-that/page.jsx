@@ -10,7 +10,6 @@ import Pusher from "pusher-js";
 import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
 
-const CHANNEL_NAME = "game-this-or-that";
 
 const ALL_QUESTIONS = [
   { this: "Coffee ☕", that: "Tea 🍵" },
@@ -36,6 +35,7 @@ const ALL_QUESTIONS = [
 ];
 
 function ThisOrThatGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [gameState, setGameState] = useState("menu");
   const [localReady, setLocalReady] = useState(false);
   const [remoteReady, setRemoteReady] = useState(false);

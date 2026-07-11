@@ -23,6 +23,7 @@ model User {
   entries        Entry[]
   memories       Memory[]
   messages       Message[]
+  notifications  Notification[]
   spaceInvites   SpaceInvite[]
   identities     UserIdentity[]
   conversations  ChatConversation[]
@@ -166,10 +167,15 @@ model Notification {
   caseId        String?
   commentId     String?
   commentAuthor String?
+  // Couple space this notification belongs to; nullable only for legacy rows
+  userId        String?
   hunterRead    Boolean  @default(false)
   riceeeRead    Boolean  @default(false)
   createdAt     DateTime @default(now())
   comment       Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Message {

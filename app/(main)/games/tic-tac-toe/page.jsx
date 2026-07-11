@@ -10,9 +10,9 @@ import Pusher from "pusher-js";
 import { PLAYER_IDS, getOtherPlayer, getPlayerMeta } from "@/lib/constants/players";
 import { plusJakarta } from "@/lib/fonts";
 
-const CHANNEL_NAME = "game-tic-tac-toe";
 
 function TicTacToeGame({ localPlayer, sessionId, getPlayerName }) {
+  const CHANNEL_NAME = sessionId;
   const [board, setBoard] = useState(Array(9).fill(null));
   const [gameState, setGameState] = useState("menu");
   const [currentTurn, setCurrentTurn] = useState(PLAYER_IDS.ONE);
