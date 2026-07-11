@@ -25,10 +25,9 @@ export default function RiceeeChatLayout({ partnerNames }) {
     async function fetchHistory() {
       const res = await getConversations();
       if (res.success) {
+        // History only fills the sidebar — always open on a fresh chat;
+        // past conversations are opened by choice
         setHistory(res.data);
-        if (res.data.length > 0) {
-          setActiveChatId(res.data[0].id);
-        }
       }
       setIsLoadingHistory(false);
     }

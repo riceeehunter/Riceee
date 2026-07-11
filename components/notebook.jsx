@@ -46,8 +46,15 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
     loadChat();
   }, [activeChatId]);
 
-  // Auto-scroll to bottom
+  // Auto-scroll to bottom — but not on the initial render: a smooth scroll
+  // queued while the tab is backgrounded resumes on refocus and the page
+  // visibly slides into place
+  const hasMountedRef = useRef(false);
   useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [cells]);
 
@@ -120,10 +127,10 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
       response: { content: answer, status: "done" }
     });
 
-    // add a fresh input cell below immediately
+    // add a fresh input cell below immediately (isNew: earned its entrance)
     setCells((prev) => [
       ...prev,
-      { id: Date.now(), content: "", status: "editing", response: null },
+      { id: Date.now(), content: "", status: "editing", response: null, isNew: true },
     ]);
 
     // Only persist real exchanges — error placeholders aren't worth saving
@@ -185,9 +192,10 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
 
   return (
     <div className="w-full max-w-[100%] mx-auto space-y-6 pb-20">
-      {/* Warm welcome when the page is fresh */}
+      {/* Warm welcome when the page is fresh — no entrance animation:
+          throttled background tabs replay it late and the page jumps */}
       {isFreshConversation && (
-        <div className="fade-up-in flex flex-col items-center text-center gap-5 pt-6 pb-4">
+        <div className="flex flex-col items-center text-center gap-5 pt-6 pb-4">
           <div className="relative">
             <div className="animate-blob absolute -inset-6 rounded-full bg-gradient-to-br from-[#ffae88]/25 to-[#ffd9e2]/25 blur-2xl pointer-events-none" />
             <img
@@ -221,7 +229,7 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
       )}
 
       {cells.map((cell, index) => (
-        <div key={cell.id} className="fade-up-in relative group" data-purpose="code-cell">
+        <div key={cell.id} className={`${cell.isNew ? "fade-up-in" : ""} relative group`} data-purpose="code-cell">
           <div className={`bg-white rounded-2xl border flex flex-col overflow-hidden shadow-cell-shadow relative z-0 transition-all ${cell.status === 'editing'
             ? 'border-action-yellow-border/50 focus-within:border-action-yellow-border focus-within:ring-2 focus-within:ring-action-yellow-border/20'
             : 'border-[#ffdfcf]'
