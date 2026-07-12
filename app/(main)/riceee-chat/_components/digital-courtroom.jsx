@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Gavel, PlusCircle, MessageSquare, Clock, CheckCircle2, ChevronRight, AlertCircle, Send, Trash2, Sparkles, User } from "lucide-react";
-import { getCases, fileCase, submitResponse, deleteCase } from "@/actions/courtroom";
+import { useState, useEffect, useRef } from "react";
+import { Gavel, PlusCircle, MessageSquare, Clock, CheckCircle2, ChevronRight, AlertCircle, Send, Trash2, Sparkles, User, ScrollText, Feather, Heart } from "lucide-react";
+import {
+  getCases,
+  fileCase,
+  submitResponse,
+  deleteCase,
+  generateHeartContract,
+  signHeartContract,
+} from "@/actions/courtroom";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { plusJakarta, signature } from "@/lib/fonts";
 
 export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], poppins }) {
   const [cases, setCases] = useState([]);
@@ -399,10 +407,15 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], 
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="flex-1 flex flex-col gap-6"
           >
-            <JudgementView 
-              caseData={activeCase} 
-              partnerNames={partnerNames} 
-              resolveName={resolveName} 
+            <JudgementView
+              caseData={activeCase}
+              partnerNames={partnerNames}
+              resolveName={resolveName}
+              currentUserRole={currentUserRole}
+              onCaseUpdate={(updated) => {
+                setActiveCase(updated);
+                setCases((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+              }}
             />
           </motion.div>
         )}
@@ -442,13 +455,59 @@ function CaseCard({ caseData, onClick, onDelete, resolveName }) {
   );
 }
 
-function JudgementView({ caseData, partnerNames, resolveName }) {
+function JudgementView({ caseData, partnerNames, resolveName, currentUserRole, onCaseUpdate }) {
+  const [isDrafting, setIsDrafting] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
+  const contractRef = useRef(null);
+
   let j = {};
   try {
     j = JSON.parse(caseData.judgement || "{}");
   } catch (e) {
     j = { summary: caseData.judgement };
   }
+
+  let contract = null;
+  try {
+    contract = caseData.contract ? JSON.parse(caseData.contract) : null;
+  } catch {
+    contract = null;
+  }
+
+  const handleDraftContract = async () => {
+    setIsDrafting(true);
+    const loading = toast.loading("The Clerk is drawing up your terms...");
+    const res = await generateHeartContract(caseData.id);
+    setIsDrafting(false);
+
+    if (res.success) {
+      toast.success("Heart Contract drafted", { id: loading });
+      onCaseUpdate(res.data);
+      setTimeout(() => contractRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+    } else {
+      toast.error(res.error || "The Clerk couldn't draft it", { id: loading });
+    }
+  };
+
+  // You sign your own line only — whichever side you're currently acting as
+  const mySide = currentUserRole === caseData.sideAAuthor ? "A" : "B";
+  const myField = mySide === "A" ? "sideASignedAt" : "sideBSignedAt";
+  const iHaveSigned = Boolean(caseData[myField]);
+  const bothSigned = Boolean(caseData.sideASignedAt && caseData.sideBSignedAt);
+
+  const handleSign = async () => {
+    setIsSigning(true);
+    const res = await signHeartContract(caseData.id, mySide);
+    setIsSigning(false);
+
+    if (res.success) {
+      onCaseUpdate(res.data);
+      const nowBoth = Boolean(res.data.sideASignedAt && res.data.sideBSignedAt);
+      toast.success(nowBoth ? "Sealed. Both of you signed." : "Signed — waiting for your partner.");
+    } else {
+      toast.error(res.error || "Couldn't sign");
+    }
+  };
 
   const replacePlaceholders = (text) => {
     if (!text) return "";
@@ -648,20 +707,202 @@ function JudgementView({ caseData, partnerNames, resolveName }) {
         </div>
       </div>
 
-      {/* 📜 CERTIFIED FOOTER */}
-      <div className="w-full flex flex-col items-center justify-center gap-8 pt-12 border-t border-stone-100">
-        <div className="flex items-center gap-3">
-           <div className="w-7 h-7 rounded-full bg-stone-900 flex items-center justify-center shadow-lg">
-              <div className="text-[11px] font-black text-white">N</div>
-           </div>
-           <span className="text-[10px] font-black text-stone-400 uppercase tracking-[0.4em]">Certified Neutral Outcome</span>
-        </div>
+      {/* 📜 THE HEART CONTRACT */}
+      <div ref={contractRef} className="w-full pt-12 border-t border-stone-100">
+        {!contract ? (
+          <div className="flex flex-col items-center justify-center gap-6 text-center">
+            <div className="flex items-center gap-3">
+              <div className="w-7 h-7 rounded-full bg-stone-900 flex items-center justify-center shadow-lg">
+                <div className="text-[11px] font-black text-white">N</div>
+              </div>
+              <span className="text-[10px] font-black text-stone-400 uppercase tracking-[0.4em]">Certified Neutral Outcome</span>
+            </div>
 
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          <button className="px-10 py-3 bg-stone-900 text-white rounded-full text-[10px] font-bold uppercase tracking-widest hover:bg-black hover:scale-105 active:scale-95 transition-all shadow-xl shadow-stone-900/20">
-            Generate Heart Contract
-          </button>
-        </div>
+            <div className="space-y-2 max-w-md">
+              <h3 className={`${plusJakarta.className} text-2xl font-black tracking-tight text-stone-800`}>
+                A verdict is just words.
+              </h3>
+              <p className="text-sm text-stone-500 leading-relaxed">
+                Turn it into terms you both actually sign — specific, checkable, and binding until the next fight.
+              </p>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleDraftContract}
+              disabled={isDrafting}
+              className="group px-10 py-4 bg-stone-900 text-white rounded-full text-[11px] font-bold uppercase tracking-[0.2em] hover:bg-black transition-all shadow-xl shadow-stone-900/20 disabled:opacity-60 flex items-center gap-3"
+            >
+              <Feather size={14} className={isDrafting ? "animate-pulse" : "group-hover:-rotate-12 transition-transform"} />
+              {isDrafting ? "Drawing up terms…" : "Draft the Heart Contract"}
+            </motion.button>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="relative mx-auto max-w-3xl"
+          >
+            {/* Parchment */}
+            <div className="relative overflow-hidden rounded-[2.5rem] border border-[#e8ddc8] bg-gradient-to-b from-[#fffdf7] to-[#fdf6e8] shadow-[0_30px_80px_rgba(120,90,40,0.16)]">
+              {/* Ruled margin line, like a real legal page */}
+              <div className="pointer-events-none absolute inset-y-0 left-10 w-px bg-[#e2b98f]/30 hidden sm:block" />
+
+              {bothSigned && (
+                <div className="pointer-events-none absolute right-6 top-24 sm:right-12 z-20 -rotate-12">
+                  <div className="flex h-24 w-24 sm:h-28 sm:w-28 flex-col items-center justify-center rounded-full border-[3px] border-dashed border-[#9d4867]/50 text-[#9d4867]/70">
+                    <Heart size={16} className="fill-[#9d4867]/40" />
+                    <span className="mt-1 text-[8px] font-black uppercase tracking-[0.18em]">Sealed</span>
+                    <span className="text-[7px] font-bold tracking-[0.12em]">
+                      {new Date(caseData.sideBSignedAt > caseData.sideASignedAt ? caseData.sideBSignedAt : caseData.sideASignedAt)
+                        .toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" })
+                        .toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div className="relative z-10 p-8 sm:p-12 space-y-8">
+                {/* Letterhead */}
+                <div className="text-center space-y-3 pb-6 border-b border-[#e8ddc8]">
+                  <div className="inline-flex items-center gap-2 text-[#9d4867]">
+                    <ScrollText size={14} />
+                    <span className="text-[9px] font-black uppercase tracking-[0.35em]">The Heart Contract</span>
+                  </div>
+                  <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-stone-900 leading-tight px-2">
+                    {contract.title}
+                  </h2>
+                  <p className="mx-auto max-w-xl text-[13px] italic leading-relaxed text-stone-500">
+                    {contract.preamble}
+                  </p>
+                </div>
+
+                {/* Clauses */}
+                <div className="space-y-4">
+                  {contract.clauses?.map((clause, idx) => {
+                    const isBoth = clause.owner === "BOTH";
+                    const ownerName = isBoth
+                      ? "Both of us"
+                      : clause.owner === "A"
+                        ? resolveName(caseData.sideAAuthor)
+                        : resolveName(caseData.sideBAuthor);
+                    const accent = isBoth ? "#8a6d00" : clause.owner === "A" ? "#9d4867" : "#ab4400";
+                    const wash = isBoth ? "#fff8e8" : clause.owner === "A" ? "#fff1f6" : "#fff4ec";
+
+                    return (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -12 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.15 + idx * 0.09 }}
+                        className="flex gap-4 rounded-2xl border border-[#eee2cd] bg-white/70 p-5 hover:bg-white transition-colors"
+                      >
+                        <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+                          <span
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-black text-white shadow-sm"
+                            style={{ backgroundColor: accent }}
+                          >
+                            {idx + 1}
+                          </span>
+                        </div>
+
+                        <div className="min-w-0 space-y-1.5">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h4 className="text-base font-black tracking-tight text-stone-900">{clause.heading}</h4>
+                            <span
+                              className="rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-[0.14em]"
+                              style={{ backgroundColor: wash, color: accent }}
+                            >
+                              {ownerName}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-stone-600">{clause.text}</p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+
+                {/* Forfeit */}
+                {contract.penalty && (
+                  <div className="rounded-2xl border border-dashed border-[#e2b98f]/70 bg-[#fffaf0] p-5">
+                    <p className="mb-1.5 text-[9px] font-black uppercase tracking-[0.24em] text-[#8a6d00]">
+                      Should a clause be broken
+                    </p>
+                    <p className="text-sm font-medium leading-relaxed text-stone-700">{contract.penalty}</p>
+                  </div>
+                )}
+
+                {/* Oath */}
+                {contract.oath && (
+                  <p className="px-4 text-center text-lg sm:text-xl font-bold italic leading-relaxed text-stone-800">
+                    “{contract.oath}”
+                  </p>
+                )}
+
+                {/* Signatures */}
+                <div className="grid gap-5 pt-4 sm:grid-cols-2">
+                  {[
+                    { side: "A", name: resolveName(caseData.sideAAuthor), signedAt: caseData.sideASignedAt, accent: "#9d4867" },
+                    { side: "B", name: resolveName(caseData.sideBAuthor), signedAt: caseData.sideBSignedAt, accent: "#ab4400" },
+                  ].map((party) => {
+                    const isMine = party.side === mySide;
+                    return (
+                      <div key={party.side} className="flex flex-col items-center gap-2">
+                        <div className="flex h-14 w-full items-end justify-center border-b-2 border-stone-300 pb-1">
+                          {party.signedAt ? (
+                            <motion.span
+                              initial={{ opacity: 0, y: 6 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.4 }}
+                              className={`${signature.className} -mb-1 text-4xl font-bold -rotate-2`}
+                              style={{ color: party.accent }}
+                            >
+                              {party.name}
+                            </motion.span>
+                          ) : isMine ? (
+                            <button
+                              onClick={handleSign}
+                              disabled={isSigning}
+                              className="mb-1 rounded-full border border-stone-300 bg-white px-5 py-2 text-[10px] font-black uppercase tracking-[0.16em] text-stone-600 shadow-sm transition-all hover:border-stone-900 hover:text-stone-900 active:scale-95 disabled:opacity-50"
+                            >
+                              {isSigning ? "Signing…" : "Sign here"}
+                            </button>
+                          ) : (
+                            <span className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-stone-300">
+                              Awaiting signature
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-center">
+                          <p className="text-[11px] font-black uppercase tracking-[0.14em] text-stone-700">{party.name}</p>
+                          <p className="text-[9px] font-medium text-stone-400">
+                            {party.signedAt
+                              ? new Date(party.signedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                              : "Not yet signed"}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {bothSigned && (
+                  <motion.p
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    className="pt-2 text-center text-[10px] font-black uppercase tracking-[0.28em] text-[#9d4867]"
+                  >
+                    In force until you both say otherwise
+                  </motion.p>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

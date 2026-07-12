@@ -77,6 +77,10 @@ model CourtroomCase {
   sideAAuthor      String?
   sideBAuthor      String?
   judgement        String?    @db.Text
+  // The Heart Contract: terms both sides agree to after the verdict
+  contract         String?    @db.Text
+  sideASignedAt    DateTime?
+  sideBSignedAt    DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
   user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)

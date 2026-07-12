@@ -45,6 +45,172 @@ const JUDGEMENT_SCHEMA = {
   required: ["verdict", "balance", "analysis", "strengths", "summary"],
 };
 
+// The Heart Contract: what they actually agree to do, born from the ruling
+const CONTRACT_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    title: { type: "STRING" },
+    preamble: { type: "STRING" },
+    clauses: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          owner: { type: "STRING", enum: ["A", "B", "BOTH"] },
+          heading: { type: "STRING" },
+          text: { type: "STRING" },
+        },
+        required: ["owner", "heading", "text"],
+      },
+    },
+    penalty: { type: "STRING" },
+    oath: { type: "STRING" },
+  },
+  required: ["title", "preamble", "clauses", "penalty", "oath"],
+};
+
+function buildContractPrompt(sideAName, sideBName) {
+  return `You are the Clerk of the Riceee Courtroom. The Judge has ruled on a dispute between ${sideAName} and ${sideBName}. Your job is to draw up the HEART CONTRACT — the binding peace treaty that turns that ruling into behaviour.
+
+This is the document they will actually look back on. Make it feel like a real contract with a heart: formal in structure, warm and specific in content, quietly funny in places. Never corporate, never a therapy worksheet.
+
+Rules:
+- Write 4 to 5 clauses total. Give the LOSING side more to do — that's the point of losing — but never let the winner walk away with nothing.
+- owner is "A" (${sideAName}), "B" (${sideBName}), or "BOTH".
+- Each clause needs a short punchy heading (2-4 words, like "The Two-Minute Rule" or "No Scorekeeping") and one or two sentences of plain, concrete, checkable commitment. Someone should be able to tell within a week whether it was honoured.
+- Clauses must come from THIS specific fight — reference the actual behaviour, the real details. Generic advice ("communicate better") is a failure.
+- penalty: one playful, harmless forfeit if a clause is broken (making chai for a week, losing movie-pick rights, owing a real apology in person). Never anything cruel or humiliating.
+- oath: one warm sentence both partners sign under. Earnest, not cheesy. This is the line that should make them smile.
+- title: name the treaty after the fight, e.g. "The Dinner Phone Accord".
+- preamble: 1-2 sentences setting out what this contract settles, in the voice of a document ("Whereas...") but human.
+- Plain text only. No markdown. Use their real names.`;
+}
+
+async function callGemini({ systemPrompt, userText, schema, temperature = 0.9 }) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("The AI Clerk is not configured yet.");
+
+  const res = await fetch(JUDGE_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userText }] }],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: 4096,
+        thinkingConfig: { thinkingBudget: -1 },
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Gemini error:", res.status, errText.slice(0, 400));
+    throw new Error("The Clerk is swamped right now — try again in a minute.");
+  }
+
+  const data = await res.json();
+  const raw = data?.candidates?.[0]?.content?.parts
+    ?.filter((part) => !part.thought)
+    .map((part) => part.text || "")
+    .join("")
+    .trim();
+  if (!raw) throw new Error("The Clerk drew a blank — try again.");
+  return JSON.parse(raw);
+}
+
+export async function generateHeartContract(caseId) {
+  try {
+    const user = await getOrCreateUser();
+
+    const courtroomCase = await db.courtroomCase.findFirst({
+      where: { id: caseId, userId: user.id },
+    });
+    if (!courtroomCase) throw new Error("Case not found");
+    if (!courtroomCase.judgement) throw new Error("This case has no verdict yet");
+
+    // Already drawn up — hand back the same contract, don't rewrite history
+    if (courtroomCase.contract) {
+      return { success: true, data: courtroomCase };
+    }
+
+    const roleToName = (role) =>
+      role === "P2"
+        ? user.partnerTwoName || DEFAULT_PARTNER_NAMES.partnerTwoName
+        : user.partnerOneName || DEFAULT_PARTNER_NAMES.partnerOneName;
+
+    const sideAName = roleToName(courtroomCase.sideAAuthor);
+    const sideBName = roleToName(courtroomCase.sideBAuthor);
+
+    let judgement = {};
+    try {
+      judgement = JSON.parse(courtroomCase.judgement);
+    } catch {
+      judgement = { summary: courtroomCase.judgement };
+    }
+
+    const brief = `CASE: ${courtroomCase.title}
+
+${sideAName} SAID:
+"""${(courtroomCase.sideAPerspective || "").slice(0, MAX_PERSPECTIVE_LENGTH)}"""
+
+${sideBName} SAID:
+"""${(courtroomCase.sideBPerspective || "").slice(0, MAX_PERSPECTIVE_LENGTH)}"""
+
+THE JUDGE RULED: ${judgement.verdict || ""}
+Balance: ${sideAName} ${judgement.balance?.sideA ?? 50}% / ${sideBName} ${judgement.balance?.sideB ?? 50}%
+Reasoning: ${judgement.analysis?.reasoning || ""}
+Closing truth: ${judgement.summary || ""}
+
+Draw up the Heart Contract.`;
+
+    const contract = await callGemini({
+      systemPrompt: buildContractPrompt(sideAName, sideBName),
+      userText: brief,
+      schema: CONTRACT_SCHEMA,
+    });
+
+    const updated = await db.courtroomCase.update({
+      where: { id: caseId },
+      data: { contract: JSON.stringify(contract) },
+    });
+
+    revalidatePath("/riceee-chat");
+    return { success: true, data: updated };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Each partner signs their own line; the contract seals when both have
+export async function signHeartContract(caseId, side) {
+  try {
+    const user = await getOrCreateUser();
+
+    const courtroomCase = await db.courtroomCase.findFirst({
+      where: { id: caseId, userId: user.id },
+    });
+    if (!courtroomCase) throw new Error("Case not found");
+    if (!courtroomCase.contract) throw new Error("No contract to sign yet");
+
+    const field = side === "B" ? "sideBSignedAt" : "sideASignedAt";
+    if (courtroomCase[field]) return { success: true, data: courtroomCase };
+
+    const updated = await db.courtroomCase.update({
+      where: { id: caseId },
+      data: { [field]: new Date() },
+    });
+
+    revalidatePath("/riceee-chat");
+    return { success: true, data: updated };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 function buildJudgePrompt(sideAName, sideBName) {
   return `You are The Judge of the Riceee Courtroom — a private couples app where ${sideAName} and ${sideBName} bring real disputes for a real ruling.
 
@@ -80,9 +246,6 @@ function normalizeBalance(balance) {
 }
 
 async function judgeCaseWithAI({ title, sideAName, sideAText, sideBName, sideBText }) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("The AI Judge is not configured yet.");
-
   const caseFile = `CASE TITLE: ${title}
 
 SIDE A — ${sideAName} (filed the case):
@@ -93,41 +256,11 @@ SIDE B — ${sideBName} (their response):
 
 Deliberate carefully, then deliver your ruling.`;
 
-  const res = await fetch(JUDGE_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-goog-api-key": apiKey,
-    },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: buildJudgePrompt(sideAName, sideBName) }] },
-      contents: [{ role: "user", parts: [{ text: caseFile }] }],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 4096,
-        // Dynamic thinking — this is where the actual deliberation happens
-        thinkingConfig: { thinkingBudget: -1 },
-        responseMimeType: "application/json",
-        responseSchema: JUDGEMENT_SCHEMA,
-      },
-    }),
+  const judgement = await callGemini({
+    systemPrompt: buildJudgePrompt(sideAName, sideBName),
+    userText: caseFile,
+    schema: JUDGEMENT_SCHEMA,
   });
-
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error("Judge API error:", res.status, errText.slice(0, 500));
-    throw new Error("The Judge is deliberating too many cases right now — try again in a minute.");
-  }
-
-  const data = await res.json();
-  const raw = data?.candidates?.[0]?.content?.parts
-    ?.filter((part) => !part.thought)
-    .map((part) => part.text || "")
-    .join("")
-    .trim();
-  if (!raw) throw new Error("The Judge went silent — try submitting again.");
-
-  const judgement = JSON.parse(raw);
   judgement.balance = normalizeBalance(judgement.balance);
   return judgement;
 }
