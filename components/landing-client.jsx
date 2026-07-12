@@ -129,9 +129,9 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
                 variants={stagger}
                 initial="hidden"
                 animate="show"
-                className="relative flex flex-col md:flex-row items-center justify-between gap-14"
+                className="relative flex flex-col xl:flex-row items-center justify-between gap-14"
               >
-                <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left space-y-8">
+                <div className="flex-1 flex flex-col items-center xl:items-start text-center xl:text-left space-y-8">
                   <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#ffd9e2]/80 text-[#863655] rounded-full text-[10px] font-extrabold tracking-[0.2em] uppercase">
                     <span className="heart-beat inline-block">❤️</span>
                     Our Sanctuary
@@ -139,7 +139,7 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
 
                   <motion.h1
                     variants={fadeUp}
-                    className={`${plusJakarta.className} text-6xl sm:text-8xl md:text-[8rem] lg:text-[9.5rem] font-extrabold text-[#393832] tracking-tighter leading-[0.9] md:leading-[0.8]`}
+                    className={`${plusJakarta.className} text-6xl sm:text-8xl md:text-[7rem] xl:text-[9.5rem] font-extrabold text-[#393832] tracking-tighter leading-[0.9] xl:leading-[0.8]`}
                   >
                     {!isLoggedIn ? (
                       <>
@@ -305,10 +305,10 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
               initial="hidden"
               whileInView="show"
               viewport={{ once: true, margin: "-60px" }}
-              className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 md:gap-6 items-stretch"
             >
               {/* Journal — big card */}
-              <motion.div variants={fadeUp} className="md:col-span-6 bg-[#ffae88]/10 p-8 md:p-12 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffae88]/20 hover:-translate-y-1 transition-all duration-300 group border border-[#ab4400]/5">
+              <motion.div variants={fadeUp} className="md:col-span-2 lg:col-span-6 bg-[#ffae88]/10 p-8 md:p-12 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffae88]/20 hover:-translate-y-1 transition-all duration-300 group border border-[#ab4400]/5">
                 <div className="w-16 h-16 bg-[#ab4400] rounded-full flex items-center justify-center text-white group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 mb-6 shadow-lg shadow-[#ab4400]/20">
                   <span className="material-symbols-outlined text-3xl">stylus_note</span>
                 </div>
@@ -322,7 +322,7 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
               </motion.div>
 
               {/* Memories */}
-              <motion.div variants={fadeUp} className="md:col-span-3 bg-[#ebe8df]/40 p-8 md:p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:shadow-lg hover:shadow-stone-200/50 hover:-translate-y-1 transition-all duration-300 border border-stone-200/40 group">
+              <motion.div variants={fadeUp} className="lg:col-span-3 bg-[#ebe8df]/40 p-8 md:p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:shadow-lg hover:shadow-stone-200/50 hover:-translate-y-1 transition-all duration-300 border border-stone-200/40 group">
                 <div className="w-14 h-14 bg-[#393832] text-[#fffbff] rounded-full flex items-center justify-center mb-6 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">
                   <span className="material-symbols-outlined text-3xl">photo_library</span>
                 </div>
@@ -335,7 +335,7 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
               </motion.div>
 
               {/* Riceee AI */}
-              <motion.div variants={fadeUp} className="md:col-span-3 bg-[#ffd9e2]/15 p-8 md:p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffd9e2]/25 hover:-translate-y-1 transition-all duration-300 border border-[#9d4867]/5 group">
+              <motion.div variants={fadeUp} className="lg:col-span-3 bg-[#ffd9e2]/15 p-8 md:p-10 rounded-[2rem] flex flex-col items-center text-center justify-center min-h-[320px] hover:bg-[#ffd9e2]/25 hover:-translate-y-1 transition-all duration-300 border border-[#9d4867]/5 group">
                 <div className="w-14 h-14 bg-[#9d4867] text-white rounded-full flex items-center justify-center mb-6 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
                   <span className="material-symbols-outlined text-3xl">auto_awesome</span>
                 </div>
@@ -348,7 +348,9 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
               </motion.div>
 
               {/* Games — wide card with chips */}
-              <motion.div variants={fadeUp} className="md:col-span-7 bg-[#fdf9f4] p-8 md:p-12 rounded-[2rem] flex flex-col md:flex-row gap-10 items-center border border-[#bcb9b1]/10 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300 group">
+              {/* Side-by-side only from xl: at lg the card is 7/12 wide, which
+                  squeezed the chip box to ~92px a cell and cut the labels off */}
+              <motion.div variants={fadeUp} className="md:col-span-2 lg:col-span-7 bg-[#fdf9f4] p-5 md:p-8 lg:p-10 rounded-[2rem] flex flex-col xl:flex-row gap-6 xl:gap-8 items-center border border-[#bcb9b1]/10 shadow-sm md:hover:-translate-y-1 md:hover:shadow-lg md:hover:shadow-stone-200/60 transition-all duration-300 group">
                 <div className="flex-1 space-y-4 text-center md:text-left">
                   <div className="w-14 h-14 bg-[#815f19] text-white rounded-full flex items-center justify-center mx-auto md:mx-0 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300">
                     <span className="material-symbols-outlined text-3xl">sports_esports</span>
@@ -361,11 +363,16 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
                     </p>
                   </div>
                 </div>
-                <div className="flex-1 bg-white/60 rounded-2xl p-5 border border-stone-200/30 flex flex-wrap gap-2.5 justify-center">
+                {/* Always 2 across. A wrapping flex row can't fit two chips in
+                    this narrow box, so all 10 used to stack into one long column
+                    on phones/tablets and left orphan rows on desktop. */}
+                <div className="flex-1 w-full rounded-2xl border border-stone-200/30 bg-white/60 p-2.5 lg:p-4 grid grid-cols-2 gap-2 lg:gap-2.5">
                   {GAME_CHIPS.map((game) => (
                     <span
                       key={game.name}
-                      className="bg-[#fff0e8] text-[#6a2700] border border-[#ffae88]/30 px-3.5 py-1.5 rounded-full text-xs font-bold shadow-sm hover:bg-[#ffe3d4] hover:scale-105 transition-all cursor-default"
+                      className="bg-[#fff0e8] text-[#6a2700] border border-[#ffae88]/30 rounded-full font-bold shadow-sm transition-all cursor-default whitespace-nowrap
+                        flex items-center justify-center px-1.5 sm:px-2.5 py-1.5 text-[11px]
+                        lg:hover:bg-[#ffe3d4] lg:hover:scale-105"
                     >
                       {game.emoji} {game.name}
                     </span>
@@ -373,26 +380,28 @@ export default function LandingClient({ isLoggedIn, partnerNames }) {
                 </div>
               </motion.div>
 
-              {/* Tonight's Prompt card */}
-              <motion.div variants={fadeUp} className="md:col-span-5 relative overflow-hidden rounded-[2rem] group min-h-[320px] shadow-lg bg-[#393832] p-10 md:p-12 flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
-                <div className="blob-drift absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#ffae88]/15 blur-3xl pointer-events-none" />
-                <div className="blob-drift absolute -bottom-16 -left-16 w-56 h-56 rounded-full bg-[#ffd9e2]/10 blur-3xl pointer-events-none" style={{ animationDelay: "2s" }} />
+              {/* Tonight's Prompt — light, so it sits in the same family as its
+                  siblings. It was a dark card with a forward arrow but no link:
+                  it pulled the most attention on the page and led nowhere. */}
+              <motion.div variants={fadeUp} className="md:col-span-2 lg:col-span-5 relative overflow-hidden rounded-[2rem] group min-h-[320px] bg-[#fff8e8] border border-[#fbe9b7]/70 p-8 md:p-12 flex flex-col justify-center gap-6 shadow-sm hover:-translate-y-1 hover:shadow-lg hover:shadow-stone-200/60 transition-all duration-300">
+                <div className="blob-drift absolute -top-16 -right-16 w-56 h-56 rounded-full bg-[#fed07f]/20 blur-3xl pointer-events-none" />
 
-                <div className="relative flex items-center gap-2 text-[#fed07f] text-[11px] font-extrabold uppercase tracking-[0.3em]">
-                  <span className="material-symbols-outlined text-lg">tips_and_updates</span>
-                  Tonight&apos;s Prompt
+                <div className="relative flex items-center gap-2.5">
+                  <div className="w-14 h-14 bg-[#815f19] text-white rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:-rotate-6 transition-transform duration-300">
+                    <span className="material-symbols-outlined text-3xl">tips_and_updates</span>
+                  </div>
+                  <span className="text-[#8a6d00] text-[11px] font-extrabold uppercase tracking-[0.3em]">
+                    Tonight&apos;s Prompt
+                  </span>
                 </div>
 
-                <p className={`${plusJakarta.className} relative text-[#fffbff] font-bold text-2xl md:text-[1.7rem] italic leading-snug`}>
+                <p className={`${plusJakarta.className} relative text-[#5c4a10] font-bold text-2xl md:text-[1.7rem] italic leading-snug`}>
                   &ldquo;What tiny moment from this week do you never want to forget?&rdquo;
                 </p>
 
-                <div className="relative flex items-center justify-between gap-4">
-                  <p className="text-white/55 text-sm">
-                    Answer it together tonight — it takes two minutes, and you&apos;ll keep it forever.
-                  </p>
-                  <span className="material-symbols-outlined text-[#ffae88] text-2xl shrink-0 group-hover:translate-x-1.5 transition-transform">arrow_forward</span>
-                </div>
+                <p className="relative text-[#8a6d00]/75 text-sm leading-relaxed">
+                  Answer it together tonight — it takes two minutes, and you&apos;ll keep it forever.
+                </p>
               </motion.div>
             </motion.div>
           </section>
