@@ -150,7 +150,7 @@ const MoodAnalytics = () => {
     const leadMood = getMoodById(point.mostFrequentMood);
 
     return (
-      <div className="w-[236px] overflow-hidden rounded-2xl border border-[#ffdfcf] bg-[#fffbff]/95 backdrop-blur-sm shadow-[0_16px_36px_rgba(57,56,50,0.16)]">
+      <div className="w-[min(236px,74vw)] overflow-hidden rounded-2xl border border-[#ffdfcf] bg-[#fffbff]/95 backdrop-blur-sm shadow-[0_16px_36px_rgba(57,56,50,0.16)]">
         <div className="px-4 pt-3 pb-2.5">
           {/* The day, and how it felt — named, not emoji-d */}
           <div className="flex items-baseline justify-between gap-2">
@@ -418,14 +418,89 @@ const MoodAnalytics = () => {
           </CardHeader>
           
           <CardContent className="pt-4 px-0">
+            {/* MOBILE: a day-by-day ribbon. A 7-point line chart squeezed into
+                ~280px is unreadable, so phones get a vertical read instead. */}
+            {(hasEntriesInPeriod || isInactiveForSelectedPeriod) && (
+              <div className="sm:hidden px-4 space-y-2">
+                {timeline.slice(-7).map((point, i) => {
+                  const date = parseISO(point.date);
+                  const today = isToday(date);
+                  const score = point.averageScore;
+                  const wrote = point.entryCount > 0;
+                  const mood = getMoodById(point.mostFrequentMood);
+
+                  return (
+                    <motion.div
+                      key={point.date}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05, duration: 0.35 }}
+                      className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-colors ${
+                        today
+                          ? "border-[#ffae88]/60 bg-[#fff5ef]"
+                          : wrote
+                            ? "border-[#ffe5d6] bg-white/80"
+                            : "border-dashed border-[#efe9e2] bg-transparent"
+                      }`}
+                    >
+                      {/* Day */}
+                      <div className="w-9 flex-shrink-0 text-center">
+                        <p className={`${plusJakarta.className} text-[11px] font-extrabold leading-none ${today ? "text-[#ab4400]" : "text-[#393832]"}`}>
+                          {today ? "TDY" : format(date, "EEE").toUpperCase()}
+                        </p>
+                        <p className="mt-0.5 text-[10px] font-medium text-[#a09d95]">{format(date, "d")}</p>
+                      </div>
+
+                      {/* Mood bar */}
+                      <div className="min-w-0 flex-1">
+                        {wrote ? (
+                          <>
+                            <div className="h-2.5 w-full overflow-hidden rounded-full bg-[#f5f2ee]">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(score / 10) * 100}%` }}
+                                transition={{ delay: 0.15 + i * 0.05, duration: 0.6, ease: "easeOut" }}
+                                className="h-full rounded-full bg-gradient-to-r from-[#ffae88] to-[#ab4400]"
+                              />
+                            </div>
+                            <p className="mt-1 truncate text-[11px] font-medium text-[#66645e]">
+                              {mood?.label ?? "Logged"}
+                              {point.entryCount > 1 && (
+                                <span className="text-[#a09d95]"> · {point.entryCount} entries</span>
+                              )}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[11px] font-medium italic text-[#c9c5bd]">
+                            {today ? "Nothing written yet" : "Quiet day"}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Score */}
+                      <div className="w-9 flex-shrink-0 text-right">
+                        {wrote ? (
+                          <span className={`${plusJakarta.className} text-base font-extrabold tabular-nums text-[#ab4400]`}>
+                            {score}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-bold text-[#e0dbd3]">—</span>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
             {hasEntriesInPeriod || isInactiveForSelectedPeriod ? (
-              // Chart fills the card width; no horizontal scrolling
-              <div className="px-4 sm:px-6">
-                <div className="h-[240px] w-full">
+              // DESKTOP: the chart, unchanged
+              <div className="hidden sm:block px-2 sm:px-6">
+                <div className="h-[260px] sm:h-[240px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
                       data={timeline}
-                      margin={{ top: 56, right: 16, left: 16, bottom: 4 }}
+                      margin={{ top: 56, right: 8, left: 8, bottom: 4 }}
                     >
                       <defs>
                         <linearGradient id="colorMood" x1="0" y1="0" x2="0" y2="1">
@@ -515,9 +590,10 @@ const MoodAnalytics = () => {
             )}
 
             {/* Week ritual strip: which days you showed up, and a nudge for today */}
-            <div className="mt-3 px-4 sm:px-6 flex flex-wrap gap-4 justify-between items-center bg-[#fff8f3] py-3 border-t border-[#ffede2]">
+            <div className="mt-3 px-4 sm:px-6 flex flex-wrap gap-3 justify-between items-center bg-[#fff8f3] py-3 border-t border-[#ffede2]">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
+                {/* Squares hidden on mobile — the ribbon above already says this */}
+                <div className="hidden sm:flex items-center gap-1.5">
                   {weekStrip.map((day) => (
                     <div key={day.key} className="flex flex-col items-center gap-1">
                       <div

@@ -62,10 +62,10 @@ const Collections = ({ collections = [], entriesByCollection }) => {
       >
         {/* washi tape accent */}
         <div className="absolute -top-3 left-24 w-20 h-5 bg-[#ffae88]/30 rotate-[-3deg] rounded-sm pointer-events-none hidden md:block" />
-        <h2 className={`${plusJakarta.className} text-4xl md:text-5xl font-bold text-[#ab4400] tracking-tight`}>
-          Collections <span className="text-2xl md:text-3xl align-middle">🗂️</span>
+        <h2 className={`${plusJakarta.className} text-[1.75rem] sm:text-4xl md:text-5xl font-bold text-[#ab4400] tracking-tight`}>
+          Collections <span className="text-xl sm:text-2xl md:text-3xl align-middle">🗂️</span>
         </h2>
-        <p className="text-base text-[#66645e]">
+        <p className="text-sm sm:text-base text-[#66645e]">
           Organize your journal into themes so it is easier to revisit memories later.
         </p>
       </motion.div>

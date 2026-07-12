@@ -66,8 +66,8 @@ const BottomNav = () => {
   };
 
   return (
-    <div className="md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-1rem)] max-w-md z-[100]">
-      <nav className="bg-white/85 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-[0_12px_40px_rgba(0,0,0,0.15)] flex items-center justify-around p-1 sm:p-2">
+    <div className="md:hidden fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-1.5rem)] max-w-md z-[100]">
+      <nav className="bg-white/95 backdrop-blur-2xl border border-white/60 rounded-[1.75rem] shadow-[0_12px_40px_rgba(0,0,0,0.15)] flex items-stretch justify-between px-1.5 py-1.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -77,13 +77,14 @@ const BottomNav = () => {
               <button
                 key={item.label}
                 onClick={handleChatToggle}
-                className="flex flex-col items-center justify-center"
+                aria-label="Open Riceee chat"
+                className="flex flex-1 flex-col items-center justify-center"
               >
                 <div className={cn(
-                  "w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white flex items-center justify-center shadow-lg shadow-[#ab4400]/25 transition-transform active:scale-90 hover:scale-105 mb-1",
+                  "w-12 h-12 rounded-2xl bg-gradient-to-br from-[#ab4400] to-[#9d4867] text-white flex items-center justify-center shadow-lg shadow-[#ab4400]/25 transition-transform active:scale-90",
                   isActive && "ring-2 ring-[#ab4400]/20"
                 )}>
-                  <Icon size={24} className="fill-white/20" />
+                  <Icon size={22} className="fill-white/20" />
                 </div>
               </button>
             );
@@ -93,7 +94,7 @@ const BottomNav = () => {
             <Link
               key={item.href}
               href={item.href}
-              className="relative flex flex-col items-center justify-center px-1.5 min-[400px]:px-3 py-1.5 gap-1 active:scale-90 transition-transform"
+              className="relative flex flex-1 min-w-0 flex-col items-center justify-center gap-0.5 py-1.5 active:scale-90 transition-transform"
             >
               {/* Springy pill that glides to the active tab */}
               {isActive && (
@@ -104,14 +105,14 @@ const BottomNav = () => {
                 />
               )}
               <Icon
-                size={22}
+                size={20}
                 className={cn(
                   "relative transition-all duration-300",
-                  isActive ? "text-[#ab4400] scale-110 -translate-y-0.5" : "text-stone-400"
+                  isActive ? "text-[#ab4400] scale-110" : "text-stone-400"
                 )}
               />
               <span className={cn(
-                "relative text-[10px] font-bold uppercase tracking-tight transition-colors",
+                "relative w-full truncate text-center text-[9px] font-bold uppercase tracking-tight transition-colors",
                 isActive ? "text-[#ab4400]" : "text-stone-400"
               )}>
                 {item.label}

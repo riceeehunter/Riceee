@@ -140,37 +140,37 @@ function FeaturedCard({ game, index }) {
     <motion.div variants={cardPop} className="lg:col-span-6">
       <Link href={game.path} className="group block h-full">
         <div
-          className="relative h-full min-h-[220px] overflow-hidden rounded-[2rem] border p-7 md:p-9 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_24px_48px_rgba(57,56,50,0.13)]"
+          className="relative h-full min-h-[180px] md:min-h-[220px] overflow-hidden rounded-[1.75rem] md:rounded-[2rem] border p-6 md:p-9 transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_24px_48px_rgba(57,56,50,0.13)] active:scale-[0.98]"
           style={{ backgroundColor: cat.wash, borderColor: cat.edge }}
         >
           {/* Oversized ghost icon */}
           <Icon
-            className="absolute -right-8 -bottom-10 h-52 w-52 rotate-12 transition-transform duration-500 group-hover:rotate-6 group-hover:scale-105"
+            className="absolute -right-6 -bottom-8 h-40 w-40 md:-right-8 md:-bottom-10 md:h-52 md:w-52 rotate-12 transition-transform duration-500 group-hover:rotate-6 group-hover:scale-105"
             style={{ color: cat.accent, opacity: 0.07 }}
             strokeWidth={1.2}
           />
 
           <div className="relative flex h-full flex-col">
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2">
               <span
-                className="rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white"
+                className="rounded-full px-2.5 py-1 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em] text-white"
                 style={{ backgroundColor: cat.accent }}
               >
                 {game.tag}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: cat.accent, opacity: 0.65 }}>
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.16em]" style={{ color: cat.accent, opacity: 0.65 }}>
                 {cat.label}
               </span>
             </div>
 
-            <h2 className={`${plusJakarta.className} mt-5 text-4xl md:text-5xl font-extrabold tracking-tight text-[#393832]`}>
+            <h2 className={`${plusJakarta.className} mt-4 md:mt-5 text-3xl md:text-5xl font-extrabold tracking-tight text-[#393832]`}>
               {game.title}
             </h2>
-            <p className="mt-2.5 max-w-sm text-sm md:text-[15px] leading-relaxed text-[#66645e]">
+            <p className="mt-2 max-w-sm text-[13px] md:text-[15px] leading-relaxed text-[#66645e]">
               {game.line}
             </p>
 
-            <div className="mt-auto flex items-center gap-2 pt-6 text-sm font-bold" style={{ color: cat.accent }}>
+            <div className="mt-auto flex items-center gap-2 pt-5 text-sm font-bold" style={{ color: cat.accent }}>
               <span className="uppercase tracking-[0.14em] text-[11px]">Enter</span>
               <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />
             </div>
@@ -188,7 +188,7 @@ function GameCard({ game, index }) {
   return (
     <motion.div variants={cardPop} className="lg:col-span-3">
       <Link href={game.path} className="group block h-full">
-        <div className="relative flex h-full min-h-[190px] flex-col overflow-hidden rounded-[1.6rem] border border-[#efe9e2] bg-white p-6 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(57,56,50,0.11)]"
+        <div className="relative flex h-full min-h-[170px] sm:min-h-[190px] flex-col overflow-hidden rounded-[1.6rem] border border-[#efe9e2] bg-white p-5 sm:p-6 transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_20px_40px_rgba(57,56,50,0.11)] active:scale-[0.98]"
           style={{ "--accent": cat.accent }}
         >
           {/* Ghost index number */}
@@ -218,7 +218,8 @@ function GameCard({ game, index }) {
             {game.line}
           </p>
 
-          <div className="relative mt-auto flex items-center gap-1.5 pt-4 text-[10px] font-bold uppercase tracking-[0.16em] opacity-0 transition-all duration-300 group-hover:opacity-100" style={{ color: cat.accent }}>
+          {/* Always visible on touch — there's no hover to reveal it */}
+          <div className="relative mt-auto flex items-center gap-1.5 pt-4 text-[10px] font-bold uppercase tracking-[0.16em] opacity-100 md:opacity-0 transition-all duration-300 md:group-hover:opacity-100" style={{ color: cat.accent }}>
             Play
             <ArrowRight className="h-3.5 w-3.5" />
           </div>
@@ -239,24 +240,24 @@ export default function GamesHub() {
   };
 
   return (
-    <div className={`${manrope.className} page-shell py-8 md:py-12`}>
+    <div className={`${manrope.className} py-2 md:py-6`}>
       {/* Masthead */}
-      <div className="mb-8 flex flex-col gap-6 md:mb-10 md:flex-row md:items-end md:justify-between">
+      <div className="mb-6 flex flex-col gap-5 md:mb-10 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.3em] text-[#9d4867]/70">
+          <p className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.3em] text-[#9d4867]/70">
             Riceee Arcade
           </p>
-          <h1 className={`${plusJakarta.className} mt-2 text-5xl md:text-7xl font-extrabold tracking-tighter text-[#393832]`}>
+          <h1 className={`${plusJakarta.className} mt-1.5 text-[2.75rem] leading-[1.05] sm:text-5xl md:text-7xl font-extrabold tracking-tighter text-[#393832]`}>
             Game <span className="text-[#ab4400]">Night.</span>
           </h1>
-          <p className="mt-3 max-w-md text-sm md:text-base text-[#66645e]">
+          <p className="mt-2.5 max-w-md text-sm md:text-base text-[#66645e]">
             Ten ways to ruin a perfectly peaceful evening. Pick your poison.
           </p>
         </div>
 
         <button
           onClick={pickForUs}
-          className="group flex w-fit items-center gap-3 rounded-full border border-[#ffdfcf] bg-white px-6 py-3.5 text-sm font-bold text-[#6a2700] shadow-sm transition-all hover:border-[#ffba99] hover:bg-[#fff5ef] hover:-translate-y-0.5 active:scale-95"
+          className="group flex w-full md:w-fit items-center justify-center gap-3 rounded-full border border-[#ffdfcf] bg-white px-6 py-3.5 text-sm font-bold text-[#6a2700] shadow-sm transition-all hover:border-[#ffba99] hover:bg-[#fff5ef] md:hover:-translate-y-0.5 active:scale-95"
         >
           <Shuffle className="h-4 w-4 text-[#ab4400] transition-transform duration-500 group-hover:rotate-180" />
           Can&apos;t decide? Pick for us

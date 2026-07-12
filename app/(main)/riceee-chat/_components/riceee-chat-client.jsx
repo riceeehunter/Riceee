@@ -41,8 +41,8 @@ export default function RiceeeChatClient({ poppins, activeChatId, onTitleUpdate,
   return (
     <>
 
-      <div className="flex-1 p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6 relative">
-        <div className="w-full flex justify-center pb-8 pt-4">
+      <div className="flex-1 px-3 py-2 sm:p-6 overflow-y-auto custom-scrollbar flex flex-col gap-6 relative">
+        <div className="w-full flex justify-center sm:pb-8 sm:pt-4">
           <div className="w-full">
             <Notebook 
               activeChatId={activeChatId} 

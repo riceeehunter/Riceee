@@ -14,10 +14,11 @@ async function Header() {
   const partnerNames = resolvePartnerNames(user);
 
   return (
-    <header className={`${plusJakarta.className} fixed top-[calc(1.5rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 w-fit max-w-[95vw] z-50`}>
-      <nav className="flex items-center justify-between gap-2 p-2 rounded-full bg-white/40 backdrop-blur-2xl border border-white/50 shadow-[0_8px_32px_0_rgba(0,0,0,0.08)]">
-        <Link href="/" className="flex items-center px-4 sm:px-6 py-2 rounded-full bg-white/60 shadow-sm border border-white/40">
-          <div className="text-xl font-semibold text-[#ab4400] tracking-tighter leading-none">Riceee</div>
+    <header className={`${plusJakarta.className} fixed top-[calc(0.75rem+env(safe-area-inset-top))] md:top-[calc(1.5rem+env(safe-area-inset-top))] left-1/2 -translate-x-1/2 w-fit max-w-[calc(100vw-1rem)] z-50`}>
+      {/* Near-opaque on mobile — at 40% the page text scrolled straight through it */}
+      <nav className="flex items-center justify-between gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-full bg-white/95 md:bg-white/40 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_0_rgba(0,0,0,0.10)]">
+        <Link href="/" className="flex items-center px-3.5 sm:px-6 py-2 rounded-full bg-white/70 shadow-sm border border-white/40">
+          <div className="text-lg sm:text-xl font-semibold text-[#ab4400] tracking-tighter leading-none">Riceee</div>
         </Link>
 
         <div className="hidden md:flex flex-1 items-center justify-center gap-1 font-medium text-[13px] tracking-wide leading-none">

@@ -173,11 +173,57 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
       `}</style>
 
       <div>
-        <main className="page-shell pt-12 pb-24 space-y-12">
-          <section className="relative bg-white/40 border border-white/60 rounded-[2.5rem] p-8 md:p-12 overflow-hidden shadow-sm">
+        {/* The (main) layout already supplies page-shell padding — this used to
+            double it up and squeeze the wall on phones */}
+        <main className="space-y-6 md:space-y-12">
+          {/* MOBILE: a tight album header — the old hero card ate most of the
+              first screen before you saw a single photo */}
+          <section className="md:hidden space-y-3.5">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <h1 className={`${plusJakarta.className} text-[2rem] leading-none font-extrabold text-[#ab4400] tracking-tight`}>
+                  Memories
+                </h1>
+                <p className="mt-1.5 text-xs font-medium text-[#66645e]">
+                  {memories.length} {memories.length === 1 ? "moment" : "moments"} kept
+                  <span className="text-[#c3b5ab]"> · {usedText.replace(" used", "")}</span>
+                </p>
+              </div>
+
+              <Link
+                href="/memories/upload"
+                aria-label="Upload a memory"
+                className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[#ab4400] text-white shadow-lg shadow-[#ab4400]/25 active:scale-90 transition-transform"
+              >
+                <span className="material-symbols-outlined">add_photo_alternate</span>
+              </Link>
+            </div>
+
+            {/* Storage, as a hairline */}
+            <div className="h-1 w-full overflow-hidden rounded-full bg-[#f0ebe4]">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#ffae88] to-[#ab4400]"
+                style={{ width: `${Math.max(2, Math.min(100, usage))}%` }}
+              />
+            </div>
+
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#a09d95] text-[20px]">search</span>
+              <input
+                className="w-full rounded-full border border-[#efe9e2] bg-white py-3 pl-12 pr-4 text-sm text-[#393832] shadow-sm transition-shadow placeholder:text-[#c3b5ab] focus:border-[#ffae88] focus:outline-none focus:ring-2 focus:ring-[#ab4400]/10"
+                placeholder="Search a moment..."
+                type="text"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </div>
+          </section>
+
+          {/* DESKTOP: unchanged */}
+          <section className="hidden md:block relative bg-white/40 border border-white/60 rounded-[2.5rem] p-12 overflow-hidden shadow-sm">
             <div className="absolute inset-0 hero-gradient -z-10" />
             <div className="flex flex-col items-center text-center space-y-6 mb-14">
-            <h1 className={`${plusJakarta.className} text-5xl md:text-7xl font-extrabold text-[#ab4400] tracking-tight`}>
+            <h1 className={`${plusJakarta.className} text-7xl font-extrabold text-[#ab4400] tracking-tight`}>
               Cosmic Memories
             </h1>
             <div className="flex flex-col items-center gap-2">
@@ -213,7 +259,7 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
             </div>
           </section>
 
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-14 md:gap-y-16 lg:pb-10">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-10 gap-y-9 md:gap-y-16 lg:pb-10">
             {filtered.map((memory, index) => {
               const imageUrl = memory.url || fallbackImages[index % fallbackImages.length];
               const tiltClass = TILT_CLASSES[index % TILT_CLASSES.length];
@@ -238,7 +284,9 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
                         className={`absolute -top-3.5 left-1/2 z-10 h-7 w-28 -translate-x-1/2 -rotate-3 rounded-[2px] ${washiColor}`}
                       />
 
-                      <div className="relative aspect-[4/5] overflow-hidden">
+                      {/* 4:5 is tall on a phone — a single stamp filled the whole
+                          screen. 1:1 there, portrait on desktop. */}
+                      <div className="relative aspect-square sm:aspect-[4/5] overflow-hidden">
                         <Image
                           src={imageUrl}
                           alt={clean || "Memory"}
@@ -250,7 +298,7 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
 
                       <div className="flex items-start justify-between gap-3 px-1 pt-3">
                         <div className="min-w-0 space-y-1.5">
-                          <h3 className={`${plusJakarta.className} font-semibold text-lg leading-snug text-[#393832]`}>
+                          <h3 className={`${plusJakarta.className} font-semibold text-base sm:text-lg leading-snug text-[#393832]`}>
                             {clean || "A sweet memory"}
                           </h3>
                           {tags.length > 0 && (
@@ -294,33 +342,33 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
           )}
         </main>
 
-        <div className="md:hidden fixed bottom-[calc(0.5rem+env(safe-area-inset-bottom))] left-4 right-4 z-50 flex justify-around items-center px-6 py-4 max-w-md mx-auto bg-[#fffbff]/70 backdrop-blur-xl rounded-full shadow-[0_20px_50px_rgba(57,56,50,0.1)]">
-          <Link className="flex flex-col items-center justify-center bg-[#ab4400] text-white rounded-full w-12 h-12 hover:scale-110 transition-transform duration-150" href="/memories">
-            <span className="material-symbols-outlined">auto_awesome</span>
-          </Link>
-          <Link className="flex flex-col items-center justify-center text-[#9d4867] opacity-60 hover:scale-110 transition-transform duration-150" href="/dashboard#collections">
-            <span className="material-symbols-outlined">library_books</span>
-          </Link>
-          <Link className="flex flex-col items-center justify-center text-[#9d4867] opacity-60 hover:scale-110 transition-transform duration-150" href="/games">
-            <span className="material-symbols-outlined">videogame_asset</span>
-          </Link>
-        </div>
-
-        <footer className="flex flex-col items-center justify-center space-y-4 w-full text-center bg-transparent pb-12">
-          <div className="flex gap-8">
-            <Link className="text-[#9d4867] opacity-70 text-sm italic hover:text-[#ab4400] transition-colors" href="/dashboard">Our Story</Link>
-            <Link className="text-[#9d4867] opacity-70 text-sm italic hover:text-[#ab4400] transition-colors" href="/settings">Privacy</Link>
-            <Link className="text-[#9d4867] opacity-70 text-sm italic hover:text-[#ab4400] transition-colors" href="/settings">Support</Link>
+        {/* The app's global bottom nav already covers mobile — this page used
+            to stack a second one on top of it.
+            mt-16 clears the tilted stamps: rotation doesn't grow the layout box,
+            so the last card's corner was landing on top of the footer. */}
+        <footer className="mt-16 flex flex-col items-center justify-center gap-3 w-full text-center bg-transparent pb-2">
+          <div className="flex gap-6 sm:gap-8">
+            <Link className="text-[#9d4867] opacity-70 text-xs sm:text-sm italic hover:text-[#ab4400] transition-colors" href="/dashboard">Our Story</Link>
+            <Link className="text-[#9d4867] opacity-70 text-xs sm:text-sm italic hover:text-[#ab4400] transition-colors" href="/settings">Privacy</Link>
+            <Link className="text-[#9d4867] opacity-70 text-xs sm:text-sm italic hover:text-[#ab4400] transition-colors" href="/settings">Support</Link>
           </div>
-          <p className="text-[#9d4867] text-sm italic leading-relaxed">Handcrafted with love by Riceee © 2024</p>
+          <p className="text-[#9d4867] text-xs sm:text-sm italic leading-relaxed">Handcrafted with love by Riceee © 2024</p>
         </footer>
       </div>
 
       {selectedMemory && (
-        <div className="fixed inset-0 z-[90] bg-black/45 backdrop-blur-sm p-4 md:p-8 flex items-center justify-center">
-          <div className="w-full max-w-5xl bg-[#fffbff] rounded-[2rem] border border-white/60 shadow-2xl overflow-hidden">
+        // z-[120] clears the mobile bottom nav (z-100), which was floating on
+        // top of the photo. Tap the backdrop to close.
+        <div
+          className="fixed inset-0 z-[120] bg-black/55 backdrop-blur-sm p-3 md:p-8 flex items-center justify-center"
+          onClick={closePreview}
+        >
+          <div
+            className="w-full max-w-5xl max-h-[90dvh] overflow-y-auto scrollbar-hide bg-[#fffbff] rounded-[1.75rem] md:rounded-[2rem] border border-white/60 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
             <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="relative bg-[#f7f3ed] min-h-[320px] md:min-h-[520px]">
+              <div className="relative bg-[#f7f3ed] aspect-square md:aspect-auto md:min-h-[520px]">
                 <Image
                   src={selectedMemory.url || fallbackImages[0]}
                   alt={selectedMemory.caption || "Memory"}

@@ -175,11 +175,13 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
   const isFreshConversation =
     cells.length === 1 && cells[0]?.status === "editing" && !cells[0]?.content;
 
+  // label is what the chip shows (short, so it fits one row on a phone);
+  // prompt is what actually gets typed for you
   const suggestionPrompts = [
-    "I had a weird dream last night 😴",
-    "We had a tiny fight today...",
-    "Tell me something sweet about us 💗",
-    "I'm a little stressed lately",
+    { label: "Weird dream 😴", prompt: "I had a weird dream last night" },
+    { label: "We fought 😕", prompt: "We had a tiny fight today..." },
+    { label: "Say something sweet 💗", prompt: "Tell me something sweet about us" },
+    { label: "I'm stressed", prompt: "I'm a little stressed lately" },
   ];
 
   const handleSuggestion = (text) => {
@@ -191,40 +193,46 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
   };
 
   return (
-    <div className="w-full max-w-[100%] mx-auto space-y-6 pb-20">
+    <div className="w-full max-w-[100%] mx-auto space-y-3 sm:space-y-6 pb-6 sm:pb-20">
       {/* Warm welcome when the page is fresh — no entrance animation:
           throttled background tabs replay it late and the page jumps */}
       {isFreshConversation && (
-        <div className="flex flex-col items-center text-center gap-5 pt-6 pb-4">
-          <div className="relative">
-            <div className="animate-blob absolute -inset-6 rounded-full bg-gradient-to-br from-[#ffae88]/25 to-[#ffd9e2]/25 blur-2xl pointer-events-none" />
-            <img
-              src="/cat-ai.png"
-              alt="Riceee AI"
-              className="relative w-24 h-24 object-contain mix-blend-multiply animate-float"
-              style={{ animationDuration: "5s" }}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <h3 className="text-2xl font-bold text-[#393832] tracking-tight">
+        <div className="flex flex-col items-center text-center gap-3 sm:gap-5 pt-1 sm:pt-6 pb-1 sm:pb-4">
+          {/* No glow behind the cat — the blurred gradient read as a grey box */}
+          <img
+            src="/cat-ai.png"
+            alt="Riceee AI"
+            className="w-24 h-24 sm:w-28 sm:h-28 object-contain animate-float"
+            style={{ animationDuration: "5s" }}
+          />
+          <div className="space-y-1 sm:space-y-1.5">
+            <h3 className="text-lg sm:text-2xl font-bold text-[#393832] tracking-tight">
               Hey, I&apos;m <span className="text-[#ab4400]">Riceee</span> 🐾
             </h3>
-            <p className="text-sm text-[#66645e] max-w-sm mx-auto leading-relaxed">
+            {/* Long version only where there's room for it */}
+            <p className="hidden sm:block text-sm text-[#66645e] max-w-sm mx-auto leading-relaxed">
               Your in-house listener. Vent, wonder, overthink — this notebook keeps it all between us.
             </p>
+            <p className="sm:hidden text-[13px] text-[#66645e] leading-snug">
+              Vent, wonder, overthink. Stays between us.
+            </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-2 max-w-lg">
-            {suggestionPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                type="button"
-                onClick={() => handleSuggestion(prompt)}
-                className="px-4 py-2 rounded-full bg-white/80 border border-[#ffdfcf] text-[#6a2700] text-xs font-semibold hover:bg-[#fff0e8] hover:border-[#ffba99] hover:-translate-y-0.5 active:scale-95 transition-all shadow-sm"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
+        </div>
+      )}
+
+      {/* Quick starts — desktop only. On a phone they crowded the input. */}
+      {isFreshConversation && (
+        <div className="hidden sm:flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
+          {suggestionPrompts.map(({ label, prompt }) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => handleSuggestion(prompt)}
+              className="whitespace-nowrap rounded-full border border-[#ffdfcf] bg-white/80 px-4 py-2 text-xs font-semibold text-[#6a2700] shadow-sm transition-all hover:-translate-y-0.5 hover:border-[#ffba99] hover:bg-[#fff0e8] active:scale-95"
+            >
+              {label}
+            </button>
+          ))}
         </div>
       )}
 

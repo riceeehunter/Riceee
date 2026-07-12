@@ -24,8 +24,11 @@ const Layout = async ({ children }) => {
   return (
     <>
       <Header />
-      <div className="page-shell pt-28 md:pt-32">{children}</div>
-
+      {/* Bottom padding clears the floating mobile nav — content used to run
+          underneath it (the Collections heading sat behind the bar) */}
+      <div className="page-shell pt-24 md:pt-32 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-10">
+        {children}
+      </div>
     </>
   );
 };

@@ -50,10 +50,10 @@ export function BackToArena({ label = "Arena" }) {
 }
 
 export function GameFrame({ children, size = "max-w-xl" }) {
-  // The (main) layout already pads for the floating header (pt-28/pt-32),
-  // so the frame fills only the remaining viewport — no phantom scroll
+  // The layout already pads for the floating header and the mobile bottom nav,
+  // so the frame only claims what's left — no phantom scroll on either
   return (
-    <div className="flex min-h-[calc(100dvh-9rem)] md:min-h-[calc(100dvh-10rem)] flex-col items-center justify-center py-2 pb-8">
+    <div className="flex min-h-[calc(100dvh-15rem)] md:min-h-[calc(100dvh-10rem)] flex-col items-center justify-center py-2 md:pb-8">
       <div className={`mx-auto w-full ${size}`}>{children}</div>
     </div>
   );
