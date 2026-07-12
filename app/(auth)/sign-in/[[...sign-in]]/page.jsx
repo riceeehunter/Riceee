@@ -1,8 +1,21 @@
 import { SignIn } from "@clerk/nextjs";
 
-export default function Page() {
+export default async function Page({ searchParams }) {
+  const { redirect_url: redirectUrl } = await searchParams;
+
+  // Someone arriving from an invite link must land back on /join, not on the
+  // dashboard — a detour through the dashboard used to create them an empty
+  // space of their own, which then blocked the invite they came here to accept.
+  // Only same-origin paths are honoured, so this can't be used as an open redirect.
+  const afterSignIn =
+    typeof redirectUrl === "string" && redirectUrl.startsWith("/") && !redirectUrl.startsWith("//")
+      ? redirectUrl
+      : "/dashboard";
+
   return (
     <SignIn
+      forceRedirectUrl={afterSignIn}
+      signUpForceRedirectUrl={afterSignIn}
       appearance={{
         elements: {
           formButtonPrimary: "bg-[#ab4400] hover:bg-[#8e3800] text-sm normal-case transition-all shadow-lg shadow-[#ab4400]/20",

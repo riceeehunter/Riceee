@@ -1,9 +1,19 @@
 import { SignUp } from "@clerk/nextjs";
 
-export default function Page() {
+export default async function Page({ searchParams }) {
+  const { redirect_url: redirectUrl } = await searchParams;
+
+  // A partner who signs up from an invite link goes straight back to /join.
+  // Sending them through onboarding first would have them name a space they're
+  // about to leave behind anyway. Same-origin paths only.
+  const afterSignUp =
+    typeof redirectUrl === "string" && redirectUrl.startsWith("/") && !redirectUrl.startsWith("//")
+      ? redirectUrl
+      : "/onboarding";
+
   return (
     <SignUp
-      forceRedirectUrl="/onboarding"
+      forceRedirectUrl={afterSignUp}
       appearance={{
         elements: {
           formButtonPrimary: "bg-[#ab4400] hover:bg-[#8e3800] text-sm normal-case transition-all shadow-lg shadow-[#ab4400]/20",
