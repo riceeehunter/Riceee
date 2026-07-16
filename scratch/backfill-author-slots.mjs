@@ -33,6 +33,25 @@ const TARGETS = [
 const norm = (v) => String(v ?? "").trim().toLowerCase();
 
 /**
+ * Names that were in Settings when rows were written but have since been renamed
+ * away, leaving nothing in the database to decode them.
+ *
+ * This is the orphaning bug biting the migration itself. Space yqx7rd read
+ * one="Praneeth" during the dry run; a rename to "Hunter" landed before --apply
+ * and erased the only proof of what its five "Praneeth" entries meant, so they
+ * came back UNRESOLVED. Once the rename happens, no amount of inference gets it
+ * back -- the evidence is genuinely gone and a human has to supply it.
+ *
+ * Every line needs provenance. Never guess: a wrong slot puts one partner's name
+ * on the other's writing.
+ */
+const HISTORICAL_NAMES = {
+  // yqx7rd: read as one="Praneeth" two="Toasty" on 2026-07-16, before the owner
+  // renamed partner one to "Hunter" ("i changed my name to hunter from praneeth").
+  cmr8yocy00000io81fbyqx7rd: { praneeth: SLOT_ONE },
+};
+
+/**
  * Build name -> slot for one space.
  *
  * Current settings names are the primary source. Historical "A x B" both-labels
@@ -47,8 +66,15 @@ function buildNameMap(space, values) {
     if (key && !map.has(key)) map.set(key, slot);
   };
 
+  // Current settings first -- they're the strongest evidence and must win over
+  // anything inferred below.
   put(space.partnerOneName, SLOT_ONE);
   put(space.partnerTwoName, SLOT_TWO);
+
+  for (const [name, slot] of Object.entries(HISTORICAL_NAMES[space.id] ?? {})) {
+    put(name, slot);
+  }
+
   put("partner 1", SLOT_ONE);
   put("partner 2", SLOT_TWO);
 
