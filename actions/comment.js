@@ -4,6 +4,9 @@ import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "./notification";
 import { getOrCreateUser } from "@/lib/auth";
+import { resolveAuthorSlotForWrite } from "@/lib/space-identity";
+import { resolveAuthorName } from "@/lib/constants/players";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 export async function addComment(data) {
   try {
@@ -16,10 +19,13 @@ export async function addComment(data) {
     });
     if (!entry) throw new Error("Entry not found");
 
+    const authorSlot = await resolveAuthorSlotForWrite(user.id, data.author);
+    const authorName = resolveAuthorName(authorSlot, resolvePartnerNames(user));
+
     const comment = await db.comment.create({
       data: {
         content: data.content,
-        author: data.author,
+        author: authorSlot,
         entryId: data.entryId,
         userId: user.id,
       },
@@ -28,11 +34,11 @@ export async function addComment(data) {
     // Create notification
     await createNotification({
       type: "comment",
-      message: `${data.author} commented on "${entry?.title}"`,
+      message: `${authorName} commented on "${entry?.title}"`,
       entryId: data.entryId,
       entryTitle: entry?.title || "an entry",
       commentId: comment.id,
-      commentAuthor: data.author,
+      commentAuthor: authorName,
     });
 
     revalidatePath(`/journal/${data.entryId}`);
@@ -66,7 +72,12 @@ export async function getComments(entryId) {
       },
     });
 
-    return comments;
+    const partnerNames = resolvePartnerNames(user);
+
+    return comments.map((comment) => ({
+      ...comment,
+      authorName: resolveAuthorName(comment.author, partnerNames),
+    }));
   } catch (error) {
     throw new Error(error.message);
   }

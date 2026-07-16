@@ -53,3 +53,5 @@ env/
 __pycache__/
 *.py[cod]
 *$py.class
+# Local backup dumps from one-time data migrations (contain user data)
+scratch/author-slot-backup-*.json

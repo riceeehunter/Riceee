@@ -3,6 +3,7 @@
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { uploadToR2, deleteFromR2, generateR2Key, getSignedR2Url } from "@/lib/r2";
+import { resolveAuthorSlotForWrite } from "@/lib/space-identity";
 
 // Verify the file really is an image by its magic bytes — the MIME type
 // alone is client-supplied and can be faked
@@ -46,7 +47,8 @@ export async function uploadMemory(formData) {
     // Get form data
     const file = formData.get("file");
     const caption = formData.get("caption") || null;
-    const uploadedBy = formData.get("uploadedBy") || "Both Partners";
+    // Slot, not name -- see resolveAuthorSlotForWrite. Photos outlive nicknames.
+    const uploadedBy = await resolveAuthorSlotForWrite(user.id, formData.get("uploadedBy"));
     const memoryDateString = formData.get("memoryDate");
     
     // Parse the memory date, default to now if not provided

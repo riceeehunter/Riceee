@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { AUTHOR_SLOTS } from "@/lib/constants/players";
 
 const TAGS = ["Warmth", "Playful", "Adventure", "Cafe Date", "Cozy", "Sunset", "Foodie", "Home", "Travel"];
 
@@ -36,7 +37,7 @@ export default function UploadMemoryPageClient({ partnerNames }) {
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [caption, setCaption] = useState("");
-  const [uploadedBy, setUploadedBy] = useState(bothLabel);
+  const [uploadedBy, setUploadedBy] = useState(AUTHOR_SLOTS.BOTH);
   const [memoryDate, setMemoryDate] = useState(new Date());
   const [selectedTags, setSelectedTags] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -444,30 +445,30 @@ export default function UploadMemoryPageClient({ partnerNames }) {
                 <div className="flex gap-3">
                   <button
                     className={`flex-1 flex flex-col items-center justify-center py-3 rounded-full border border-[#bcb9b1]/10 transition-colors group ${
-                      uploadedBy === partnerOneName ? "bg-[#ffd9e2] text-[#863655]" : "bg-white hover:bg-orange-50"
+                      uploadedBy === AUTHOR_SLOTS.ONE ? "bg-[#ffd9e2] text-[#863655]" : "bg-white hover:bg-orange-50"
                     }`}
                     type="button"
-                    onClick={() => setUploadedBy(partnerOneName)}
+                    onClick={() => setUploadedBy(AUTHOR_SLOTS.ONE)}
                   >
                     <span className="material-symbols-outlined opacity-80">person</span>
                     <span className="text-xs font-semibold mt-1">{partnerOneName}</span>
                   </button>
                   <button
                     className={`flex-1 flex flex-col items-center justify-center py-3 rounded-full border border-[#bcb9b1]/10 transition-colors group ${
-                      uploadedBy === partnerTwoName ? "bg-[#ffae88] text-[#6a2700]" : "bg-white hover:bg-orange-50"
+                      uploadedBy === AUTHOR_SLOTS.TWO ? "bg-[#ffae88] text-[#6a2700]" : "bg-white hover:bg-orange-50"
                     }`}
                     type="button"
-                    onClick={() => setUploadedBy(partnerTwoName)}
+                    onClick={() => setUploadedBy(AUTHOR_SLOTS.TWO)}
                   >
                     <span className="material-symbols-outlined opacity-80">person_2</span>
                     <span className="text-xs font-semibold mt-1">{partnerTwoName}</span>
                   </button>
                   <button
                     className={`flex-1 flex flex-col items-center justify-center py-3 rounded-full border border-[#bcb9b1]/10 transition-colors group ${
-                      uploadedBy === bothLabel ? "bg-[#ffae88] text-[#6a2700] shadow-md shadow-[#ab4400]/10" : "bg-white hover:bg-orange-50"
+                      uploadedBy === AUTHOR_SLOTS.BOTH ? "bg-[#ffae88] text-[#6a2700] shadow-md shadow-[#ab4400]/10" : "bg-white hover:bg-orange-50"
                     }`}
                     type="button"
-                    onClick={() => setUploadedBy(bothLabel)}
+                    onClick={() => setUploadedBy(AUTHOR_SLOTS.BOTH)}
                   >
                     <span className="material-symbols-outlined">favorite</span>
                     <span className="text-xs font-semibold mt-1">Both</span>

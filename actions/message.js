@@ -1,11 +1,11 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
 import { getOrCreateUser } from "@/lib/auth";
 import { PLAYER_IDS, getOtherPlayer, getPlayerSenderAliases, normalizePlayerId } from "@/lib/constants/players";
 import { getSpaceChatChannel } from "@/lib/constants/channels";
+import { getViewerSlot } from "@/lib/space-identity";
 
 function getOppositeSenderAliases(player) {
   const playerId = normalizePlayerId(player);
@@ -13,33 +13,12 @@ function getOppositeSenderAliases(player) {
   return getPlayerSenderAliases(oppositeId);
 }
 
-// Derive the sender identity server-side (same ordering as getCurrentGameSetup),
-// so one partner can't send messages pretending to be the other
-async function getServerSenderId(user) {
-  try {
-    const { userId: clerkUserId } = await auth();
-    if (!clerkUserId) return null;
-
-    const identities = await db.userIdentity.findMany({
-      where: { userId: user.id },
-      select: { clerkUserId: true },
-      orderBy: { createdAt: "asc" },
-    });
-
-    const index = identities.findIndex((identity) => identity.clerkUserId === clerkUserId);
-    if (index === -1) return null;
-    return index % 2 === 0 ? PLAYER_IDS.ONE : PLAYER_IDS.TWO;
-  } catch {
-    return null;
-  }
-}
-
 export async function sendMessage(data) {
   try {
     const user = await getOrCreateUser();
     // Server-derived identity wins; client value is only a legacy fallback
     const senderId =
-      (await getServerSenderId(user)) ||
+      (await getViewerSlot(user.id)) ||
       normalizePlayerId(data.sender) ||
       PLAYER_IDS.ONE;
 

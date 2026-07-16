@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { addComment, deleteComment } from "@/actions/comment";
+import { AUTHOR_SLOTS, resolveAuthorName } from "@/lib/constants/players";
 import { format } from "date-fns";
 import { Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,14 +23,12 @@ export default function Comments({ entryId, initialComments, partnerNames }) {
   const bothLabel = partnerNames?.bothLabel || `${partnerOneName} x ${partnerTwoName}`;
   const [comments, setComments] = useState(initialComments || []);
   const [newComment, setNewComment] = useState("");
-  const [author, setAuthor] = useState(bothLabel);
+  // The picker carries a slot, never a name: a stored name orphans the moment
+  // the couple renames a partner. Labels stay names, values are slots.
+  const [author, setAuthor] = useState(AUTHOR_SLOTS.BOTH);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const router = useRouter();
-
-  useEffect(() => {
-    setAuthor(bothLabel);
-  }, [bothLabel]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -98,9 +97,9 @@ export default function Comments({ entryId, initialComments, partnerNames }) {
                 <SelectValue placeholder="Commenting as..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={partnerOneName}>{partnerOneName} 💙</SelectItem>
-                <SelectItem value={partnerTwoName}>{partnerTwoName} 💗</SelectItem>
-                <SelectItem value={bothLabel}>{bothLabel} 💕</SelectItem>
+                <SelectItem value={AUTHOR_SLOTS.ONE}>{partnerOneName} 💙</SelectItem>
+                <SelectItem value={AUTHOR_SLOTS.TWO}>{partnerTwoName} 💗</SelectItem>
+                <SelectItem value={AUTHOR_SLOTS.BOTH}>{bothLabel} 💕</SelectItem>
               </SelectContent>
             </Select>
             
@@ -126,7 +125,7 @@ export default function Comments({ entryId, initialComments, partnerNames }) {
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs px-3 py-1 bg-white text-pink-700 rounded-full font-medium border border-pink-300">
-                      {comment.author}
+                      {comment.authorName || resolveAuthorName(comment.author, partnerNames)}
                     </span>
                     <span className="text-xs text-gray-500">
                       {format(new Date(comment.createdAt), "MMM d, yyyy 'at' h:mm a")}

@@ -49,7 +49,7 @@ export default async function JournalEntryPage({ params }) {
                   Created {format(new Date(entry.createdAt), "PPP")}
                 </p>
                 <span className="text-pink-600 font-medium">
-                  ✍️ {entry.author}
+                  ✍️ {entry.authorName || entry.author}
                 </span>
               </div>
             </div>

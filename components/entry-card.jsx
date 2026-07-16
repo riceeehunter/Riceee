@@ -25,7 +25,7 @@ const EntryCard = ({ entry }) => {
                 {format(new Date(entry.createdAt), "MMM d, yyyy")}
               </time>
               <span className="text-xs px-2 sm:px-3 py-1 bg-gradient-to-r from-pink-100 to-rose-100 text-pink-700 rounded-full font-medium border border-pink-200">
-                {entry.author}
+                {entry.authorName || entry.author}
               </span>
             </div>
           </div>

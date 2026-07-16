@@ -24,6 +24,7 @@ import { BarLoader } from "react-spinners";
 import { toast } from "sonner";
 import { journalSchema } from "@/app/lib/schemas";
 import { getCurrentPartnerNames } from "@/actions/onboarding";
+import { AUTHOR_SLOTS, resolveAuthorName } from "@/lib/constants/players";
 import { plusJakarta, manrope } from "@/lib/fonts";
 import { cn } from "@/lib/utils";
 import "react-quill-new/dist/quill.snow.css";
@@ -95,7 +96,7 @@ export default function JournalEntryPage() {
       title: "",
       content: "",
       mood: "",
-      author: bothLabel,
+      author: AUTHOR_SLOTS.BOTH,
       collectionId: "",
     },
   });
@@ -120,7 +121,7 @@ export default function JournalEntryPage() {
         title: existingEntry.title || "",
         content: existingEntry.content || "",
         mood: existingEntry.mood || "",
-        author: existingEntry.author || bothLabel,
+        author: existingEntry.author || AUTHOR_SLOTS.BOTH,
         collectionId: existingEntry.collectionId || "",
       });
     } else if (draftData?.success && draftData?.data) {
@@ -128,7 +129,7 @@ export default function JournalEntryPage() {
         title: draftData.data.title || "",
         content: draftData.data.content || "",
         mood: draftData.data.mood || "",
-        author: draftData.data.author || bothLabel,
+        author: draftData.data.author || AUTHOR_SLOTS.BOTH,
         collectionId: "",
       });
     } else {
@@ -136,7 +137,7 @@ export default function JournalEntryPage() {
         title: "",
         content: "",
         mood: "",
-        author: bothLabel,
+        author: AUTHOR_SLOTS.BOTH,
         collectionId: "",
       });
     }
@@ -358,7 +359,9 @@ export default function JournalEntryPage() {
                         )}
                       >
                         <span className={field.value ? "text-[#393832]" : "text-[#9b948d]"}>
-                          {field.value || "Who's writing?"}
+                          {field.value
+                            ? resolveAuthorName(field.value, partnerNames)
+                            : "Who's writing?"}
                         </span>
                         <ChevronDown className="h-4 w-4 text-[#9b948d]" />
                       </button>
@@ -369,9 +372,9 @@ export default function JournalEntryPage() {
                       className="max-h-72 w-[var(--radix-popover-trigger-width)] overflow-y-auto border-[#ffdfcf] bg-[#fffaf6] p-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
                     >
                       {[
-                        { value: partnerOneName, label: `${partnerOneName} 💙` },
-                        { value: partnerTwoName, label: `${partnerTwoName} 💗` },
-                        { value: bothLabel, label: `${bothLabel} 💕` },
+                        { value: AUTHOR_SLOTS.ONE, label: `${partnerOneName} 💙` },
+                        { value: AUTHOR_SLOTS.TWO, label: `${partnerTwoName} 💗` },
+                        { value: AUTHOR_SLOTS.BOTH, label: `${bothLabel} 💕` },
                       ].map((option) => (
                         <button
                           key={option.value}

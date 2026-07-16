@@ -8,6 +8,11 @@ import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { deleteMemory, updateMemoryCaption } from "@/actions/memory";
 import { plusJakarta, manrope } from "@/lib/fonts";
+import {
+  AUTHOR_SLOTS,
+  normalizeAuthorSlot,
+  resolveAuthorName,
+} from "@/lib/constants/players";
 
 const fallbackImages = [
   "https://lh3.googleusercontent.com/aida-public/AB6AXuDoQWZnKcJ5EF0m7f1iBNuNO1mvY-3XiWFeP7GqkLP0tDXVzdtSAXB-QD4JB6vaWRPU3ET9aEKfSofCXoLQIjGs0hvCeeAM2pGyrfDA2mY6SsVP9RMchbXYICGfUvSD8UQMklQ2GZftceQmVL4orWge1tPjEbVWdpYGsji21X6n6GVsuPNs8fGwotVTbHMzAAzssct-tsaVNuy1bCDpKE9faMOgEznzzeyIsUXdJfPN6LuofqWlcfazhyDSUiOa7R9Y4N6uk0anuBs",
@@ -56,6 +61,14 @@ function uploaderTheme(value, partnerNames) {
   const two = partnerNames?.partnerTwoName || "Partner 2";
   const both = partnerNames?.bothLabel || `${one} x ${two}`;
 
+  // Slot first. Comparing the stored value against the *current* name is what
+  // broke here: rename a partner and every branch missed, so their photos
+  // silently fell through to the "both" colour.
+  const slot = normalizeAuthorSlot(value);
+  if (slot === AUTHOR_SLOTS.ONE) return "bg-[#ffd9e2] text-[#863655]";
+  if (slot === AUTHOR_SLOTS.TWO) return "bg-[#ffae88] text-[#6a2700]";
+  if (slot === AUTHOR_SLOTS.BOTH) return "bg-[#fed07f] text-[#634500]";
+
   if (value === one || value === "Partner 1") {
     return "bg-[#ffd9e2] text-[#863655]";
   }
@@ -87,10 +100,12 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
 
     return memories.filter((memory) => {
       const caption = (memory.caption || "").toLowerCase();
-      const uploadedBy = (memory.uploadedBy || "").toLowerCase();
+      // Match the name the user can actually see, not the slot behind it --
+      // searching "praneeth" must still find photos stored as "hunter".
+      const uploadedBy = resolveAuthorName(memory.uploadedBy, partnerNames).toLowerCase();
       return caption.includes(query) || uploadedBy.includes(query);
     });
-  }, [memories, search]);
+  }, [memories, search, partnerNames]);
 
   const usage = Number(stats?.usagePercentage || 0);
   const usedText = `${formatBytes(stats?.totalSize)} of ${formatBytes(stats?.quotaLimit)} used`;
@@ -308,7 +323,7 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
                           )}
                           <div className="pt-0.5">
                             <span className={`inline-block px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider ${uploaderTheme(memory.uploadedBy, partnerNames)}`}>
-                              {memory.uploadedBy || "Both Partners"}
+                              {resolveAuthorName(memory.uploadedBy, partnerNames)}
                             </span>
                           </div>
                         </div>
@@ -381,7 +396,7 @@ export default function MemoriesTemplateClient({ initialMemories, stats, partner
               <div className="p-6 md:p-8 flex flex-col">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${uploaderTheme(selectedMemory.uploadedBy, partnerNames)}`}>
-                    {selectedMemory.uploadedBy || "Both Partners"}
+                    {resolveAuthorName(selectedMemory.uploadedBy, partnerNames)}
                   </span>
                   <button
                     className="w-10 h-10 rounded-full bg-[#ebe8df] text-[#66645e] hover:text-[#ab4400] transition-colors"

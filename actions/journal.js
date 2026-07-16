@@ -8,6 +8,9 @@ import { createNotification } from "./notification";
 import aj from "@/lib/arcjet";
 import { request } from "@arcjet/next";
 import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
+import { resolveAuthorSlotForWrite } from "@/lib/space-identity";
+import { resolveAuthorName } from "@/lib/constants/players";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 export async function createJournalEntry(data) {
   try {
@@ -48,6 +51,11 @@ export async function createJournalEntry(data) {
     // Get mood image from Pixabay
     const moodImageUrl = await getPixabayImage(data.moodQuery);
 
+    // Store the slot, not the name -- renaming a partner must never orphan
+    // their past entries. The client only says solo-or-joint; the server
+    // decides *which* partner, so nobody can post under the other's name.
+    const authorSlot = await resolveAuthorSlotForWrite(user.id, data.author);
+
     // Create the entry
     const entry = await db.entry.create({
       data: {
@@ -56,16 +64,20 @@ export async function createJournalEntry(data) {
         mood: mood.id,
         moodScore: mood.score,
         moodImageUrl,
-        author: data.author,
+        author: authorSlot,
         userId: user.id,
         collectionId: data.collectionId || null,
       },
     });
 
+    // The notification is a point-in-time sentence, so it keeps the name as it
+    // read the moment it was sent rather than a slot resolved on every view.
+    const authorName = resolveAuthorName(authorSlot, resolvePartnerNames(user));
+
     // Create notification for new journal entry
     await createNotification({
       type: "journal",
-      message: `${data.author} wrote a new journal: "${data.title}"`,
+      message: `${authorName} wrote a new journal: "${data.title}"`,
       entryId: entry.id,
       entryTitle: data.title,
       commentAuthor: data.author,
@@ -146,10 +158,15 @@ export async function getJournalEntries({
       // take: limit,
     });
 
-    // Add mood data to each entry
+    // Resolve author slots to the names the couple currently goes by. Doing it
+    // here means callers render `authorName` and never have to know slots exist
+    // or thread partnerNames down through the component tree.
+    const partnerNames = resolvePartnerNames(user);
+
     const entriesWithMoodData = entries.map((entry) => ({
       ...entry,
       moodData: getMoodById(entry.mood),
+      authorName: resolveAuthorName(entry.author, partnerNames),
     }));
 
     return {
@@ -190,7 +207,10 @@ export async function getJournalEntry(id) {
 
     if (!entry) throw new Error("Entry not found");
 
-    return entry;
+    return {
+      ...entry,
+      authorName: resolveAuthorName(entry.author, resolvePartnerNames(user)),
+    };
   } catch (error) {
     throw new Error(error.message);
   }
@@ -246,6 +266,8 @@ export async function updateJournalEntry(data) {
       moodImageUrl = await getPixabayImage(data.moodQuery);
     }
 
+    const authorSlot = await resolveAuthorSlotForWrite(user.id, data.author);
+
     // Update the entry
     const updatedEntry = await db.entry.update({
       where: { id: data.id },
@@ -255,7 +277,7 @@ export async function updateJournalEntry(data) {
         mood: mood.id,
         moodScore: mood.score,
         moodImageUrl,
-        author: data.author,
+        author: authorSlot,
         collectionId: data.collectionId || null,
       },
     });
@@ -286,20 +308,22 @@ export async function saveDraft(data) {
   try {
     const user = await getOrCreateUser();
 
+    const authorSlot = await resolveAuthorSlotForWrite(user.id, data.author);
+
     const draft = await db.draft.upsert({
       where: { userId: user.id },
       create: {
         title: data.title,
         content: data.content,
         mood: data.mood,
-        author: data.author,
+        author: authorSlot,
         userId: user.id,
       },
       update: {
         title: data.title,
         content: data.content,
         mood: data.mood,
-        author: data.author,
+        author: authorSlot,
       },
     });
 

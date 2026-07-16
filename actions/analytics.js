@@ -2,6 +2,8 @@
 
 import { db } from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/auth";
+import { resolveAuthorName } from "@/lib/constants/players";
+import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 // Which calendar day an instant falls on, in the reader's timezone.
 // Using UTC here silently shifted late-night entries to the previous day
@@ -17,6 +19,7 @@ function dayKeyInTimeZone(date, timeZone) {
 
 export async function getAnalytics(period = "30d", timeZone = "UTC") {
   const user = await getOrCreateUser();
+  const partnerNames = resolvePartnerNames(user);
 
   // Reject a bogus timezone rather than crashing the dashboard
   let zone = timeZone;
@@ -107,7 +110,7 @@ export async function getAnalytics(period = "30d", timeZone = "UTC") {
             id: entry.id,
             title: entry.title,
             mood: entry.mood,
-            author: entry.author,
+            author: resolveAuthorName(entry.author, partnerNames),
           }))
         : [],
     };
