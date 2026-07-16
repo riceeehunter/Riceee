@@ -23,7 +23,7 @@ import { useUser } from "@clerk/nextjs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import Link from "next/link";
 import ReminderDialog from "./reminder-dialog";
-import { Check, ChevronDown, MessageCircle, NotebookPen, HeartPulse, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Flame, MessageCircle, NotebookPen, HeartPulse, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { plusJakarta } from "@/lib/fonts";
@@ -66,6 +66,102 @@ function CountUp({ value, duration = 900 }) {
   return <>{display.toFixed(decimals)}</>;
 }
 
+/**
+ * The reason to come back tomorrow.
+ *
+ * This slot used to repeat the average mood score, which the tile at the top of
+ * the page already shows. A streak is the one number that asks for something.
+ *
+ * Three states, because they want different things from you: no streak invites,
+ * a live streak reassures, and a streak you haven't fed today is the only one
+ * that should feel urgent.
+ */
+function StreakPill({ streak }) {
+  const current = streak?.current ?? 0;
+  const longest = streak?.longest ?? 0;
+  const wroteToday = streak?.wroteToday ?? false;
+  const atRisk = current > 0 && !wroteToday;
+
+  if (current === 0) {
+    return (
+      <Link
+        href="/journal/write"
+        className="group flex items-center gap-2.5 rounded-2xl border border-dashed border-[#ffceb4] bg-white/70 px-3.5 py-2 transition-all hover:border-[#ab4400] hover:-translate-y-0.5"
+      >
+        <Flame className="h-5 w-5 text-[#dcc9bb] transition-colors group-hover:text-[#ab4400]" />
+        <div className="text-left leading-tight">
+          <p className={`${plusJakarta.className} text-[13px] font-black text-[#7c6f66]`}>
+            Start a streak
+          </p>
+          <p className="text-[8px] font-bold uppercase tracking-widest text-[#c3b5ab]">
+            {longest > 1 ? `Your best was ${longest}` : "Write today"}
+          </p>
+        </div>
+      </Link>
+    );
+  }
+
+  const body = (
+    <>
+      {/* Flame breathes when the streak is safe; flickers harder when it isn't */}
+      <motion.span
+        animate={
+          atRisk
+            ? { scale: [1, 1.18, 0.96, 1.12, 1], rotate: [0, -6, 5, -3, 0] }
+            : { scale: [1, 1.07, 1], y: [0, -1.5, 0] }
+        }
+        transition={{
+          duration: atRisk ? 1.1 : 2.4,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="relative flex items-center justify-center"
+      >
+        <span
+          className={`absolute h-6 w-6 rounded-full blur-md ${
+            atRisk ? "bg-[#ff9969]/70" : "bg-[#fed07f]/60"
+          }`}
+        />
+        <Flame
+          className={`relative h-5 w-5 ${atRisk ? "text-[#ffd9b0]" : "text-[#fff3d6]"}`}
+          fill="currentColor"
+        />
+      </motion.span>
+
+      <div className="text-left leading-none">
+        <p className={`${plusJakarta.className} text-xl font-black text-white`}>
+          <CountUp value={current} />
+          <span className="ml-1 text-[9px] font-bold uppercase tracking-widest text-white/70">
+            {current === 1 ? "day" : "days"}
+          </span>
+        </p>
+        <p className="mt-1 text-[8px] font-bold uppercase tracking-widest text-white/70">
+          {atRisk ? "Write today to keep it" : longest > current ? `Best ${longest}` : "On fire"}
+        </p>
+      </div>
+    </>
+  );
+
+  const shell =
+    "flex items-center gap-2.5 rounded-2xl px-3.5 py-2 shadow-md transition-all";
+
+  // At risk, the whole pill is a button -- the urgency should be tappable.
+  return atRisk ? (
+    <Link
+      href="/journal/write"
+      className={`${shell} bg-gradient-to-br from-[#ab4400] to-[#ff7a3d] shadow-[#ab4400]/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#ab4400]/40`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <div
+      className={`${shell} bg-gradient-to-br from-[#c05400] to-[#ffae88] shadow-[#ab4400]/20`}
+    >
+      {body}
+    </div>
+  );
+}
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour < 5) return { text: "Still up", emoji: "🌙" };
@@ -105,7 +201,7 @@ const MoodAnalytics = () => {
 
   if (!analytics) return null;
 
-  const { timeline, stats } = analytics.data;
+  const { timeline, stats, streak } = analytics.data;
   const hasEntriesInPeriod = analytics.data.entries.length > 0;
   const hasAnyEntries = analytics.data.hasAnyEntries ?? hasEntriesInPeriod;
   const isNewUser = !hasAnyEntries;
@@ -136,7 +232,6 @@ const MoodAnalytics = () => {
       moodCount: hasEntry ? match.moods?.length ?? 1 : 0,
     };
   });
-  const wroteToday = weekStrip[weekStrip.length - 1]?.hasEntry;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
@@ -631,25 +726,11 @@ const MoodAnalytics = () => {
                   ))}
                 </div>
 
-                {!wroteToday && (
-                  <Link
-                    href="/journal/write"
-                    className="group flex items-center gap-1.5 rounded-full bg-[#ab4400] text-white px-3.5 py-2 text-[11px] font-bold shadow-md shadow-[#ab4400]/20 hover:bg-[#973b00] hover:-translate-y-0.5 transition-all"
-                  >
-                    <NotebookPen className="h-3.5 w-3.5 group-hover:rotate-6 transition-transform" />
-                    Write today
-                  </Link>
-                )}
               </div>
 
-              <div className="text-right">
-                <p className="text-[8px] font-bold text-[#9d4867] uppercase tracking-widest opacity-60">
-                  {period === "7d" ? "This week" : period === "15d" ? "Last 15 days" : "This month"}
-                </p>
-                <p className={`${plusJakarta.className} text-lg font-black text-[#ab4400] leading-tight`}>
-                  {averageMoodText}
-                </p>
-              </div>
+              {/* Carries the write-today nudge itself when the streak is at
+                  risk, so there's one call to action here rather than two */}
+              <StreakPill streak={streak} />
             </div>
           </CardContent>
 
