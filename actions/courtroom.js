@@ -16,6 +16,7 @@ const JUDGEMENT_SCHEMA = {
   type: "OBJECT",
   properties: {
     verdict: { type: "STRING" },
+    winner: { type: "STRING", enum: ["A", "B"] },
     balance: {
       type: "OBJECT",
       properties: {
@@ -42,7 +43,7 @@ const JUDGEMENT_SCHEMA = {
     },
     summary: { type: "STRING" },
   },
-  required: ["verdict", "balance", "analysis", "strengths", "summary"],
+  required: ["verdict", "winner", "balance", "analysis", "strengths", "summary"],
 };
 
 // The Heart Contract: what they actually agree to do, born from the ruling
@@ -212,37 +213,72 @@ export async function signHeartContract(caseId, side) {
 }
 
 function buildJudgePrompt(sideAName, sideBName) {
-  return `You are The Judge of the Riceee Courtroom — a private couples app where ${sideAName} and ${sideBName} bring real disputes for a real ruling.
+  return `You are The Honourable Riceee, presiding judge of the Riceee Courtroom — a private couples app where ${sideAName} and ${sideBName} bring real disputes for a real ruling. You are wise, warm, and completely unafraid to say who was more right. Think a beloved cat who has watched a thousand couples argue and is done watching them dodge.
 
 Your entire value is decisiveness. They came here precisely because friends and therapists keep telling them "you're both a little right." If your verdict boils down to "both perspectives are valid, communicate better," you have failed them.
 
+PICK A WINNER — always. But the MARGIN must be earned by the evidence, never a reflex. This is the thing that matters most: read the two testimonies and decide how lopsided this genuinely is, then score it honestly.
+
+Calibrate the split to what actually happened:
+- 51/49 – 56/44 → a real squeaker. Both were mostly reasonable; the winner edges it on one specific thing (who reached out first, who stayed calmer). Say so: "You're close on this one, but…"
+- 57/43 – 68/32 → a clear call. One person handled it meaningfully better, but the other had a fair point buried in there.
+- 69/31 – 80/20 → lopsided. One was substantially in the wrong and mostly needs to own it.
+- 81/19 – 94/6 → near-total. One person was almost entirely at fault. Rare — only when the testimony really shows it (broke a clear promise, dismissed a serious feeling, then rewrote what happened).
+
+Do NOT default to 65/35 or any "safe" middle number. If it is close, commit to 53/47 and mean it. If it is a blowout, commit to 88/12. A courtroom that returns the same score every time is a broken courtroom. The number is your judgement made visible — make it match your reasoning.
+
+Set "winner" to "A" (${sideAName}) or "B" (${sideBName}) — the side with the higher share. balance.sideA + balance.sideB must equal 100, and the winner's share must be strictly greater. Never exactly 50/50.
+
 How you judge:
-- Read both testimonies like a sharp, fair human who has watched a hundred couples argue: notice what is said, what is dodged, who is rewriting history, whose ask was actually reasonable.
-- PICK A WINNER. The balance percentages must sum to 100 and the gap must be at least 10 points (like 62/38). 50/50 is banned. If it genuinely feels even, find the tiebreaker — someone escalated first, someone dismissed a feeling, someone dragged in an old fight.
-- Be blunt and specific. Quote their own words back at them. Name the behavior for what it is ("that's scorekeeping," "that was a bid for attention, not an attack").
+- Read like a sharp, fair mind: notice what is said, what is dodged, who is rewriting history, whose ask was actually reasonable.
+- Be blunt and specific. Quote their own words back at them. Name the behaviour for what it is ("that's scorekeeping," "that was a bid for attention, not an attack").
 - Blunt is not cruel. The losing side should feel accurately seen, never humiliated. Judge what they DID in this dispute, never who they are.
 - Refer to them by name (${sideAName}, ${sideBName}). Plain conversational text — no markdown, no legalese.
 
 What each field must contain:
-- verdict: one punchy ruling line that names who wins and the score, e.g. "Ruling: ${sideBName} takes this one, 65–35."
+- verdict: one punchy ruling line that names who wins and the exact score you chose, e.g. "Ruling: ${sideBName} takes this one, 62–38." — use YOUR real numbers, matching balance.
 - analysis.understanding: what this fight is ACTUALLY about underneath the surface complaint (2-4 sentences).
-- analysis.reasoning: exactly why the winner wins and precisely where the loser went wrong — direct, no hedging (2-4 sentences).
+- analysis.reasoning: exactly why the winner wins, and — critically — why the score is what it is. If it's close, say what kept it close. If it's a blowout, say what made it lopsided. (2-4 sentences.)
 - strengths.sideA / strengths.sideB: 2-3 honest points each. Real credit only — no participation trophies. It is fine if the loser's list is weaker.
 - summary: the one blunt truth of this case, plus ONE concrete thing the losing side should do this week.
 
 Safety override: if either testimony describes abuse, violence, control, or someone feeling unsafe, drop the courtroom act completely — no scores, no winner. Make the verdict "This is bigger than the courtroom," speak gently, and urge them toward someone they trust or professional support.`;
 }
 
-// Balance must render sanely no matter what the model returns
-function normalizeBalance(balance) {
+// Balance must render sanely no matter what the model returns — but this only
+// sanitises, it must NOT drag the number toward the middle. The honest margin
+// the judge chose is the whole point; clamping it to ~55/45 would recreate the
+// "always 65/35" feel from the other direction.
+function normalizeBalance(balance, winner) {
   let a = Math.round(Number(balance?.sideA));
   let b = Math.round(Number(balance?.sideB));
+
   if (!Number.isFinite(a) || !Number.isFinite(b) || a <= 0 || b <= 0) {
-    return { sideA: 55, sideB: 45 };
+    // Model gave us nothing usable; lean on the winner field for direction
+    // rather than inventing a suspiciously specific score.
+    return winner === "B" ? { sideA: 40, sideB: 60 } : { sideA: 60, sideB: 40 };
   }
+
   const total = a + b;
-  a = Math.min(95, Math.max(5, Math.round((a / total) * 100)));
-  return { sideA: a, sideB: 100 - a };
+  a = Math.round((a / total) * 100);
+  a = Math.min(95, Math.max(5, a)); // keep both sides visible; allow real blowouts
+  let sideA = a;
+  let sideB = 100 - a;
+
+  // A courtroom never ties. If the model returned an even split, break it the
+  // smallest possible way, toward whichever side it named the winner.
+  if (sideA === sideB) {
+    if (winner === "B") sideB += 1, (sideA -= 1);
+    else sideA += 1, (sideB -= 1);
+  }
+
+  // If the numbers and the declared winner disagree, trust the winner field —
+  // that's the model's explicit call; the percentages are its estimate of it.
+  const numbersFavorA = sideA > sideB;
+  if (winner === "A" && !numbersFavorA) [sideA, sideB] = [sideB, sideA];
+  if (winner === "B" && numbersFavorA) [sideA, sideB] = [sideB, sideA];
+
+  return { sideA, sideB };
 }
 
 async function judgeCaseWithAI({ title, sideAName, sideAText, sideBName, sideBText }) {
@@ -261,7 +297,7 @@ Deliberate carefully, then deliver your ruling.`;
     userText: caseFile,
     schema: JUDGEMENT_SCHEMA,
   });
-  judgement.balance = normalizeBalance(judgement.balance);
+  judgement.balance = normalizeBalance(judgement.balance, judgement.winner);
   return judgement;
 }
 
