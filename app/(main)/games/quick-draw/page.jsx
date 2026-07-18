@@ -69,8 +69,13 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
   }, [localReady]);
 
   const localStrokeRef = useRef({ last: null, prev: null });
-  const remoteStrokeRef = useRef({ last: null, prev: null });
-  const lastSentAtRef = useRef(0);
+  const remoteStrokeRef = useRef({ last: null, prev: null, strokeId: null });
+  const remoteQueueRef = useRef([]); // incoming points, painted at a steady pace
+  const rectRef = useRef(null); // canvas rect, cached per stroke (no per-move reflow)
+  const strokeIdRef = useRef(0);
+  const sendingRef = useRef(false); // one batch in flight at a time (ordering)
+  // Outgoing points buffer, flushed as one batched event on an interval
+  const pendingRef = useRef({ strokeId: 0, first: true, color: COLORS[0], size: 4, points: [] });
 
   const remotePlayer = getOtherPlayer(localPlayer);
   const localPlayerName = getPlayerName(localPlayer);
@@ -143,27 +148,18 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
     });
 
     gameChannel.bind('drawing-stroke', (data) => {
-      if (data.player !== localPlayer && remoteCtxRef.current) {
-        const ctx = remoteCtxRef.current;
-        ctx.strokeStyle = data.color;
-        ctx.lineWidth = data.size;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-
-        if (data.type === "start") {
-          remoteStrokeRef.current.last = { x: data.x, y: data.y };
-          ctx.beginPath();
-          ctx.moveTo(data.x, data.y);
-        } else if (data.type === "draw") {
-          const last = remoteStrokeRef.current.last;
-          const next = { x: data.x, y: data.y };
-          if (last) {
-            const mid = midpoint(last, next);
-            ctx.quadraticCurveTo(last.x, last.y, mid.x, mid.y);
-            ctx.stroke();
-            remoteStrokeRef.current.last = next;
-          }
-        }
+      if (data.player === localPlayer) return;
+      // Just enqueue — the rAF loop paints these at a steady pace so bursts of
+      // arriving points render as a smoothly growing line, not a sudden jump.
+      const pts = data.points || [];
+      for (let i = 0; i < pts.length; i++) {
+        remoteQueueRef.current.push({
+          strokeId: data.strokeId,
+          color: data.color,
+          size: data.size,
+          nx: pts[i][0],
+          ny: pts[i][1],
+        });
       }
     });
 
@@ -172,6 +168,8 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
         const ctx = remoteCtxRef.current;
         ctx.fillStyle = "#FFFFFF";
         ctx.fillRect(0, 0, remoteCanvasRef.current.width, remoteCanvasRef.current.height);
+        remoteQueueRef.current = []; // drop anything queued from before the clear
+        remoteStrokeRef.current.last = null; // new drawing starts fresh
       }
     });
 
@@ -236,59 +234,146 @@ function QuickDrawGame({ localPlayer, sessionId, getPlayerName }) {
     }
   }, [localReady, remoteReady, localPlayer, gameState]);
 
+  const pointFrom = (e) => {
+    const rect = rectRef.current;
+    const cx = e.clientX ?? e.touches?.[0]?.clientX;
+    const cy = e.clientY ?? e.touches?.[0]?.clientY;
+    return { x: cx - rect.left, y: cy - rect.top, w: rect.width, h: rect.height };
+  };
+
   const startDrawing = (e) => {
     if (localRoundComplete || gameState !== "playing") return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
-    
+    // Cache the rect once per stroke — reading it per move forces a reflow.
+    rectRef.current = canvasRef.current.getBoundingClientRect();
+    const p = pointFrom(e);
+
     setIsDrawing(true);
-    localStrokeRef.current.last = { x, y };
-    
+    localStrokeRef.current.prev = { x: p.x, y: p.y };
+    localStrokeRef.current.last = { x: p.x, y: p.y };
+
     const ctx = ctxRef.current;
     ctx.strokeStyle = selectedColor;
     ctx.lineWidth = brushSize;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
 
-    broadcastStroke("start", x, y);
+    strokeIdRef.current += 1;
+    pendingRef.current = {
+      strokeId: strokeIdRef.current,
+      first: true,
+      color: selectedColor,
+      size: brushSize,
+      points: [[p.x / p.w, p.y / p.h]],
+    };
   };
 
   const draw = (e) => {
     if (!isDrawing || localRoundComplete) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.clientX || e.touches?.[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches?.[0].clientY) - rect.top;
-    
-    const last = localStrokeRef.current.last;
-    const next = { x, y };
-    const mid = midpoint(last, next);
-    
+    const p = pointFrom(e);
+    const s = localStrokeRef.current;
+    const next = { x: p.x, y: p.y };
+
+    // Draw only the new segment (O(n) total), smoothed through the midpoints.
     const ctx = ctxRef.current;
-    ctx.quadraticCurveTo(last.x, last.y, mid.x, mid.y);
+    const mPrev = midpoint(s.prev, s.last);
+    const mNext = midpoint(s.last, next);
+    ctx.beginPath();
+    ctx.moveTo(mPrev.x, mPrev.y);
+    ctx.quadraticCurveTo(s.last.x, s.last.y, mNext.x, mNext.y);
     ctx.stroke();
-    
-    localStrokeRef.current.last = next;
-    broadcastStroke("draw", x, y);
+
+    s.prev = s.last;
+    s.last = next;
+    pendingRef.current.points.push([p.x / p.w, p.y / p.h]);
   };
 
-  const stopDrawing = () => setIsDrawing(false);
-
-  const broadcastStroke = (type, x, y) => {
-    const now = Date.now();
-    if (type === "draw" && now - lastSentAtRef.current < 20) return;
-    lastSentAtRef.current = now;
-
-    fetch('/api/pusher/trigger', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channel: CHANNEL_NAME,
-        event: 'drawing-stroke',
-        data: { player: localPlayer, type, x, y, color: selectedColor, size: brushSize }
-      })
-    });
+  const stopDrawing = () => {
+    if (isDrawing) flushStroke();
+    setIsDrawing(false);
   };
+
+  // Send accumulated points as ONE batched event — but only one request in
+  // flight at a time. Independent fetches can complete out of order and reach
+  // Pusher scrambled; serializing keeps strokes in the order they were drawn.
+  // While a send is in flight, points keep accumulating and go out next tick.
+  const flushStroke = useCallback(async () => {
+    if (sendingRef.current) return;
+    const p = pendingRef.current;
+    if (!p || p.points.length === 0) return;
+    const batch = {
+      player: localPlayer,
+      strokeId: p.strokeId,
+      first: p.first,
+      color: p.color,
+      size: p.size,
+      points: p.points,
+    };
+    p.first = false;
+    p.points = [];
+    sendingRef.current = true;
+    try {
+      await fetch('/api/pusher/trigger', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: CHANNEL_NAME, event: 'drawing-stroke', data: batch }),
+      });
+    } catch {
+      /* a dropped batch self-heals: the stroke id keeps the next one from
+         connecting to the wrong place */
+    } finally {
+      sendingRef.current = false;
+    }
+  }, [localPlayer, CHANNEL_NAME]);
+
+  useEffect(() => {
+    const id = setInterval(flushStroke, 40);
+    return () => clearInterval(id);
+  }, [flushStroke]);
+
+  // Paint the remote's queued points at a steady pace. Draining a fraction of
+  // the backlog each frame keeps it near-live when busy and buttery when idle,
+  // turning bursty network arrivals into a continuously growing line.
+  useEffect(() => {
+    let raf;
+    const tick = () => {
+      const q = remoteQueueRef.current;
+      const ctx = remoteCtxRef.current;
+      const canvas = remoteCanvasRef.current;
+      if (ctx && canvas && q.length) {
+        const dpr = window.devicePixelRatio || 1;
+        const cssW = canvas.width / dpr;
+        const cssH = canvas.height / dpr;
+        const s = remoteStrokeRef.current;
+        // Catch up if a big backlog built up, but never fewer than 1/frame.
+        const perFrame = Math.max(1, Math.ceil(q.length / 4));
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        for (let n = 0; n < perFrame && q.length; n++) {
+          const op = q.shift();
+          const next = { x: op.nx * cssW, y: op.ny * cssH };
+          if (op.strokeId !== s.strokeId || !s.last) {
+            s.strokeId = op.strokeId;
+            s.prev = next;
+            s.last = next;
+            continue; // first point of a stroke — nothing to connect yet
+          }
+          ctx.strokeStyle = op.color;
+          ctx.lineWidth = op.size;
+          const mPrev = midpoint(s.prev, s.last);
+          const mNext = midpoint(s.last, next);
+          ctx.beginPath();
+          ctx.moveTo(mPrev.x, mPrev.y);
+          ctx.quadraticCurveTo(s.last.x, s.last.y, mNext.x, mNext.y);
+          ctx.stroke();
+          s.prev = s.last;
+          s.last = next;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, []);
 
   const clearCanvas = () => {
     const ctx = ctxRef.current;
