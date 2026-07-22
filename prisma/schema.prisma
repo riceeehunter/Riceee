@@ -17,6 +17,22 @@ model User {
   updatedAt      DateTime       @updatedAt
   partnerOneName String?
   partnerTwoName String?
+
+  // --- Ending a space ---------------------------------------------------
+  // A space runs ACTIVE until someone ends it, spends the cooldown in
+  // COOLING_DOWN, then forks into two ARCHIVED spaces — one per partner.
+  spaceStatus        SpaceStatus @default(ACTIVE)
+  // Who pressed the button. Only they can call it off, so the partner who
+  // wants out can't be held in the space by the other one cancelling forever.
+  closureInitiatedBy String?
+  closureStartedAt   DateTime?
+  // When the fork becomes due. Nothing fires on its own — the next request
+  // into the space notices the date has passed and forks then.
+  closesAt           DateTime?
+  archivedAt         DateTime?
+  // Set on the copy that was split off, pointing at the space it came from.
+  // Provenance only: the two archives are fully independent rows.
+  forkedFromId       String?
   collections    Collection[]
   comments       Comment[]
   currentDraft   Draft?
@@ -26,6 +42,7 @@ model User {
   notifications  Notification[]
   spaceInvites   SpaceInvite[]
   identities     UserIdentity[]
+  spaceAccess    SpaceAccess[]
   conversations  ChatConversation[]
   courtroomCases CourtroomCase[]
   reminders      Reminder[]
@@ -114,6 +131,32 @@ model UserIdentity {
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+/**
+ * Every space this login is allowed to open — as opposed to UserIdentity, which
+ * is the single space it is currently *in*.
+ *
+ * Without this the two are the same thing, and a breakup is a dead end: the
+ * fork points your identity at an archive, an archive is full of entries, and
+ * joining a partner refuses any account whose current space has entries in it.
+ * The account is then stuck in that archive permanently, with no way to pair
+ * with anyone ever again short of abandoning the Google account entirely.
+ *
+ * Splitting "can open" from "currently in" makes moving on possible without
+ * giving anything up: switching spaces just repoints the identity, and the
+ * archive stays listed here to return to or download for as long as it exists.
+ */
+model SpaceAccess {
+  id          String   @id @default(cuid())
+  clerkUserId String
+  userId      String
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clerkUserId, userId])
+  @@index([clerkUserId])
   @@index([userId])
 }
 
@@ -245,4 +288,10 @@ enum InviteStatus {
   ACCEPTED
   REVOKED
   EXPIRED
+}
+
+enum SpaceStatus {
+  ACTIVE
+  COOLING_DOWN
+  ARCHIVED
 }

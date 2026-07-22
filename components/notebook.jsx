@@ -1,8 +1,12 @@
 "use client"
 import React, { useEffect, useRef, useState } from "react";
 import { saveChatCell, getConversation, updateConversationTitle } from "@/actions/chat";
+import { useSpaceState } from "@/components/space-state-provider";
 
 export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) {
+  // Past conversations stay readable in an archive; only new writing stops.
+  const { status: spaceStatus } = useSpaceState();
+  const isSealed = spaceStatus === "ARCHIVED";
   const [cells, setCells] = useState([]);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const nextId = useRef(2);
@@ -76,6 +80,7 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
   }
 
   async function handleRun(id) {
+    if (isSealed) return;
     const cell = cells.find((c) => c.id === id);
     if (!cell || !cell.content.trim() || cell.status !== "editing") return;
 
@@ -252,9 +257,16 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
                   <>
                     <textarea
                       ref={(el) => (inputRefs.current[cell.id] = el)}
-                      className="flex-grow py-2 text-gray-800 bg-transparent border-none focus:ring-0 focus:outline-none outline-none placeholder-gray-500 font-mono text-sm resize-none overflow-hidden"
-                      placeholder={index === 0 ? "What's on your mind today?" : ""}
+                      className="flex-grow py-2 text-gray-800 bg-transparent border-none focus:ring-0 focus:outline-none outline-none placeholder-gray-500 font-mono text-sm resize-none overflow-hidden disabled:cursor-not-allowed"
+                      placeholder={
+                        isSealed
+                          ? "This space is an archive — Riceee can't reply here anymore."
+                          : index === 0
+                            ? "What's on your mind today?"
+                            : ""
+                      }
                       value={cell.content}
+                      disabled={isSealed}
                       onChange={(e) => {
                         handleChange(cell.id, e.target.value);
                         e.target.style.height = "auto";
@@ -265,7 +277,8 @@ export default function Notebook({ activeChatId, onTitleUpdate, onCreateChat }) 
                     />
                     <button
                       aria-label="Run Cell"
-                      className="w-8 h-8 bg-action-yellow border border-action-yellow-border rounded-full flex items-center justify-center text-yellow-700 hover:bg-yellow-300 shadow-sm ml-3 flex-shrink-0 self-end mb-1"
+                      disabled={isSealed}
+                      className="w-8 h-8 bg-action-yellow border border-action-yellow-border rounded-full flex items-center justify-center text-yellow-700 hover:bg-yellow-300 shadow-sm ml-3 flex-shrink-0 self-end mb-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-action-yellow"
                       onClick={() => handleRun(cell.id)}
                     >
                       <svg className="w-3.5 h-3.5 ml-0.5" fill="currentColor" viewBox="0 0 20 20">

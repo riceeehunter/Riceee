@@ -3,14 +3,14 @@
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { createNotification } from "./notification";
-import { getOrCreateUser } from "@/lib/auth";
+import { getOrCreateUser, getWritableSpace } from "@/lib/auth";
 import { resolveAuthorSlotForWrite } from "@/lib/space-identity";
 import { resolveAuthorName } from "@/lib/constants/players";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
 
 export async function addComment(data) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Only allow commenting on entries in the caller's own space
     const entry = await db.entry.findFirst({
@@ -85,7 +85,7 @@ export async function getComments(entryId) {
 
 export async function deleteComment(commentId) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Check if comment belongs to user
     const comment = await db.comment.findFirst({

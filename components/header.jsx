@@ -1,9 +1,9 @@
 import React from "react";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { PenBox } from "lucide-react";
 import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
 import UserMenu from "./user-menu";
+import WriteCta from "./write-cta";
 import NotificationBell from "./notification-bell";
 import { checkUser } from "@/lib/checkUser";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
@@ -30,13 +30,7 @@ async function Header() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/journal/write" className="relative group">
-            <div className="absolute -inset-0.5 bg-[#ab4400] rounded-full blur opacity-20 group-hover:opacity-40 transition duration-1000" />
-            <div className="relative h-10 w-10 lg:h-auto lg:w-auto lg:px-5 lg:py-2.5 rounded-full bg-[#ab4400] text-white flex items-center justify-center gap-2 shadow-lg shadow-[#ab4400]/20 hover:scale-[1.02] active:scale-95 transition-all">
-              <PenBox size={16} className="lg:w-4 lg:h-4" />
-              <span className="hidden lg:inline text-[11px] font-bold uppercase tracking-[0.05em] whitespace-nowrap">WRITE YOUR HEARTS OUT</span>
-            </div>
-          </Link>
+          <WriteCta />
           <SignedOut>
             <SignInButton forceRedirectUrl="/dashboard">
               <Button variant="outline" className="rounded-full px-8 py-2.5 h-auto text-[11px] font-extrabold uppercase tracking-[0.15em] border-stone-200 text-stone-500 hover:bg-stone-50 hover:text-[#ab4400] hover:border-[#ab4400]/30 transition-all">Login</Button>

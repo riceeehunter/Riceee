@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { getOrCreateUser } from "@/lib/auth";
+import { getOrCreateUser, getUnarchivedSpace } from "@/lib/auth";
 import { getViewerSlot } from "@/lib/space-identity";
 import { PLAYER_IDS } from "@/lib/constants/players";
 import { revalidatePath } from "next/cache";
@@ -56,7 +56,8 @@ export async function getConversation(id) {
 
 export async function createConversation(title = "New Conversation") {
   try {
-    const user = await getOrCreateUser();
+    // Stays open through the cooldown, closed once archived.
+    const user = await getUnarchivedSpace();
     const slot = await viewerSlot(user.id);
     const conversation = await db.chatConversation.create({
       data: {
@@ -77,7 +78,7 @@ export async function saveChatCell({ conversationId, content, response, order })
       console.warn("Attempted to save chat cell without conversationId");
       return { success: false, error: "No conversation ID" };
     }
-    const user = await getOrCreateUser();
+    const user = await getUnarchivedSpace();
     const slot = await viewerSlot(user.id);
 
     // Ownership is per partner, not per space — writing into the other
@@ -130,7 +131,7 @@ export async function deleteConversation(id) {
 
 export async function updateConversationTitle(id, title) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getUnarchivedSpace();
     const slot = await viewerSlot(user.id);
     const { count } = await db.chatConversation.updateMany({
       where: { id, userId: user.id, ownerSlot: slot },

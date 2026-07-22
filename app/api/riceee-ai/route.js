@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOrCreateUser } from "@/lib/auth";
+import { getUnarchivedSpace } from "@/lib/auth";
 import { ajChat } from "@/lib/arcjet";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 
@@ -31,9 +31,29 @@ You're on both ${partnerOne}'s and ${partnerTwo}'s side. The quiet goal undernea
 }
 
 export async function POST(req) {
+  // Resolved outside the try so a closed space reads as a closed space. Letting
+  // it fall through to the catch-all turned "this archive doesn't take new
+  // conversations" into "Failed to get AI response", which looks like the app
+  // is broken rather than like a decision someone made.
+  let user;
   try {
-    // Only signed-in members of the app can use the AI (protects the quota)
-    const user = await getOrCreateUser();
+    // Unarchived rather than writable: venting stays available while a space is
+    // closing, and there'd be nowhere to save the reply once it's an archive.
+    user = await getUnarchivedSpace();
+  } catch (error) {
+    const unauthorized = /unauthorized/i.test(error?.message || "");
+    return NextResponse.json(
+      {
+        success: false,
+        error: unauthorized
+          ? "You need to be signed in for that."
+          : "This space is an archive, so Riceee can't start anything new here. Everything already written stays readable.",
+      },
+      { status: unauthorized ? 401 : 403 }
+    );
+  }
+
+  try {
 
     // Per-user rate limit so nobody can drain the Gemini quota
     const decision = await ajChat.protect(req, { userId: user.id, requested: 1 });

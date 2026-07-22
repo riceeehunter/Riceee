@@ -6,6 +6,7 @@ import { getOrCreateUser } from "@/lib/auth";
 import Header from "@/components/header";
 import FloatingChat from "@/components/floating-chat";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
+import ReadOnlyBanner from "@/components/read-only-banner";
 
 const Layout = async ({ children }) => {
   const { userId } = await auth();
@@ -27,6 +28,8 @@ const Layout = async ({ children }) => {
       {/* Bottom padding clears the floating mobile nav — content used to run
           underneath it (the Collections heading sat behind the bar) */}
       <div className="page-shell pt-24 md:pt-32 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pb-10">
+        {/* Reads the space state from the root layout's provider. */}
+        <ReadOnlyBanner />
         {children}
       </div>
     </>

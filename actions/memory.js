@@ -20,7 +20,14 @@ function sniffImageType(buffer) {
 }
 import aj from "@/lib/arcjet";
 import { request } from "@arcjet/next";
-import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
+import {
+  getAuthenticatedUserId,
+  getCurrentUser,
+  getOrCreateUser,
+  getWritableSpace,
+} from "@/lib/auth";
+import { isArchived, isCoolingDown, releaseMemoryObject } from "@/lib/space-closure";
+import { getViewerSlot } from "@/lib/space-identity";
 
 /**
  * Upload a new memory (photo)
@@ -42,7 +49,7 @@ export async function uploadMemory(formData) {
       throw new Error("Request blocked");
     }
 
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Get form data
     const file = formData.get("file");
@@ -208,13 +215,44 @@ export async function getStorageStats() {
 }
 
 /**
+ * Whether this viewer may take a photo down, given what state the space is in.
+ *
+ * Deliberately more permissive than the blanket read-only rule. Withdrawing a
+ * photo of yourself is a consent decision, not a write — treating it like one
+ * would mean the moment a relationship ends is the exact moment you lose the
+ * ability to take your own face out of it, which is backwards.
+ *
+ *   active       anyone in the space, as before
+ *   cooling down only what you uploaded — there's still one shared copy, so a
+ *                delete here removes it for both of you and can't be undone.
+ *                Joint photos wait for per-archive redaction, which can do it
+ *                properly once there are two copies to tell apart.
+ *   archived     anything in your own archive. It's your copy alone; the other
+ *                archive keeps its own row, and the stored file survives until
+ *                the last reference to it goes.
+ */
+async function assertCanRemoveMemory(space, memory) {
+  if (isArchived(space)) return;
+  if (!isCoolingDown(space)) return;
+
+  const slot = await getViewerSlot(space.id);
+  if (slot && memory.uploadedBy === slot) return;
+
+  throw new Error(
+    "This space is closing, so only photos you added yourself can be removed right now."
+  );
+}
+
+/**
  * Delete a memory
  * @param {string} memoryId - The memory ID to delete
  * @returns {Promise<void>}
  */
 export async function deleteMemory(memoryId) {
   try {
-    const user = await getOrCreateUser();
+    // Not getWritableSpace: taking a photo down stays available after a space
+    // stops accepting new content. assertCanRemoveMemory decides instead.
+    const user = await getCurrentUser();
 
     // Get memory record
     const memory = await db.memory.findUnique({
@@ -224,13 +262,19 @@ export async function deleteMemory(memoryId) {
     if (!memory) throw new Error("Memory not found");
     if (memory.userId !== user.id) throw new Error("Unauthorized");
 
-    // Delete from R2
-    await deleteFromR2(memory.key);
+    await assertCanRemoveMemory(user, memory);
 
-    // Delete from database
+    // Row first, file second. When a space is forked both archives point at the
+    // same stored object rather than paying to duplicate every photo, so the
+    // file may only go once nothing references it — otherwise deleting a photo
+    // here would blank the same photo out of the other person's archive.
     await db.memory.delete({
       where: { id: memoryId },
     });
+
+    if (await releaseMemoryObject(memory.key)) {
+      await deleteFromR2(memory.key);
+    }
 
     revalidatePath("/memories");
   } catch (error) {
@@ -247,7 +291,7 @@ export async function deleteMemory(memoryId) {
  */
 export async function updateMemoryCaption(memoryId, caption) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     const memory = await db.memory.findUnique({
       where: { id: memoryId },

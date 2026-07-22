@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher";
-import { getOrCreateUser } from "@/lib/auth";
+import { getOrCreateUser, getWritableSpace } from "@/lib/auth";
 import { PLAYER_IDS, getOtherPlayer, getPlayerSenderAliases, normalizePlayerId } from "@/lib/constants/players";
 import { getSpaceChatChannel } from "@/lib/constants/channels";
 import { getViewerSlot } from "@/lib/space-identity";
@@ -15,7 +15,7 @@ function getOppositeSenderAliases(player) {
 
 export async function sendMessage(data) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
     // Server-derived identity wins; client value is only a legacy fallback
     const senderId =
       (await getViewerSlot(user.id)) ||

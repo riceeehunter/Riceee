@@ -4,7 +4,7 @@ import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { request } from "@arcjet/next";
 import { revalidatePath } from "next/cache";
-import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
+import { getAuthenticatedUserId, getOrCreateUser, getWritableSpace } from "@/lib/auth";
 
 export async function getCollections() {
   const user = await getOrCreateUser();
@@ -47,7 +47,7 @@ export async function createCollection(data) {
       throw new Error("Request blocked");
     }
 
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     const collection = await db.collection.create({
       data: {
@@ -66,7 +66,7 @@ export async function createCollection(data) {
 
 export async function deleteCollection(id) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Check if collection exists and belongs to user
     const collection = await db.collection.findFirst({

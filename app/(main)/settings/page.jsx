@@ -1,16 +1,22 @@
 import { getCurrentPartnerNames } from "@/actions/onboarding";
 import { getSpaceStatus } from "@/actions/space-invite";
+import { getClosureState } from "@/actions/space-closure";
+import { getMySpaces } from "@/actions/spaces";
 import PartnerNamesForm from "./_components/partner-names-form";
 import SpaceConnectionCard from "./_components/space-connection-card";
+import SpaceClosureCard from "./_components/space-closure-card";
+import MySpacesCard from "./_components/my-spaces-card";
 
 export const metadata = {
   title: "Settings | Riceee",
 };
 
 export default async function SettingsPage() {
-  const [partnerNames, spaceStatus] = await Promise.all([
+  const [partnerNames, spaceStatus, closureState, mySpaces] = await Promise.all([
     getCurrentPartnerNames(),
     getSpaceStatus(),
+    getClosureState(),
+    getMySpaces(),
   ]);
 
   return (
@@ -23,6 +29,8 @@ export default async function SettingsPage() {
       </div>
       <SpaceConnectionCard status={spaceStatus} />
       <PartnerNamesForm initialValues={partnerNames} />
+      <MySpacesCard spaces={mySpaces.spaces} canStartFresh={mySpaces.canStartFresh} />
+      <SpaceClosureCard state={closureState} />
     </div>
   );
 }

@@ -105,6 +105,27 @@ function isDisposableSpace(space, clerkUserId) {
   return isSpaceEmpty(space._count);
 }
 
+/**
+ * Whether this account can move into a different space, and what has to happen
+ * to its current one first.
+ *
+ *   "free"       nothing to leave behind
+ *   "disposable" an empty shell a stray sign-in created; delete it
+ *   "archived"   a closed space. Moving on doesn't lose it — SpaceAccess keeps
+ *                it openable and downloadable — so this must be allowed, or
+ *                anyone who has been through a breakup is locked out of pairing
+ *                with anybody, permanently, for as long as they keep the login.
+ *
+ * Anything else is a live journal with real writing in it, and joining would
+ * strand it. That's the one case worth refusing.
+ */
+function leaveMode(space, clerkUserId) {
+  if (!space) return "free";
+  if (space.spaceStatus === "ARCHIVED") return "archived";
+  if (isDisposableSpace(space, clerkUserId)) return "disposable";
+  return "blocked";
+}
+
 function spaceTitle(space) {
   const one = space?.partnerOneName?.trim();
   const two = space?.partnerTwoName?.trim();
@@ -268,8 +289,9 @@ export async function previewSpaceInvite(rawCode) {
   }
 
   // The one case we genuinely can't resolve for them: this account has its own
-  // journal with real writing in it. Joining would strand that content.
-  if (currentSpace && !isDisposableSpace(currentSpace, clerkUserId)) {
+  // live journal with real writing in it. Joining would strand that content.
+  // An archive is fine to leave — it stays reachable either way.
+  if (leaveMode(currentSpace, clerkUserId) === "blocked") {
     return {
       ok: false,
       blocker:
@@ -326,8 +348,8 @@ export async function joinSpaceWithCode(rawCode) {
     throw new Error("That space already has both partners connected.");
   }
 
-  const disposable = isDisposableSpace(currentSpace, clerkUserId);
-  if (currentSpace && !disposable) {
+  const mode = leaveMode(currentSpace, clerkUserId);
+  if (mode === "blocked") {
     throw new Error(
       "This account already has its own journal with entries in it. Sign in with the account you want to connect, or start fresh."
     );
@@ -335,15 +357,29 @@ export async function joinSpaceWithCode(rawCode) {
 
   const operations = [];
 
-  // Drop the empty shell first — it holds this account's unique clerkUserId on
-  // both User and UserIdentity, so the new identity can't exist alongside it.
-  if (disposable) {
+  if (mode === "disposable") {
+    // Drop the empty shell first — it holds this account's unique clerkUserId
+    // on both User and UserIdentity, so the new identity can't exist alongside
+    // it. Deleting the User cascades the identity away with it.
     operations.push(db.user.delete({ where: { id: currentSpace.id } }));
+  } else if (mode === "archived") {
+    // Keep the archive and everything in it; only stop being *in* it. Recorded
+    // first so the right to reopen it exists before we point away.
+    operations.push(
+      db.spaceAccess.createMany({
+        data: [{ clerkUserId, userId: currentSpace.id }],
+        skipDuplicates: true,
+      })
+    );
   }
 
   operations.push(
-    db.userIdentity.create({
-      data: { clerkUserId, userId: target.id },
+    // Upsert rather than create: leaving an archive keeps the existing identity
+    // row, so there is one to move instead of one to add.
+    db.userIdentity.upsert({
+      where: { clerkUserId },
+      create: { clerkUserId, userId: target.id },
+      update: { userId: target.id },
     }),
     db.spaceInvite.update({
       where: { id: invite.id },

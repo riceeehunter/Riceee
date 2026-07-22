@@ -7,7 +7,7 @@ import { getPixabayImage } from "./public";
 import { createNotification } from "./notification";
 import aj from "@/lib/arcjet";
 import { request } from "@arcjet/next";
-import { getAuthenticatedUserId, getOrCreateUser } from "@/lib/auth";
+import { getAuthenticatedUserId, getOrCreateUser, getWritableSpace } from "@/lib/auth";
 import { resolveAuthorSlotForWrite } from "@/lib/space-identity";
 import { resolveAuthorName } from "@/lib/constants/players";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
@@ -42,7 +42,7 @@ export async function createJournalEntry(data) {
       throw new Error("Request blocked");
     }
 
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Get mood data
     const mood = MOODS[data.mood.toUpperCase()];
@@ -218,7 +218,7 @@ export async function getJournalEntry(id) {
 
 export async function deleteJournalEntry(id) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Check if entry exists and belongs to user
     const entry = await db.entry.findFirst({
@@ -244,7 +244,7 @@ export async function deleteJournalEntry(id) {
 
 export async function updateJournalEntry(data) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     // Check if entry exists and belongs to user
     const existingEntry = await db.entry.findFirst({
@@ -306,7 +306,7 @@ export async function getDraft() {
 
 export async function saveDraft(data) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     const authorSlot = await resolveAuthorSlotForWrite(user.id, data.author);
 

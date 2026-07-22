@@ -10,9 +10,12 @@ import Pusher from "pusher-js";
 import { PLAYER_IDS } from "@/lib/constants/players";
 import { getSpaceChatChannel } from "@/lib/constants/channels";
 import { plusJakarta } from "@/lib/fonts";
+import { useIsWritable } from "@/components/space-state-provider";
 
 export default function FloatingChat({ partnerNames, user, currentUserId, spaceId }) {
   const [mounted, setMounted] = useState(false);
+  // Old notes stay readable in a closing space; only the composer shuts off.
+  const isWritable = useIsWritable();
   const partnerOneName = partnerNames?.partnerOneName || "Partner 1";
   const partnerTwoName = partnerNames?.partnerTwoName || "Partner 2";
 
@@ -120,7 +123,7 @@ export default function FloatingChat({ partnerNames, user, currentUserId, spaceI
   }, [spaceId]);
 
   const handleSend = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !isWritable) return;
 
     setIsSending(true);
     try {
@@ -346,14 +349,18 @@ export default function FloatingChat({ partnerNames, user, currentUserId, spaceI
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyDown={handleKeyPress}
-                placeholder="Write a sweet note..."
-                className="flex-1 h-10 rounded-full border border-[#e7d4c3] bg-white px-4 text-sm text-[#5a4a3d] placeholder:text-[#a49589] focus:outline-none focus:ring-2 focus:ring-[#ffb995]/40"
-                disabled={isSending}
+                placeholder={
+                  isWritable
+                    ? "Write a sweet note..."
+                    : "This space is closed to new messages"
+                }
+                className="flex-1 h-10 rounded-full border border-[#e7d4c3] bg-white px-4 text-sm text-[#5a4a3d] placeholder:text-[#a49589] focus:outline-none focus:ring-2 focus:ring-[#ffb995]/40 disabled:bg-stone-50 disabled:cursor-not-allowed"
+                disabled={isSending || !isWritable}
               />
 
               <Button
                 onClick={handleSend}
-                disabled={!newMessage.trim() || isSending}
+                disabled={!newMessage.trim() || isSending || !isWritable}
                 className="h-9 w-9 rounded-full bg-gradient-to-r from-[#ab4400] to-[#ff9969] hover:from-[#973b00] hover:to-[#ff8b57] shadow-md disabled:opacity-50 p-0"
               >
                 <SendHorizonal className="h-4 w-4" />

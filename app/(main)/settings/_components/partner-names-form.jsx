@@ -6,15 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { savePartnerNames } from "@/actions/onboarding";
+import { useSpaceState } from "@/components/space-state-provider";
 import { toast } from "sonner";
 
 export default function PartnerNamesForm({ initialValues }) {
   const [isPending, startTransition] = useTransition();
+  const { isWritable, status } = useSpaceState();
   const [partnerOneName, setPartnerOneName] = useState(initialValues?.partnerOneName || "");
   const [partnerTwoName, setPartnerTwoName] = useState(initialValues?.partnerTwoName || "");
 
+  const locked = !isWritable;
+
   const onSubmit = (e) => {
     e.preventDefault();
+    if (locked) return;
 
     startTransition(async () => {
       try {
@@ -30,6 +35,13 @@ export default function PartnerNamesForm({ initialValues }) {
     <Card className="shadow-sm">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Partner names</CardTitle>
+        {locked && (
+          <p className="text-xs text-stone-500">
+            {status === "ARCHIVED"
+              ? "Names are fixed in an archive — they're how everything in it is signed."
+              : "Names can't be changed while this space is closing."}
+          </p>
+        )}
       </CardHeader>
       <CardContent className="pt-0">
         <form onSubmit={onSubmit} className="space-y-3">
@@ -42,7 +54,7 @@ export default function PartnerNamesForm({ initialValues }) {
               placeholder="Enter partner 1 name"
               className="h-9"
               required
-              disabled={isPending}
+              disabled={isPending || locked}
             />
           </div>
           <div className="space-y-1">
@@ -54,10 +66,10 @@ export default function PartnerNamesForm({ initialValues }) {
               placeholder="Enter partner 2 name"
               className="h-9"
               required
-              disabled={isPending}
+              disabled={isPending || locked}
             />
           </div>
-          <Button type="submit" disabled={isPending}>
+          <Button type="submit" disabled={isPending || locked}>
             {isPending ? "Saving..." : "Save changes"}
           </Button>
         </form>

@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { getOrCreateUser } from "@/lib/auth";
+import { getOrCreateUser, getWritableSpace } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 
@@ -125,7 +125,7 @@ async function callGemini({ systemPrompt, userText, schema, temperature = 0.9 })
 
 export async function generateHeartContract(caseId) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     const courtroomCase = await db.courtroomCase.findFirst({
       where: { id: caseId, userId: user.id },
@@ -189,7 +189,7 @@ Draw up the Heart Contract.`;
 // Each partner signs their own line; the contract seals when both have
 export async function signHeartContract(caseId, side) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     const courtroomCase = await db.courtroomCase.findFirst({
       where: { id: caseId, userId: user.id },
@@ -316,7 +316,7 @@ export async function getCases() {
 
 export async function fileCase({ title, perspective, author }) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
     const courtroomCase = await db.courtroomCase.create({
       data: {
         userId: user.id,
@@ -351,7 +351,7 @@ export async function fileCase({ title, perspective, author }) {
 
 export async function submitResponse({ caseId, perspective, author }) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
     
     // Verify ownership
     const existingCase = await db.courtroomCase.findFirst({
@@ -409,7 +409,7 @@ export async function submitResponse({ caseId, perspective, author }) {
 
 export async function deleteCase(id) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
     await db.courtroomCase.delete({
       where: { id, userId: user.id },
     });

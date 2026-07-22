@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/lib/prisma";
-import { getOrCreateUser } from "@/lib/auth";
+import { getOrCreateUser, getWritableSpace } from "@/lib/auth";
 
 export async function getReminders() {
   try {
@@ -18,7 +18,7 @@ export async function getReminders() {
 
 export async function addReminder({ date, title, note }) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
 
     if (!title?.trim()) throw new Error("Reminder title is required");
     const parsedDate = new Date(date);
@@ -40,7 +40,7 @@ export async function addReminder({ date, title, note }) {
 
 export async function deleteReminder(id) {
   try {
-    const user = await getOrCreateUser();
+    const user = await getWritableSpace();
     // Scoped delete — nobody can remove another space's reminder
     await db.reminder.delete({
       where: { id, userId: user.id },

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/prisma";
-import { getOrCreateUser } from "@/lib/auth";
+import { getOrCreateUser, getWritableSpace } from "@/lib/auth";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
 import { PLAYER_IDS } from "@/lib/constants/players";
 
@@ -50,7 +50,10 @@ export async function getCurrentGameSetup() {
 }
 
 export async function savePartnerNames(data) {
-  const user = await getOrCreateUser();
+  // Names are read back through every author slot in the space, so renaming
+  // rewrites how all of its history reads — which makes it a write, not a
+  // setting, and one a closed space shouldn't accept.
+  const user = await getWritableSpace();
   const partnerOneName = data.partnerOneName?.trim();
   const partnerTwoName = data.partnerTwoName?.trim();
 
