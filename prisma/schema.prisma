@@ -46,6 +46,18 @@ model Reminder {
 model ChatConversation {
   id        String     @id @default(cuid())
   userId    String
+  // Which partner this conversation belongs to. Solo Vent is the one place in
+  // a shared space that is *not* shared — without this, both partners read the
+  // same list, so venting about someone lands in front of them.
+  //
+  // An author slot rather than a clerkUserId: deleting a login and signing back
+  // in mints a fresh Clerk id (it has happened here), which would orphan
+  // someone's history. Slots survive that, and match how authorship works
+  // everywhere else in the app.
+  //
+  // Nullable only for rows written before this column existed; those are
+  // unattributable, so nothing matches them and they stay hidden.
+  ownerSlot String?
   title     String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -53,6 +65,7 @@ model ChatConversation {
   cells     ChatCell[]
 
   @@index([userId])
+  @@index([userId, ownerSlot])
 }
 
 model ChatCell {
