@@ -19,7 +19,7 @@ import {
 import { format, isSameDay } from "date-fns";
 import { Calendar as CalendarIcon, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { MOODS } from "@/app/lib/moods";
+import { MOODS } from "@/lib/moods";
 import EntryCard from "@/components/entry-card";
 
 export function JournalFilters({ entries }) {

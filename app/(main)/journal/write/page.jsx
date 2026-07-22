@@ -19,10 +19,10 @@ import {
   saveDraft,
 } from "@/actions/journal";
 import { createCollection, getCollections } from "@/actions/collection";
-import { getMoodById, MOODS } from "@/app/lib/moods";
+import { getMoodById, MOODS } from "@/lib/moods";
 import { BarLoader } from "react-spinners";
 import { toast } from "sonner";
-import { journalSchema } from "@/app/lib/schemas";
+import { journalSchema } from "@/lib/schemas";
 import { getCurrentPartnerNames } from "@/actions/onboarding";
 import { AUTHOR_SLOTS, resolveAuthorName } from "@/lib/constants/players";
 import { plusJakarta, manrope } from "@/lib/fonts";

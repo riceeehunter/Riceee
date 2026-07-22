@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -55,3 +56,6 @@ __pycache__/
 *$py.class
 # Local backup dumps from one-time data migrations (contain user data)
 scratch/author-slot-backup-*.json
+
+# Local LLM experiment — superseded by the Gemini API, kept off the repo
+Riceee_ai/

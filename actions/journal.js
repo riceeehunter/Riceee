@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { getMoodById, MOODS } from "@/app/lib/moods";
+import { getMoodById, MOODS } from "@/lib/moods";
 import { getPixabayImage } from "./public";
 import { createNotification } from "./notification";
 import aj from "@/lib/arcjet";

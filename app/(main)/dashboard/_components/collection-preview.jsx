@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Plus } from "lucide-react";
-import { getMoodById } from "@/app/lib/moods";
+import { getMoodById } from "@/lib/moods";
 import { plusJakarta } from "@/lib/fonts";
 
 const colorSchemes = {

@@ -15,7 +15,7 @@ import {
   Legend,
 } from "recharts";
 import { getAnalytics } from "@/actions/analytics";
-import { getMoodById, getMoodTrend } from "@/app/lib/moods";
+import { getMoodById, getMoodTrend } from "@/lib/moods";
 import { format, parseISO, isToday, subDays, isSameDay } from "date-fns";
 import useFetch from "@/hooks/use-fetch";
 import MoodAnalyticsSkeleton from "./analytics-loading";

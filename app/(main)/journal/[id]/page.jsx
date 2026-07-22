@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import DeleteDialog from "./_components/delete-dialog";
 import EditButton from "./_components/edit-button";
 import Comments from "./_components/comments";
-import { getMoodById } from "@/app/lib/moods";
+import { getMoodById } from "@/lib/moods";
 import { getJournalEntry } from "@/actions/journal";
 import { getComments } from "@/actions/comment";
 import { getOrCreateUser } from "@/lib/auth";
