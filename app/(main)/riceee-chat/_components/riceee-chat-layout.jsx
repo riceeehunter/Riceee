@@ -11,7 +11,7 @@ const poppins = Poppins({ subsets: ["latin"], weight: ["400", "500", "600", "700
 
 import { getConversations, createConversation, deleteConversation, updateConversationTitle } from "@/actions/chat";
 
-export default function RiceeeChatLayout({ partnerNames }) {
+export default function RiceeeChatLayout({ partnerNames, viewerIdx }) {
   const [activeTab, setActiveTab] = useState("solo-vent");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -258,7 +258,7 @@ export default function RiceeeChatLayout({ partnerNames }) {
               {/* Full Digital Courtroom */}
               <section className="lg:col-span-12 flex flex-col items-center overflow-visible">
                 <div className="w-full max-w-6xl">
-                  <DigitalCourtroom partnerNames={partnerNames} poppins={poppins} />
+                  <DigitalCourtroom partnerNames={partnerNames} viewerIdx={viewerIdx} poppins={poppins} />
                 </div>
               </section>
             </>

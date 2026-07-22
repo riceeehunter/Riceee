@@ -48,7 +48,7 @@ function JudgeCat({ size = 64, className = "" }) {
   );
 }
 
-export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }) {
+export default function DigitalCourtroom({ partnerNames = ["User A", "User B"], viewerIdx = 0 }) {
   const [cases, setCases] = useState([]);
   const [view, setView] = useState("list"); // list | file | respond | deliberating | view
   const [activeCase, setActiveCase] = useState(null);
@@ -57,15 +57,15 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }
 
   const [newTitle, setNewTitle] = useState("");
   const [newPerspective, setNewPerspective] = useState("");
-  const [currentUserIdx, setCurrentUserIdx] = useState(0); // 0 or 1
-
   const resolveName = (storedName) => {
     if (storedName === "P1") return partnerNames[0];
     if (storedName === "P2") return partnerNames[1];
     return storedName; // Legacy rows stored a raw name
   };
 
-  const currentUserRole = `P${currentUserIdx + 1}`;
+  // Who you are is decided by which account you signed in with, not by a
+  // control on the page. The server stamps the same thing on anything filed.
+  const currentUserRole = `P${viewerIdx + 1}`;
 
   useEffect(() => {
     fetchCases();
@@ -81,7 +81,7 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }
   async function handleFileCase() {
     if (!newTitle || !newPerspective) return toast.error("Give your case a title and your side of it.");
     setIsSubmitting(true);
-    const res = await fileCase({ title: newTitle, perspective: newPerspective, author: currentUserRole });
+    const res = await fileCase({ title: newTitle, perspective: newPerspective });
     if (res.success) {
       toast.success("Filed. Your partner has been summoned.");
       setNewTitle("");
@@ -102,7 +102,7 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }
     setIsSubmitting(true);
 
     try {
-      const res = await submitResponse({ caseId, perspective: newPerspective, author: currentUserRole });
+      const res = await submitResponse({ caseId, perspective: newPerspective });
       if (res.success) {
         setNewPerspective("");
         setActiveCase(res.data);
@@ -169,28 +169,6 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }
           )}
         </div>
 
-        {/* identity switcher — who's speaking right now */}
-        {showHeaderControls && (
-          <div className="relative mt-5 flex items-center gap-3">
-            <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#bfa588]">Speaking as</span>
-            <div className="flex items-center gap-1 rounded-full border border-[#f0e2c8] bg-white/70 p-1">
-              {partnerNames.map((name, idx) => (
-                <button
-                  key={name}
-                  onClick={() => setCurrentUserIdx(idx)}
-                  className={`rounded-full px-4 py-1.5 text-[11px] font-black tracking-wide transition-all ${
-                    currentUserIdx === idx
-                      ? "text-white shadow-sm"
-                      : "text-[#a9825f] hover:text-[#7c5a3f]"
-                  }`}
-                  style={currentUserIdx === idx ? { backgroundColor: idx === 0 ? ROSE : TERRA } : undefined}
-                >
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Back button for sub-views */}
@@ -301,8 +279,8 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }
           >
             <TestimonyForm
               heading="State your case"
-              sub={`Tell Riceee exactly what happened, in your own words. ${partnerNames[currentUserIdx]} is speaking.`}
-              accent={currentUserIdx === 0 ? ROSE : TERRA}
+              sub={`Tell Riceee exactly what happened, in your own words. ${partnerNames[viewerIdx]} is speaking.`}
+              accent={viewerIdx === 0 ? ROSE : TERRA}
               title={newTitle}
               onTitle={setNewTitle}
               perspective={newPerspective}
@@ -325,7 +303,7 @@ export default function DigitalCourtroom({ partnerNames = ["User A", "User B"] }
             {activeCase?.sideAAuthor === currentUserRole ? (
               <WaitingForPartner
                 title={activeCase?.title}
-                partnerName={partnerNames[currentUserIdx === 0 ? 1 : 0]}
+                partnerName={partnerNames[viewerIdx === 0 ? 1 : 0]}
               />
             ) : (
               <TestimonyForm

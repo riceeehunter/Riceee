@@ -2,6 +2,23 @@
 
 import { db } from "@/lib/prisma";
 import { getOrCreateUser, getWritableSpace } from "@/lib/auth";
+import { getViewerSlot } from "@/lib/space-identity";
+import { PLAYER_IDS } from "@/lib/constants/players";
+
+/**
+ * Which side of the courtroom the signed-in account argues for.
+ *
+ * Derived here rather than accepted from the client. The page used to carry a
+ * "Speaking as" switch, which was only ever a way to test both sides from one
+ * login — with it gone, trusting a caller-supplied author would leave a way to
+ * file a case as your partner and have Riceee rule on words they never wrote.
+ *
+ * Cases store P1/P2 rather than the app-wide slots; the mapping is fixed.
+ */
+async function viewerRole(spaceId) {
+  const slot = await getViewerSlot(spaceId);
+  return slot === PLAYER_IDS.TWO ? "P2" : "P1";
+}
 import { revalidatePath } from "next/cache";
 import { DEFAULT_PARTNER_NAMES } from "@/lib/constants/partner-names";
 
@@ -314,9 +331,10 @@ export async function getCases() {
   }
 }
 
-export async function fileCase({ title, perspective, author }) {
+export async function fileCase({ title, perspective }) {
   try {
     const user = await getWritableSpace();
+    const author = await viewerRole(user.id);
     const courtroomCase = await db.courtroomCase.create({
       data: {
         userId: user.id,
@@ -349,10 +367,11 @@ export async function fileCase({ title, perspective, author }) {
   }
 }
 
-export async function submitResponse({ caseId, perspective, author }) {
+export async function submitResponse({ caseId, perspective }) {
   try {
     const user = await getWritableSpace();
-    
+    const author = await viewerRole(user.id);
+
     // Verify ownership
     const existingCase = await db.courtroomCase.findFirst({
       where: { id: caseId, userId: user.id }

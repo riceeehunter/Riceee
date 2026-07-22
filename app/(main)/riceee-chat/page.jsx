@@ -1,4 +1,6 @@
 import { getOrCreateUser } from "@/lib/auth";
+import { getViewerSlot } from "@/lib/space-identity";
+import { PLAYER_IDS } from "@/lib/constants/players";
 import { resolvePartnerNames } from "@/lib/constants/partner-names";
 import { RiceeeHub } from "@/components/riceee-hub";
 import RiceeeChatClient from "./_components/riceee-chat-client";
@@ -13,6 +15,11 @@ export default async function RiceeeChatPage() {
   const user = await getOrCreateUser();
   const resolved = resolvePartnerNames(user);
   const partnerNames = [resolved.partnerOneName, resolved.partnerTwoName];
-  
-  return <RiceeeChatLayout partnerNames={partnerNames} />;
+
+  // Which partner is actually signed in. The courtroom used to let you pick,
+  // which only ever made sense for testing both sides from one login.
+  const slot = await getViewerSlot(user.id);
+  const viewerIdx = slot === PLAYER_IDS.TWO ? 1 : 0;
+
+  return <RiceeeChatLayout partnerNames={partnerNames} viewerIdx={viewerIdx} />;
 }
